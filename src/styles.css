@@ -1,0 +1,1056 @@
+/* ---------------------------------------------------------------------------
+   golosov-danylo.com — styles
+   Ported from the inline styles of design/index.dc.html (PORT_PLAN step 3).
+   Every value here is measured from the prototype, not re-derived.
+
+   Contract with the scripts: the engine and the router drive state through
+   inline `element.style.*` writes, which always beat these class rules. The
+   only `!important` in this file lives in the text-edition / print blocks,
+   where overriding those inline writes is the point.
+   --------------------------------------------------------------------------- */
+
+:root {
+  /* Surfaces */
+  --void:         #05060d;  /* page base, blue-violet cast */
+  --void-2:       #080a13;  /* panel cards */
+  --void-3:       #070912;  /* text-edition cards */
+  --void-3-hover: #0c1020;  /* …and their hover */
+  --void-glow:    #080a15;  /* text-edition backdrop, mid stop */
+
+  /* Text */
+  --text:      #e9e7f2;  /* document default, and the default link colour */
+  --ink:       #f4f2fa;  /* panel h1 */
+  --ink-hub:   #f2f0f8;  /* hub h1, text-edition h2 */
+  --ink-xr:    #f2f0fa;  /* employment h3 */
+  --ink-head:  #eeecf6;  /* entry / project / card headings */
+  --ink-label: #eceaf4;  /* planet name at rest, text-edition card title */
+  --body:      #c2c3d3;  /* body text */
+  --body-2:    #c8c9d8;  /* employment summary, language rows */
+  --body-3:    #c5c6d5;  /* skills rows */
+  --bullet:    #b0b1c4;  /* bullet text */
+  --intro:     #a9aabe;  /* panel intro paragraph */
+  --intro-te:  #b6b7c8;  /* text-edition tagline */
+  --intro-bio: #b6b7c9;  /* about bio — one digit off --intro-te in the
+                            prototype; kept distinct rather than "tidied" */
+  --link:      #d3d4e2;  /* elsewhere links */
+  --link-2:    #dcdde9;  /* contact rows */
+  --link-cv:   #a9aabd;  /* CV links */
+  --bar-link:  #b8b9c9;  /* back-to-system, in the sticky bar */
+  --chrome:    #9294ab;  /* section titles, footers, hub role line */
+  --muted:     #83859c;  /* metadata, stack lines */
+  --dim:       #8a8ca3;  /* chrome text — min 4.5:1 on --void */
+  --meta:      #7b7d95;  /* entry dates / location */
+  --meta-2:    #8b8da5;  /* employment dates / location */
+  --marker:    #5e6076;  /* decoration only: list markers, hairlines */
+  --marker-xr: #6b5a9e;  /* …and their violet variant, employment only */
+  --esc:       #5f6178;  /* the "Esc" hint in the sticky bar */
+
+  /* Accents */
+  --ember:       #ff9a4d;         /* engine glow — set in the scene, not in CSS */
+  --hover:       #ffb877;         /* universal link hover */
+  --hover-rgb:   255, 184, 119;
+  --amber:       #ffd39a;         /* contact heading, CV row */
+  --cyan-soft:   #8ff0ff;         /* skills: used in production */
+  --mint:        #9dffd6;         /* skills: personal projects, project links */
+  --mint-rgb:    157, 255, 214;
+  --violet-soft: #dcb6ff;         /* employment heading and eyebrow */
+
+  --backend:  #3fd8ff;  --backend-hover:  #8ce7ff;  --backend-rgb:   63, 216, 255;
+  --projects: #38ffb0;  --projects-hover: #84ffcb;  --projects-rgb:  56, 255, 176;
+  --xr:       #b26bff;  --xr-hover:       #d0a6ff;  --xr-rgb:       178, 107, 255;
+  --about:    #ff9b3d;  --about-hover:    #ffc182;  --about-rgb:    255, 155,  61;
+
+  /* Rules and hairlines */
+  --rule:        rgba(255, 255, 255, 0.07);
+  --rule-card:   rgba(255, 255, 255, 0.08);
+  --rule-2:      rgba(255, 255, 255, 0.09);
+  --rule-soft:   rgba(255, 255, 255, 0.05);  /* the fade in the accent divider */
+  --rule-0:      rgba(255, 255, 255, 0);     /* …and where it ends */
+  --rule-chrome: rgba(131, 133, 156, 0.35);  /* skip-scene underline */
+  --rule-btn:    rgba(131, 133, 156, 0.28);  /* quality button */
+  --rule-cv:     rgba(169, 170, 189, 0.35);  /* CV underline, panel footers */
+  --rule-cv-te:  rgba(169, 170, 189, 0.4);   /* CV underline, text edition */
+  --bar:         rgba(5, 6, 13, 0.72);       /* sticky bar, blur(10px) */
+
+  /* Type */
+  --display: 'Bodoni Moda', Georgia, serif;
+  --sans:    'Archivo', 'Helvetica Neue', Helvetica, sans-serif;
+  --mono:    'IBM Plex Mono', monospace;
+}
+
+/* Per-destination accents. One rule set, not four copies of every rule.
+   `[data-planet]` carries it on the hub labels; `a[href="#…"]` carries it on
+   any link *to* a destination, so the "01"/"02" numerals in the text edition
+   and in each panel's "Elsewhere" list tint themselves without extra markup.
+   Do not add `data-planet` to those links — the engine iterates
+   `[data-planet]` and writes screen positions onto every match. */
+[data-panel='backend'],
+[data-planet='backend'],
+a[href='#backend'] {
+  --accent: var(--backend);
+  --accent-hover: var(--backend-hover);
+  --accent-rgb: var(--backend-rgb);
+}
+
+[data-panel='projects'],
+[data-planet='projects'],
+a[href='#projects'] {
+  --accent: var(--projects);
+  --accent-hover: var(--projects-hover);
+  --accent-rgb: var(--projects-rgb);
+}
+
+[data-panel='xr'],
+[data-planet='xr'],
+a[href='#xr'] {
+  --accent: var(--xr);
+  --accent-hover: var(--xr-hover);
+  --accent-rgb: var(--xr-rgb);
+}
+
+[data-panel='about'],
+[data-planet='about'],
+a[href='#about'] {
+  --accent: var(--about);
+  --accent-hover: var(--about-hover);
+  --accent-rgb: var(--about-rgb);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+   --------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--void);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  text-wrap: pretty;
+}
+
+a { color: var(--text); text-decoration: none; }
+a:hover { color: var(--hover); }
+
+@keyframes grainShift {
+  0%   { transform: translate(0, 0); }
+  20%  { transform: translate(-3%, 2%); }
+  40%  { transform: translate(2%, -3%); }
+  60%  { transform: translate(-2%, -2%); }
+  80%  { transform: translate(3%, 1%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* ---------------------------------------------------------------------------
+   Hub
+   --------------------------------------------------------------------------- */
+
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--void);
+}
+
+/* Faded up to 1 by the engine once the scene has booted. */
+.scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 900ms ease;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 85% at 50% 42%, rgba(0, 0, 0, 0) 42%, rgba(3, 4, 10, 0.55) 78%, rgba(2, 3, 8, 0.92) 100%);
+}
+
+.grain {
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  opacity: 0.16;
+  mix-blend-mode: overlay;
+  animation: grainShift 1.1s steps(4) infinite;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='0.55'/></svg>");
+}
+
+.labels {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms ease;
+}
+
+.label {
+  position: absolute;
+  transform: translate(-50%, 0);
+  display: grid;
+  justify-items: center;
+  gap: 0;
+  padding: 6px 10px 8px;
+  text-align: center;
+  pointer-events: auto;
+  outline-offset: 6px;
+}
+
+/* Starting positions only. The engine projects each planet every frame and
+   overwrites left/top in px, so these are what a reader sees for one frame
+   and what a no-JS reader would see if the labels were ever shown. */
+.label[data-planet='backend']  { left: 18%; top: 52%; }
+.label[data-planet='projects'] { left: 40%; top: 40%; }
+.label[data-planet='xr']       { left: 60%; top: 58%; }
+.label[data-planet='about']    { left: 82%; top: 46%; }
+
+/* Grows to 40px on hover/focus — the engine sets the height inline. */
+.label__leader {
+  display: block;
+  width: 1px;
+  height: 26px;
+  background: linear-gradient(to bottom, rgba(var(--accent-rgb), 0), rgba(var(--accent-rgb), 0.85));
+  transition: height 300ms ease;
+}
+
+.label__index {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Tinted to the destination's hover colour by the engine on hover/focus. */
+.label__name {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--display);
+  font-size: 20px;
+  letter-spacing: 0.01em;
+  color: var(--ink-label);
+  transition: color 300ms ease;
+}
+
+.label__sub {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-label);
+}
+
+.hub-head {
+  position: absolute;
+  left: clamp(20px, 4vw, 56px);
+  top: clamp(20px, 4vh, 44px);
+  z-index: 5;
+  pointer-events: none;
+  transition: opacity 300ms ease;
+}
+
+.hub-head__name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(22px, 2.4vw, 32px);
+  letter-spacing: 0.005em;
+  line-height: 1.1;
+  color: var(--ink-hub);
+}
+
+.hub-head__role {
+  margin: 10px 0 0;
+  max-width: 34ch;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.hub-head__location {
+  margin: 6px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.hub-foot {
+  position: absolute;
+  left: clamp(20px, 4vw, 56px);
+  bottom: clamp(18px, 3vh, 34px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  transition: opacity 300ms ease;
+}
+
+.skip-scene {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--rule-chrome);
+  padding-bottom: 2px;
+}
+
+.skip-scene:hover {
+  color: var(--hover);
+  border-bottom-color: rgba(var(--hover-rgb), 0.6);
+}
+
+/* One of the two permitted radii. */
+.quality {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--rule-btn);
+  border-radius: 2px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.quality:hover {
+  border-color: rgba(var(--hover-rgb), 0.5);
+  color: var(--hover);
+}
+
+.hud-hint {
+  position: absolute;
+  right: clamp(20px, 4vw, 56px);
+  bottom: clamp(18px, 3vh, 34px);
+  z-index: 5;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+  pointer-events: none;
+  transition: opacity 400ms ease;
+}
+
+/* The other permitted radius. Tracks the cursor; the engine writes left/top. */
+.reticle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 8;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 1px solid rgba(var(--hover-rgb), 0.75);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 200ms ease, transform 200ms ease;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
+/* ---------------------------------------------------------------------------
+   Text edition (#fallback)
+
+   The DEFAULT state, not an error branch. The inline WebGL probe in <head>
+   sets data-dg-3d and injects the rule that fades this out on success.
+   --------------------------------------------------------------------------- */
+
+.te {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: linear-gradient(180deg, var(--void) 0%, var(--void-glow) 60%, var(--void) 100%);
+  padding: clamp(28px, 7vh, 88px) clamp(20px, 6vw, 96px);
+}
+
+.te__col {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.te__eyebrow {
+  margin: 0 0 clamp(28px, 6vh, 56px);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.te__name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(38px, 7vw, 84px);
+  line-height: 1.02;
+  letter-spacing: -0.01em;
+  color: var(--ink-hub);
+}
+
+.te__tagline {
+  margin: 18px 0 0;
+  max-width: 46ch;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.6;
+  color: var(--intro-te);
+}
+
+/* The 1px gap plus the container background is what draws the grid hairlines. */
+.te__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  margin-top: clamp(36px, 7vh, 72px);
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+.te__card {
+  display: block;
+  padding: clamp(20px, 3vw, 30px);
+  background: var(--void-3);
+}
+
+.te__card:hover { background: var(--void-3-hover); }
+
+.te__card-num {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+.te__card-title {
+  display: block;
+  margin-top: 14px;
+  font-family: var(--display);
+  font-size: clamp(20px, 2.2vw, 26px);
+  color: var(--ink-label);
+}
+
+.te__note {
+  margin: clamp(28px, 5vh, 48px) 0 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.te__cv {
+  color: var(--link-cv);
+  border-bottom: 1px solid var(--rule-cv-te);
+}
+
+/* This one link does not take the global a:hover. In the prototype its colour
+   is an inline declaration with no style-hover beside it, so the inline value
+   wins over `a:hover` and it stays --link-cv under the cursor. Every other CV
+   link (the panel footers, the contact row) does warm to --hover. That reads
+   like an oversight in the prototype rather than a decision, but Phase 3 is a
+   port, not a redesign — deleting this rule is the whole change if the owner
+   wants it to match the others. */
+.te__cv:hover { color: var(--link-cv); }
+
+/* ---------------------------------------------------------------------------
+   Panel shell
+
+   Hidden until routed to; the router writes visibility/opacity inline. The top
+   44vh of every panel is transparent so the parked planet stays visible.
+   --------------------------------------------------------------------------- */
+
+.panel {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.panel__top {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px clamp(18px, 4vw, 44px);
+  background: var(--bar);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--rule);
+}
+
+.panel__back {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--bar-link);
+}
+
+.panel__status {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.panel__esc { color: var(--esc); }
+
+.panel__where { color: var(--accent); }
+
+.panel__hero {
+  position: relative;
+  height: 44vh;
+  min-height: 220px;
+  pointer-events: none;
+}
+
+.panel__hero-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(5, 6, 13, 0) 0%, rgba(5, 6, 13, 0.1) 55%, rgba(5, 6, 13, 0.75) 84%, var(--void) 100%);
+}
+
+.panel__hero-label {
+  position: absolute;
+  left: clamp(18px, 4vw, 44px);
+  bottom: 18px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.panel__body {
+  position: relative;
+  background: var(--void);
+  min-height: 56vh;
+}
+
+.col {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);
+}
+
+.panel__title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(38px, 6vw, 62px);
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  color: var(--ink);
+}
+
+.intro {
+  margin: 22px 0 0;
+  max-width: 60ch;
+  font-size: clamp(17px, 1.9vw, 20px);
+  line-height: 1.65;
+  color: var(--intro);
+}
+
+/* The Projects intro follows the notice, which takes the tighter rhythm. */
+[data-panel='projects'] .intro { margin-top: 24px; }
+
+.panel__footer {
+  margin-top: clamp(48px, 8vh, 80px);
+  padding-top: 24px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 26px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.cv-link {
+  color: var(--link-cv);
+  border-bottom: 1px solid var(--rule-cv);
+  padding-bottom: 2px;
+}
+
+.exit-link { color: var(--chrome); }
+
+/* ---------------------------------------------------------------------------
+   Editorial primitives, shared across panels
+   --------------------------------------------------------------------------- */
+
+.section { margin-top: clamp(40px, 7vh, 64px); }
+
+/* The two XR sections sit on the wider rhythm. */
+.section--lg { margin-top: clamp(44px, 7vh, 72px); }
+
+.section-title {
+  margin: 0 0 20px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.section-title--employment { margin-bottom: 22px; color: var(--violet-soft); }
+.section-title--skills     { margin-bottom: 22px; }
+.section-title--tight      { margin-bottom: 8px; }
+.section-title--contact    { color: var(--amber); }
+
+.meta {
+  margin: 10px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--meta);
+}
+
+.summary {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--body);
+}
+
+.bullets {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 9px;
+}
+
+.bullets > li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--bullet);
+}
+
+.bullets > li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--marker);
+}
+
+.stack {
+  margin: 16px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* Entries and the employment block breathe wider than the cards do. */
+.entry .summary,
+.entry .bullets,
+.employment__entry .bullets { margin-top: 18px; }
+
+.entry .stack,
+.employment__entry .stack { margin-top: 20px; }
+
+.card--project .stack { margin-top: 18px; }
+
+.card {
+  padding: clamp(24px, 3.4vw, 32px);
+  background: var(--void-2);
+  border: 1px solid var(--rule-card);
+}
+
+.card--project { padding: clamp(24px, 3.4vw, 34px); }
+
+.cards {
+  display: grid;
+  gap: 20px;
+}
+
+.card__title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(22px, 2.6vw, 27px);
+  line-height: 1.2;
+  color: var(--ink-head);
+}
+
+/* Editorial, not decorative: see README "Content rules". */
+.notice {
+  margin: 24px 0 0;
+  padding: 14px 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.38);
+  background: rgba(var(--accent-rgb), 0.06);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mint);
+}
+
+.note {
+  margin: 0 0 24px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.7;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.rule-accent {
+  height: 1px;
+  margin: clamp(40px, 7vh, 68px) 0 0;
+  background: linear-gradient(to right, rgba(var(--accent-rgb), 0.55), var(--rule-soft) 60%, var(--rule-0));
+}
+
+/* ---------------------------------------------------------------------------
+   Backend entries — neutral, non-employment styling on purpose.
+   If one of these ever becomes employment it moves to the XR treatment below;
+   it does not get restyled here. See README "Content rules".
+   --------------------------------------------------------------------------- */
+
+.entry {
+  padding: clamp(28px, 4vw, 38px) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.entry__org {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.entry__title {
+  margin: 12px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(24px, 3vw, 30px);
+  line-height: 1.2;
+  color: var(--ink-head);
+}
+
+/* ---------------------------------------------------------------------------
+   Projects
+   --------------------------------------------------------------------------- */
+
+.projects {
+  display: grid;
+  gap: 20px;
+  margin-top: clamp(40px, 7vh, 68px);
+}
+
+.project__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.project__title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(23px, 2.8vw, 28px);
+  line-height: 1.2;
+  color: var(--ink-head);
+}
+
+.project__status {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.project__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin-top: 18px;
+}
+
+.project__link {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mint);
+  border-bottom: 1px solid rgba(var(--mint-rgb), 0.45);
+  padding-bottom: 3px;
+}
+
+.project__link:hover {
+  color: var(--hover);
+  border-bottom-color: rgba(var(--hover-rgb), 0.6);
+}
+
+/* ---------------------------------------------------------------------------
+   XR — Employment
+
+   The only employment styling in the site: 2px accent top rule, larger
+   heading, no card background. Nothing else may borrow it.
+   --------------------------------------------------------------------------- */
+
+.employment__entry {
+  padding: 26px 0 34px;
+  border-top: 2px solid var(--accent);
+}
+
+.employment__org {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--violet-soft);
+}
+
+.employment__title {
+  margin: 14px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(26px, 3.4vw, 34px);
+  line-height: 1.15;
+  color: var(--ink-xr);
+}
+
+.employment__meta {
+  margin: 12px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  color: var(--meta-2);
+}
+
+.employment__summary {
+  margin: 20px 0 0;
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--body-2);
+}
+
+.employment__entry .bullets > li::before { color: var(--marker-xr); }
+
+/* ---------------------------------------------------------------------------
+   About
+   --------------------------------------------------------------------------- */
+
+.about__meta {
+  margin: 16px 0 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.bio {
+  margin: 26px 0 0;
+  max-width: 62ch;
+  font-size: clamp(17px, 1.9vw, 20px);
+  line-height: 1.7;
+  color: var(--intro-bio);
+}
+
+.contact__row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-size: 18px;
+  color: var(--link-2);
+}
+
+.contact__row--cv { color: var(--amber); }
+
+.contact__label {
+  min-width: 92px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.edu {
+  padding-top: 22px;
+  border-top: 1px solid var(--rule-2);
+}
+
+.langs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--rule-2);
+}
+
+.langs > li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 17px;
+  color: var(--body-2);
+}
+
+.langs__level {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+/* Exactly two groups. There is no "currently learning" group. */
+.skills__group {
+  padding: 22px 0 26px;
+  border-top: 1px solid var(--rule-2);
+}
+
+.skills__group-title {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.skills__group-title--production { color: var(--cyan-soft); }
+.skills__group-title--personal   { color: var(--mint); }
+
+.skills__list {
+  margin: 14px 0 0;
+  font-size: 17px;
+  line-height: 1.85;
+  color: var(--body-3);
+}
+
+/* ---------------------------------------------------------------------------
+   Elsewhere in the system
+   --------------------------------------------------------------------------- */
+
+.elsewhere { margin-top: clamp(48px, 8vh, 80px); }
+
+.elsewhere__title {
+  margin: 0 0 20px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.linklist {
+  display: grid;
+  gap: 14px;
+}
+
+.elsewhere__link {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-size: 18px;
+  color: var(--link);
+}
+
+.elsewhere__num {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+/* Every link that carried only a hover colour in the prototype. */
+.panel__back:hover,
+.elsewhere__link:hover,
+.cv-link:hover,
+.exit-link:hover,
+.contact__row:hover { color: var(--hover); }
+
+/* ---------------------------------------------------------------------------
+   Warp canvas
+   --------------------------------------------------------------------------- */
+
+.smoke {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: none;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Text edition / no-WebGL: panels become one continuous document.
+   Carried over verbatim from the prototype — behavioural, not decorative.
+   The !important is deliberate: it overrides the inline visibility/opacity the
+   router writes onto each panel.
+   --------------------------------------------------------------------------- */
+
+html[data-dg-flat] body { overflow: auto; }
+html[data-dg-flat] [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; }
+html[data-dg-flat] [data-hero] { display: none !important; }
+html[data-dg-flat] [data-panel-top] { position: static !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-grain] { animation: none !important; }
+}
+
+@media print {
+  body { overflow: visible; background: #fff; color: #111; }
+  [data-grain], #scene, #smoke, #reticle, [data-panel-top], [data-hero] { display: none !important; }
+  [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; }
+}

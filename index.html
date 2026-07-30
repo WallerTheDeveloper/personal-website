@@ -21,36 +21,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
-<!-- PORT_PLAN step 3 moves this block to styles.css, in this position. Every
-     rule here is behavioural, not decorative. -->
-<style>
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #05060d; color: #e9e7f2; }
-  body { font-family: 'Archivo', 'Helvetica Neue', Helvetica, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; text-wrap: pretty; }
-  a { color: #e9e7f2; text-decoration: none; }
-  a:hover { color: #ffb877; }
-  @keyframes grainShift {
-    0%   { transform: translate(0, 0); }
-    20%  { transform: translate(-3%, 2%); }
-    40%  { transform: translate(2%, -3%); }
-    60%  { transform: translate(-2%, -2%); }
-    80%  { transform: translate(3%, 1%); }
-    100% { transform: translate(0, 0); }
-  }
-  /* text-edition / no-WebGL: panels become one continuous document */
-  html[data-dg-flat] body { overflow: auto; }
-  html[data-dg-flat] [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; }
-  html[data-dg-flat] [data-hero] { display: none !important; }
-  html[data-dg-flat] [data-panel-top] { position: static !important; }
-  @media (prefers-reduced-motion: reduce) {
-    [data-grain] { animation: none !important; }
-  }
-  @media print {
-    body { overflow: visible; background: #fff; color: #111; }
-    [data-grain], #scene, #smoke, #reticle, [data-panel-top], [data-hero] { display: none !important; }
-    [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; }
-  }
-</style>
+<!-- Linked, not imported from main.ts: a JS-injected stylesheet flashes unstyled
+     content, and the text edition below is the default state, not a fallback
+     that only matters when something fails. -->
+<link rel="stylesheet" href="/src/styles.css" />
 
 <!-- Inline and blocking, in <head>, on purpose. It must run before first paint
      or the text edition flashes on every load. It sets data-dg-3d on <html> and
@@ -73,424 +47,424 @@
 </head>
 <body>
 
-<main id="stage" style="position: fixed; inset: 0; overflow: hidden; background: #05060d;">
+<main id="stage" class="stage">
 
-  <canvas id="scene" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 900ms ease;"></canvas>
+  <canvas id="scene" aria-hidden="true" class="scene"></canvas>
 
-  <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 85% at 50% 42%, rgba(0,0,0,0) 42%, rgba(3,4,10,0.55) 78%, rgba(2,3,8,0.92) 100%);"></div>
+  <div aria-hidden="true" class="vignette"></div>
 
-  <div data-grain="" aria-hidden="true" style="position: absolute; inset: -12%; pointer-events: none; opacity: 0.16; mix-blend-mode: overlay; animation: grainShift 1.1s steps(4) infinite; background-image: url(&quot;data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'&gt;&lt;filter id='n'&gt;&lt;feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/&gt;&lt;/filter&gt;&lt;rect width='180' height='180' filter='url(%23n)' opacity='0.55'/&gt;&lt;/svg&gt;&quot;);"></div>
+  <div data-grain="" aria-hidden="true" class="grain"></div>
 
-  <nav id="labels" aria-label="Destinations" style="position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 700ms ease;">
-    <a id="lbl-backend" href="#backend" data-planet="backend" style="position: absolute; left: 18%; top: 52%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
-      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(63,216,255,0), rgba(63,216,255,0.85)); transition: height 300ms ease;"></span>
-      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">01</span>
-      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">Backend &amp; Platform</span>
-      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">Services · Data · Delivery</span>
+  <nav id="labels" aria-label="Destinations" class="labels">
+    <a id="lbl-backend" href="#backend" data-planet="backend" class="label">
+      <span data-leader="" aria-hidden="true" class="label__leader"></span>
+      <span class="label__index">01</span>
+      <span data-name="" class="label__name">Backend &amp; Platform</span>
+      <span class="label__sub">Services · Data · Delivery</span>
     </a>
-    <a id="lbl-projects" href="#projects" data-planet="projects" style="position: absolute; left: 40%; top: 40%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
-      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(56,255,176,0), rgba(56,255,176,0.85)); transition: height 300ms ease;"></span>
-      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #38ffb0;">02</span>
-      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">Independent Projects</span>
-      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">Personal work</span>
+    <a id="lbl-projects" href="#projects" data-planet="projects" class="label">
+      <span data-leader="" aria-hidden="true" class="label__leader"></span>
+      <span class="label__index">02</span>
+      <span data-name="" class="label__name">Independent Projects</span>
+      <span class="label__sub">Personal work</span>
     </a>
-    <a id="lbl-xr" href="#xr" data-planet="xr" style="position: absolute; left: 60%; top: 58%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
-      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(178,107,255,0), rgba(178,107,255,0.85)); transition: height 300ms ease;"></span>
-      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #b26bff;">03</span>
-      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">XR / AR</span>
-      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">Unity · Spatial</span>
+    <a id="lbl-xr" href="#xr" data-planet="xr" class="label">
+      <span data-leader="" aria-hidden="true" class="label__leader"></span>
+      <span class="label__index">03</span>
+      <span data-name="" class="label__name">XR / AR</span>
+      <span class="label__sub">Unity · Spatial</span>
     </a>
-    <a id="lbl-about" href="#about" data-planet="about" style="position: absolute; left: 82%; top: 46%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
-      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(255,155,61,0), rgba(255,155,61,0.85)); transition: height 300ms ease;"></span>
-      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #ff9b3d;">04</span>
-      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">About &amp; Contact</span>
-      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">CV · Languages</span>
+    <a id="lbl-about" href="#about" data-planet="about" class="label">
+      <span data-leader="" aria-hidden="true" class="label__leader"></span>
+      <span class="label__index">04</span>
+      <span data-name="" class="label__name">About &amp; Contact</span>
+      <span class="label__sub">CV · Languages</span>
     </a>
   </nav>
 
-  <header id="hub-head" style="position: absolute; left: clamp(20px, 4vw, 56px); top: clamp(20px, 4vh, 44px); z-index: 5; pointer-events: none; transition: opacity 300ms ease;">
-    <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.4vw, 32px); letter-spacing: 0.005em; line-height: 1.1; color: #f2f0f8;">{{FULL_NAME}}</h1>
-    <p style="margin: 10px 0 0; max-width: 34ch; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.6; letter-spacing: 0.09em; text-transform: uppercase; color: #9294ab;">{{ROLE_TAGLINE}}</p>
-    <p style="margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: #8a8ca3;">{{LOCATION}}</p>
+  <header id="hub-head" class="hub-head">
+    <h1 class="hub-head__name">{{FULL_NAME}}</h1>
+    <p class="hub-head__role">{{ROLE_TAGLINE}}</p>
+    <p class="hub-head__location">{{LOCATION}}</p>
   </header>
 
-  <div id="hub-foot" style="position: absolute; left: clamp(20px, 4vw, 56px); bottom: clamp(18px, 3vh, 34px); z-index: 5; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; transition: opacity 300ms ease;">
-    <a id="skip-scene" href="#about" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #83859c; border-bottom: 1px solid rgba(131,133,156,0.35); padding-bottom: 2px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Skip the scene → read the CV</a>
-    <button id="quality-toggle" type="button" style="appearance: none; background: transparent; border: 1px solid rgba(131,133,156,0.28); border-radius: 2px; padding: 5px 9px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #9294ab;" style-hover="border-color: rgba(255,184,119,0.5); color: #ffb877;">Quality: high · <span id="fps-readout">--</span> fps</button>
+  <div id="hub-foot" class="hub-foot">
+    <a id="skip-scene" href="#about" class="skip-scene">Skip the scene → read the CV</a>
+    <button id="quality-toggle" type="button" class="quality">Quality: high · <span id="fps-readout">--</span> fps</button>
   </div>
 
-  <div id="hud-hint" aria-hidden="true" style="position: absolute; right: clamp(20px, 4vw, 56px); bottom: clamp(18px, 3vh, 34px); z-index: 5; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3; pointer-events: none; transition: opacity 400ms ease;">Drag / scroll to pan · Tab to cycle</div>
+  <div id="hud-hint" aria-hidden="true" class="hud-hint">Drag / scroll to pan · Tab to cycle</div>
 
-  <div id="reticle" aria-hidden="true" style="position: absolute; left: 0; top: 0; z-index: 8; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 1px solid rgba(255,184,119,0.75); border-radius: 50%; opacity: 0; transform: scale(0.6); transition: opacity 200ms ease, transform 200ms ease; pointer-events: none; mix-blend-mode: screen;"></div>
+  <div id="reticle" aria-hidden="true" class="reticle"></div>
 
 </main>
 
-<section id="fallback" style="position: fixed; inset: 0; z-index: 20; overflow-y: auto; overflow-x: hidden; background: linear-gradient(180deg, #05060d 0%, #080a15 60%, #05060d 100%); padding: clamp(28px, 7vh, 88px) clamp(20px, 6vw, 96px);">
-  <div style="max-width: 1080px; margin: 0 auto;">
-    <p style="margin: 0 0 clamp(28px, 6vh, 56px); font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #8a8ca3;">Portfolio · Text edition</p>
-    <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 7vw, 84px); line-height: 1.02; letter-spacing: -0.01em; color: #f2f0f8;">{{FULL_NAME}}</h2>
-    <p style="margin: 18px 0 0; max-width: 46ch; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.6; color: #b6b7c8;">{{ROLE_TAGLINE}} · {{LOCATION}}</p>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; margin-top: clamp(36px, 7vh, 72px); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.07);">
-      <a href="#backend" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
-        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span>
-        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">Backend &amp; Platform</span>
+<section id="fallback" class="te">
+  <div class="te__col">
+    <p class="te__eyebrow">Portfolio · Text edition</p>
+    <h2 class="te__name">{{FULL_NAME}}</h2>
+    <p class="te__tagline">{{ROLE_TAGLINE}} · {{LOCATION}}</p>
+    <div class="te__grid">
+      <a href="#backend" class="te__card">
+        <span class="te__card-num">01</span>
+        <span class="te__card-title">Backend &amp; Platform</span>
       </a>
-      <a href="#projects" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
-        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span>
-        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">Independent Projects</span>
+      <a href="#projects" class="te__card">
+        <span class="te__card-num">02</span>
+        <span class="te__card-title">Independent Projects</span>
       </a>
-      <a href="#xr" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
-        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span>
-        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">XR / AR</span>
+      <a href="#xr" class="te__card">
+        <span class="te__card-num">03</span>
+        <span class="te__card-title">XR / AR</span>
       </a>
-      <a href="#about" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
-        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span>
-        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">About &amp; Contact</span>
+      <a href="#about" class="te__card">
+        <span class="te__card-num">04</span>
+        <span class="te__card-title">About &amp; Contact</span>
       </a>
     </div>
-    <p style="margin: clamp(28px, 5vh, 48px) 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8ca3;">Full navigation without 3D. <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.4);">Download CV (PDF)</a></p>
+    <p class="te__note">Full navigation without 3D. <a href="cv.pdf" target="_blank" rel="noopener" class="te__cv">Download CV (PDF)</a></p>
   </div>
 </section>
 
-<section id="panel-backend" data-panel="backend" data-screen-label="01 Backend" aria-label="Backend and Platform" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
-  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
-    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
-    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #3fd8ff;">01 · Backend &amp; Platform</span></span>
+<section id="panel-backend" data-panel="backend" data-screen-label="01 Backend" aria-label="Backend and Platform" class="panel">
+  <div data-panel-top="" class="panel__top">
+    <a href="#" data-exit="" class="panel__back">← Back to system</a>
+    <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">01 · Backend &amp; Platform</span></span>
   </div>
-  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
-    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
-    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #3fd8ff;">Arrived · Backend &amp; Platform</span>
+  <div data-hero="" aria-hidden="true" class="panel__hero">
+    <div class="panel__hero-veil"></div>
+    <span class="panel__hero-label">Arrived · Backend &amp; Platform</span>
   </div>
-  <div style="position: relative; background: #05060d; min-height: 56vh;">
-    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
-      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">Backend &amp; Platform</h1>
+  <div class="panel__body">
+    <div class="col">
+      <h1 class="panel__title">Backend &amp; Platform</h1>
 
-    <p style="margin: 22px 0 0; max-width: 60ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.65; color: #a9aabe;">{{BACKEND_INTRO}}</p>
+    <p class="intro">{{BACKEND_INTRO}}</p>
 
-    <div style="height: 1px; margin: clamp(40px, 7vh, 68px) 0 0; background: linear-gradient(to right, rgba(63,216,255,0.55), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0));"></div>
+    <div class="rule-accent"></div>
 
     <section aria-label="Work">
-      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{{BACKEND_BLOCK_1_ORG}}</p>
-        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{{BACKEND_BLOCK_1_TITLE}}</h2>
-        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{{BACKEND_BLOCK_1_DATES}} · {{BACKEND_BLOCK_1_LOCATION}}</p>
-        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{BACKEND_BLOCK_1_SUMMARY}}</p>
-        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_1_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_1_POINT_2}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_1_POINT_3}}</li>
+      <article class="entry">
+        <p class="entry__org">{{BACKEND_BLOCK_1_ORG}}</p>
+        <h2 class="entry__title">{{BACKEND_BLOCK_1_TITLE}}</h2>
+        <p class="meta">{{BACKEND_BLOCK_1_DATES}} · {{BACKEND_BLOCK_1_LOCATION}}</p>
+        <p class="summary">{{BACKEND_BLOCK_1_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{BACKEND_BLOCK_1_POINT_1}}</li>
+          <li>{{BACKEND_BLOCK_1_POINT_2}}</li>
+          <li>{{BACKEND_BLOCK_1_POINT_3}}</li>
         </ul>
-        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{BACKEND_BLOCK_1_STACK}}</p>
+        <p class="stack">Stack — {{BACKEND_BLOCK_1_STACK}}</p>
       </article>
 
-      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{{BACKEND_BLOCK_2_ORG}}</p>
-        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{{BACKEND_BLOCK_2_TITLE}}</h2>
-        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{{BACKEND_BLOCK_2_DATES}} · {{BACKEND_BLOCK_2_LOCATION}}</p>
-        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{BACKEND_BLOCK_2_SUMMARY}}</p>
-        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_2_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_2_POINT_2}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_2_POINT_3}}</li>
+      <article class="entry">
+        <p class="entry__org">{{BACKEND_BLOCK_2_ORG}}</p>
+        <h2 class="entry__title">{{BACKEND_BLOCK_2_TITLE}}</h2>
+        <p class="meta">{{BACKEND_BLOCK_2_DATES}} · {{BACKEND_BLOCK_2_LOCATION}}</p>
+        <p class="summary">{{BACKEND_BLOCK_2_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{BACKEND_BLOCK_2_POINT_1}}</li>
+          <li>{{BACKEND_BLOCK_2_POINT_2}}</li>
+          <li>{{BACKEND_BLOCK_2_POINT_3}}</li>
         </ul>
-        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{BACKEND_BLOCK_2_STACK}}</p>
+        <p class="stack">Stack — {{BACKEND_BLOCK_2_STACK}}</p>
       </article>
 
-      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{{BACKEND_BLOCK_3_ORG}}</p>
-        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{{BACKEND_BLOCK_3_TITLE}}</h2>
-        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{{BACKEND_BLOCK_3_DATES}} · {{BACKEND_BLOCK_3_LOCATION}}</p>
-        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{BACKEND_BLOCK_3_SUMMARY}}</p>
-        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_3_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_3_POINT_2}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_3_POINT_3}}</li>
+      <article class="entry">
+        <p class="entry__org">{{BACKEND_BLOCK_3_ORG}}</p>
+        <h2 class="entry__title">{{BACKEND_BLOCK_3_TITLE}}</h2>
+        <p class="meta">{{BACKEND_BLOCK_3_DATES}} · {{BACKEND_BLOCK_3_LOCATION}}</p>
+        <p class="summary">{{BACKEND_BLOCK_3_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{BACKEND_BLOCK_3_POINT_1}}</li>
+          <li>{{BACKEND_BLOCK_3_POINT_2}}</li>
+          <li>{{BACKEND_BLOCK_3_POINT_3}}</li>
         </ul>
-        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{BACKEND_BLOCK_3_STACK}}</p>
+        <p class="stack">Stack — {{BACKEND_BLOCK_3_STACK}}</p>
       </article>
 
-      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
-        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{{BACKEND_BLOCK_4_ORG}}</p>
-        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{{BACKEND_BLOCK_4_TITLE}}</h2>
-        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{{BACKEND_BLOCK_4_DATES}} · {{BACKEND_BLOCK_4_LOCATION}}</p>
-        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{BACKEND_BLOCK_4_SUMMARY}}</p>
-        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_4_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_4_POINT_2}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{BACKEND_BLOCK_4_POINT_3}}</li>
+      <article class="entry">
+        <p class="entry__org">{{BACKEND_BLOCK_4_ORG}}</p>
+        <h2 class="entry__title">{{BACKEND_BLOCK_4_TITLE}}</h2>
+        <p class="meta">{{BACKEND_BLOCK_4_DATES}} · {{BACKEND_BLOCK_4_LOCATION}}</p>
+        <p class="summary">{{BACKEND_BLOCK_4_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{BACKEND_BLOCK_4_POINT_1}}</li>
+          <li>{{BACKEND_BLOCK_4_POINT_2}}</li>
+          <li>{{BACKEND_BLOCK_4_POINT_3}}</li>
         </ul>
-        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{BACKEND_BLOCK_4_STACK}}</p>
+        <p class="stack">Stack — {{BACKEND_BLOCK_4_STACK}}</p>
       </article>
     </section>
-      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
-        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
-        <div style="display: grid; gap: 14px;">
-          <a href="#projects" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span> Independent Projects</a>
-          <a href="#xr" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span> XR / AR</a>
-          <a href="#about" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span> About &amp; Contact</a>
+      <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
+        <p class="elsewhere__title">Elsewhere in the system</p>
+        <div class="linklist">
+          <a href="#projects" class="elsewhere__link"><span class="elsewhere__num">02</span> Independent Projects</a>
+          <a href="#xr" class="elsewhere__link"><span class="elsewhere__num">03</span> XR / AR</a>
+          <a href="#about" class="elsewhere__link"><span class="elsewhere__num">04</span> About &amp; Contact</a>
         </div>
       </nav>
-      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
-        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
-        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      <footer class="panel__footer">
+        <a href="cv.pdf" target="_blank" rel="noopener" class="cv-link">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" class="exit-link">← Back to system</a>
       </footer>
     </div>
   </div>
 </section>
 
-<section id="panel-projects" data-panel="projects" data-screen-label="02 Projects" aria-label="Independent Projects" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
-  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
-    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
-    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #38ffb0;">02 · Independent Projects</span></span>
+<section id="panel-projects" data-panel="projects" data-screen-label="02 Projects" aria-label="Independent Projects" class="panel">
+  <div data-panel-top="" class="panel__top">
+    <a href="#" data-exit="" class="panel__back">← Back to system</a>
+    <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">02 · Independent Projects</span></span>
   </div>
-  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
-    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
-    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #38ffb0;">Arrived · Independent Projects</span>
+  <div data-hero="" aria-hidden="true" class="panel__hero">
+    <div class="panel__hero-veil"></div>
+    <span class="panel__hero-label">Arrived · Independent Projects</span>
   </div>
-  <div style="position: relative; background: #05060d; min-height: 56vh;">
-    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
-      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">Independent Projects</h1>
+  <div class="panel__body">
+    <div class="col">
+      <h1 class="panel__title">Independent Projects</h1>
 
-    <p role="note" style="margin: 24px 0 0; padding: 14px 18px; border: 1px solid rgba(56,255,176,0.38); background: rgba(56,255,176,0.06); font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.08em; text-transform: uppercase; color: #9dffd6;">Independent projects — personal work, not employment.</p>
+    <p role="note" class="notice">Independent projects — personal work, not employment.</p>
 
-    <p style="margin: 24px 0 0; max-width: 60ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.65; color: #a9aabe;">{{PROJECTS_INTRO}}</p>
+    <p class="intro">{{PROJECTS_INTRO}}</p>
 
-    <section aria-label="Projects" style="display: grid; gap: 20px; margin-top: clamp(40px, 7vh, 68px);">
+    <section aria-label="Projects" class="projects">
 
-      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{{PROJECT_1_TITLE}}</h2>
-          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{{PROJECT_1_STATUS}}</span>
+      <article class="card card--project">
+        <div class="project__head">
+          <h2 class="project__title">{{PROJECT_1_TITLE}}</h2>
+          <span class="project__status">{{PROJECT_1_STATUS}}</span>
         </div>
-        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{PROJECT_1_SUMMARY}}</p>
-        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_1_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_1_POINT_2}}</li>
+        <p class="summary">{{PROJECT_1_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{PROJECT_1_POINT_1}}</li>
+          <li>{{PROJECT_1_POINT_2}}</li>
         </ul>
-        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{PROJECT_1_STACK}}</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
-          <a href="#" target="_blank" rel="noopener" data-repo="1" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
-          <a href="#" target="_blank" rel="noopener" data-demo="1" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        <p class="stack">Stack — {{PROJECT_1_STACK}}</p>
+        <div class="project__links">
+          <a href="#" target="_blank" rel="noopener" data-repo="1" class="project__link">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="1" class="project__link">Live demo ↗</a>
         </div>
       </article>
 
-      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{{PROJECT_2_TITLE}}</h2>
-          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{{PROJECT_2_STATUS}}</span>
+      <article class="card card--project">
+        <div class="project__head">
+          <h2 class="project__title">{{PROJECT_2_TITLE}}</h2>
+          <span class="project__status">{{PROJECT_2_STATUS}}</span>
         </div>
-        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{PROJECT_2_SUMMARY}}</p>
-        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_2_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_2_POINT_2}}</li>
+        <p class="summary">{{PROJECT_2_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{PROJECT_2_POINT_1}}</li>
+          <li>{{PROJECT_2_POINT_2}}</li>
         </ul>
-        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{PROJECT_2_STACK}}</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
-          <a href="#" target="_blank" rel="noopener" data-repo="2" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
-          <a href="#" target="_blank" rel="noopener" data-demo="2" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        <p class="stack">Stack — {{PROJECT_2_STACK}}</p>
+        <div class="project__links">
+          <a href="#" target="_blank" rel="noopener" data-repo="2" class="project__link">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="2" class="project__link">Live demo ↗</a>
         </div>
       </article>
 
-      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{{PROJECT_3_TITLE}}</h2>
-          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{{PROJECT_3_STATUS}}</span>
+      <article class="card card--project">
+        <div class="project__head">
+          <h2 class="project__title">{{PROJECT_3_TITLE}}</h2>
+          <span class="project__status">{{PROJECT_3_STATUS}}</span>
         </div>
-        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{PROJECT_3_SUMMARY}}</p>
-        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_3_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_3_POINT_2}}</li>
+        <p class="summary">{{PROJECT_3_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{PROJECT_3_POINT_1}}</li>
+          <li>{{PROJECT_3_POINT_2}}</li>
         </ul>
-        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{PROJECT_3_STACK}}</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
-          <a href="#" target="_blank" rel="noopener" data-repo="3" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
-          <a href="#" target="_blank" rel="noopener" data-demo="3" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        <p class="stack">Stack — {{PROJECT_3_STACK}}</p>
+        <div class="project__links">
+          <a href="#" target="_blank" rel="noopener" data-repo="3" class="project__link">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="3" class="project__link">Live demo ↗</a>
         </div>
       </article>
 
-      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
-          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{{PROJECT_4_TITLE}}</h2>
-          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{{PROJECT_4_STATUS}}</span>
+      <article class="card card--project">
+        <div class="project__head">
+          <h2 class="project__title">{{PROJECT_4_TITLE}}</h2>
+          <span class="project__status">{{PROJECT_4_STATUS}}</span>
         </div>
-        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{PROJECT_4_SUMMARY}}</p>
-        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_4_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{{PROJECT_4_POINT_2}}</li>
+        <p class="summary">{{PROJECT_4_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{PROJECT_4_POINT_1}}</li>
+          <li>{{PROJECT_4_POINT_2}}</li>
         </ul>
-        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{PROJECT_4_STACK}}</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
-          <a href="#" target="_blank" rel="noopener" data-repo="4" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
-          <a href="#" target="_blank" rel="noopener" data-demo="4" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        <p class="stack">Stack — {{PROJECT_4_STACK}}</p>
+        <div class="project__links">
+          <a href="#" target="_blank" rel="noopener" data-repo="4" class="project__link">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="4" class="project__link">Live demo ↗</a>
         </div>
       </article>
     </section>
-      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
-        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
-        <div style="display: grid; gap: 14px;">
-          <a href="#backend" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span> Backend &amp; Platform</a>
-          <a href="#xr" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span> XR / AR</a>
-          <a href="#about" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span> About &amp; Contact</a>
+      <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
+        <p class="elsewhere__title">Elsewhere in the system</p>
+        <div class="linklist">
+          <a href="#backend" class="elsewhere__link"><span class="elsewhere__num">01</span> Backend &amp; Platform</a>
+          <a href="#xr" class="elsewhere__link"><span class="elsewhere__num">03</span> XR / AR</a>
+          <a href="#about" class="elsewhere__link"><span class="elsewhere__num">04</span> About &amp; Contact</a>
         </div>
       </nav>
-      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
-        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
-        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      <footer class="panel__footer">
+        <a href="cv.pdf" target="_blank" rel="noopener" class="cv-link">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" class="exit-link">← Back to system</a>
       </footer>
     </div>
   </div>
 </section>
 
-<section id="panel-xr" data-panel="xr" data-screen-label="03 XR" aria-label="XR and AR" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
-  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
-    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
-    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #b26bff;">03 · XR / AR</span></span>
+<section id="panel-xr" data-panel="xr" data-screen-label="03 XR" aria-label="XR and AR" class="panel">
+  <div data-panel-top="" class="panel__top">
+    <a href="#" data-exit="" class="panel__back">← Back to system</a>
+    <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">03 · XR / AR</span></span>
   </div>
-  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
-    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
-    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #b26bff;">Arrived · XR / AR</span>
+  <div data-hero="" aria-hidden="true" class="panel__hero">
+    <div class="panel__hero-veil"></div>
+    <span class="panel__hero-label">Arrived · XR / AR</span>
   </div>
-  <div style="position: relative; background: #05060d; min-height: 56vh;">
-    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
-      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">XR / AR</h1>
+  <div class="panel__body">
+    <div class="col">
+      <h1 class="panel__title">XR / AR</h1>
 
-    <p style="margin: 22px 0 0; max-width: 60ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.65; color: #a9aabe;">{{XR_INTRO}}</p>
+    <p class="intro">{{XR_INTRO}}</p>
 
-    <section aria-labelledby="employment-heading" style="margin-top: clamp(44px, 7vh, 72px);">
-      <h2 id="employment-heading" style="margin: 0 0 22px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #dcb6ff;">Employment</h2>
+    <section aria-labelledby="employment-heading" class="section section--lg">
+      <h2 id="employment-heading" class="section-title section-title--employment">Employment</h2>
 
-      <article style="padding: 26px 0 34px; border-top: 2px solid #b26bff;">
-        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #dcb6ff;">Employment · ZAUBAR</p>
-        <h3 style="margin: 14px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(26px, 3.4vw, 34px); line-height: 1.15; color: #f2f0fa;">{{ZAUBAR_ROLE_TITLE}}</h3>
-        <p style="margin: 12px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #8b8da5;">{{ZAUBAR_DATES}} · {{ZAUBAR_LOCATION}}</p>
-        <p style="margin: 20px 0 0; font-size: 17px; line-height: 1.75; color: #c8c9d8;">{{ZAUBAR_SUMMARY}}</p>
-        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #6b5a9e;">{{ZAUBAR_POINT_1}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #6b5a9e;">{{ZAUBAR_POINT_2}}</li>
-          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #6b5a9e;">{{ZAUBAR_POINT_3}}</li>
+      <article class="employment__entry">
+        <p class="employment__org">Employment · ZAUBAR</p>
+        <h3 class="employment__title">{{ZAUBAR_ROLE_TITLE}}</h3>
+        <p class="employment__meta">{{ZAUBAR_DATES}} · {{ZAUBAR_LOCATION}}</p>
+        <p class="employment__summary">{{ZAUBAR_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{ZAUBAR_POINT_1}}</li>
+          <li>{{ZAUBAR_POINT_2}}</li>
+          <li>{{ZAUBAR_POINT_3}}</li>
         </ul>
-        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{ZAUBAR_STACK}}</p>
+        <p class="stack">Stack — {{ZAUBAR_STACK}}</p>
       </article>
     </section>
 
-    <section aria-labelledby="xr-personal-heading" style="margin-top: clamp(44px, 7vh, 72px);">
-      <h2 id="xr-personal-heading" style="margin: 0 0 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">XR work — personal projects</h2>
-      <p style="margin: 0 0 24px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.7; letter-spacing: 0.06em; text-transform: uppercase; color: #8a8ca3;">Personal work, not employment.</p>
+    <section aria-labelledby="xr-personal-heading" class="section section--lg">
+      <h2 id="xr-personal-heading" class="section-title section-title--tight">XR work — personal projects</h2>
+      <p class="note">Personal work, not employment.</p>
 
-      <div style="display: grid; gap: 20px;">
-        <article style="padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-          <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{{XR_PROJECT_1_TITLE}}</h3>
-          <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">Independent · {{XR_PROJECT_1_DATES}}</p>
-          <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{XR_PROJECT_1_SUMMARY}}</p>
-          <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{XR_PROJECT_1_STACK}}</p>
+      <div class="cards">
+        <article class="card">
+          <h3 class="card__title">{{XR_PROJECT_1_TITLE}}</h3>
+          <p class="meta">Independent · {{XR_PROJECT_1_DATES}}</p>
+          <p class="summary">{{XR_PROJECT_1_SUMMARY}}</p>
+          <p class="stack">Stack — {{XR_PROJECT_1_STACK}}</p>
         </article>
 
-        <article style="padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-          <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{{XR_PROJECT_2_TITLE}}</h3>
-          <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">Independent · {{XR_PROJECT_2_DATES}}</p>
-          <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{XR_PROJECT_2_SUMMARY}}</p>
-          <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{XR_PROJECT_2_STACK}}</p>
+        <article class="card">
+          <h3 class="card__title">{{XR_PROJECT_2_TITLE}}</h3>
+          <p class="meta">Independent · {{XR_PROJECT_2_DATES}}</p>
+          <p class="summary">{{XR_PROJECT_2_SUMMARY}}</p>
+          <p class="stack">Stack — {{XR_PROJECT_2_STACK}}</p>
         </article>
 
-        <article style="padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-          <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{{XR_PROJECT_3_TITLE}}</h3>
-          <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">Independent · {{XR_PROJECT_3_DATES}}</p>
-          <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{XR_PROJECT_3_SUMMARY}}</p>
-          <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {{XR_PROJECT_3_STACK}}</p>
+        <article class="card">
+          <h3 class="card__title">{{XR_PROJECT_3_TITLE}}</h3>
+          <p class="meta">Independent · {{XR_PROJECT_3_DATES}}</p>
+          <p class="summary">{{XR_PROJECT_3_SUMMARY}}</p>
+          <p class="stack">Stack — {{XR_PROJECT_3_STACK}}</p>
         </article>
       </div>
     </section>
-      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
-        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
-        <div style="display: grid; gap: 14px;">
-          <a href="#backend" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span> Backend &amp; Platform</a>
-          <a href="#projects" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span> Independent Projects</a>
-          <a href="#about" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span> About &amp; Contact</a>
+      <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
+        <p class="elsewhere__title">Elsewhere in the system</p>
+        <div class="linklist">
+          <a href="#backend" class="elsewhere__link"><span class="elsewhere__num">01</span> Backend &amp; Platform</a>
+          <a href="#projects" class="elsewhere__link"><span class="elsewhere__num">02</span> Independent Projects</a>
+          <a href="#about" class="elsewhere__link"><span class="elsewhere__num">04</span> About &amp; Contact</a>
         </div>
       </nav>
-      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
-        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
-        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      <footer class="panel__footer">
+        <a href="cv.pdf" target="_blank" rel="noopener" class="cv-link">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" class="exit-link">← Back to system</a>
       </footer>
     </div>
   </div>
 </section>
 
-<section id="panel-about" data-panel="about" data-screen-label="04 About" aria-label="About and Contact" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
-  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
-    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
-    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #ff9b3d;">04 · About &amp; Contact</span></span>
+<section id="panel-about" data-panel="about" data-screen-label="04 About" aria-label="About and Contact" class="panel">
+  <div data-panel-top="" class="panel__top">
+    <a href="#" data-exit="" class="panel__back">← Back to system</a>
+    <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">04 · About &amp; Contact</span></span>
   </div>
-  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
-    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
-    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #ff9b3d;">Arrived · About &amp; Contact</span>
+  <div data-hero="" aria-hidden="true" class="panel__hero">
+    <div class="panel__hero-veil"></div>
+    <span class="panel__hero-label">Arrived · About &amp; Contact</span>
   </div>
-  <div style="position: relative; background: #05060d; min-height: 56vh;">
-    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
-      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">{{FULL_NAME}}</h1>
+  <div class="panel__body">
+    <div class="col">
+      <h1 class="panel__title">{{FULL_NAME}}</h1>
 
-    <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #9294ab;">{{ROLE_TAGLINE}} · {{LOCATION}}</p>
+    <p class="about__meta">{{ROLE_TAGLINE}} · {{LOCATION}}</p>
 
-    <p style="margin: 26px 0 0; max-width: 62ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.7; color: #b6b7c9;">{{ABOUT_BIO}}</p>
+    <p class="bio">{{ABOUT_BIO}}</p>
 
-    <section aria-labelledby="contact-heading" style="margin-top: clamp(40px, 7vh, 64px); padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
-      <h2 id="contact-heading" style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #ffd39a;">Contact</h2>
-      <div style="display: grid; gap: 14px;">
-        <a id="lnk-email" href="#" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #dcdde9;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">Email</span>{{EMAIL}}</a>
-        <a id="lnk-github" href="#" target="_blank" rel="noopener" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #dcdde9;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">GitHub</span>{{GITHUB_URL}} ↗</a>
-        <a id="lnk-linkedin" href="#" target="_blank" rel="noopener" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #dcdde9;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">LinkedIn</span>{{LINKEDIN_URL}} ↗</a>
-        <a href="cv.pdf" target="_blank" rel="noopener" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #ffd39a;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">CV</span>Download PDF ↗</a>
+    <section aria-labelledby="contact-heading" class="section card">
+      <h2 id="contact-heading" class="section-title section-title--contact">Contact</h2>
+      <div class="linklist">
+        <a id="lnk-email" href="#" class="contact__row"><span class="contact__label">Email</span>{{EMAIL}}</a>
+        <a id="lnk-github" href="#" target="_blank" rel="noopener" class="contact__row"><span class="contact__label">GitHub</span>{{GITHUB_URL}} ↗</a>
+        <a id="lnk-linkedin" href="#" target="_blank" rel="noopener" class="contact__row"><span class="contact__label">LinkedIn</span>{{LINKEDIN_URL}} ↗</a>
+        <a href="cv.pdf" target="_blank" rel="noopener" class="contact__row contact__row--cv"><span class="contact__label">CV</span>Download PDF ↗</a>
       </div>
     </section>
 
-    <section aria-labelledby="education-heading" style="margin-top: clamp(40px, 7vh, 64px);">
-      <h2 id="education-heading" style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">Education</h2>
-      <article style="padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.09);">
-        <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{{EDUCATION_QUALIFICATION}}</h3>
-        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{{EDUCATION_INSTITUTION}} · {{EDUCATION_DATES}} · {{EDUCATION_LOCATION}}</p>
-        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{{EDUCATION_NOTE}}</p>
+    <section aria-labelledby="education-heading" class="section">
+      <h2 id="education-heading" class="section-title">Education</h2>
+      <article class="edu">
+        <h3 class="card__title">{{EDUCATION_QUALIFICATION}}</h3>
+        <p class="meta">{{EDUCATION_INSTITUTION}} · {{EDUCATION_DATES}} · {{EDUCATION_LOCATION}}</p>
+        <p class="summary">{{EDUCATION_NOTE}}</p>
       </article>
     </section>
 
-    <section aria-labelledby="languages-heading" style="margin-top: clamp(40px, 7vh, 64px);">
-      <h2 id="languages-heading" style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">Languages</h2>
-      <ul style="margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-top: 1px solid rgba(255,255,255,0.09);">
-        <li style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 17px; color: #c8c9d8;">{{LANGUAGE_1_NAME}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: #83859c;">{{LANGUAGE_1_CEFR}}</span></li>
-        <li style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 17px; color: #c8c9d8;">{{LANGUAGE_2_NAME}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: #83859c;">{{LANGUAGE_2_CEFR}}</span></li>
-        <li style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 17px; color: #c8c9d8;">{{LANGUAGE_3_NAME}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: #83859c;">{{LANGUAGE_3_CEFR}}</span></li>
+    <section aria-labelledby="languages-heading" class="section">
+      <h2 id="languages-heading" class="section-title">Languages</h2>
+      <ul class="langs">
+        <li>{{LANGUAGE_1_NAME}}<span class="langs__level">{{LANGUAGE_1_CEFR}}</span></li>
+        <li>{{LANGUAGE_2_NAME}}<span class="langs__level">{{LANGUAGE_2_CEFR}}</span></li>
+        <li>{{LANGUAGE_3_NAME}}<span class="langs__level">{{LANGUAGE_3_CEFR}}</span></li>
       </ul>
     </section>
 
-    <section aria-labelledby="skills-heading" style="margin-top: clamp(40px, 7vh, 64px);">
-      <h2 id="skills-heading" style="margin: 0 0 22px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">Skills</h2>
+    <section aria-labelledby="skills-heading" class="section">
+      <h2 id="skills-heading" class="section-title section-title--skills">Skills</h2>
 
-      <div style="padding: 22px 0 26px; border-top: 1px solid rgba(255,255,255,0.09);">
-        <h3 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #8ff0ff;">Used in production</h3>
-        <p style="margin: 14px 0 0; font-size: 17px; line-height: 1.85; color: #c5c6d5;">{{SKILLS_PRODUCTION}}</p>
+      <div class="skills__group">
+        <h3 class="skills__group-title skills__group-title--production">Used in production</h3>
+        <p class="skills__list">{{SKILLS_PRODUCTION}}</p>
       </div>
 
-      <div style="padding: 22px 0 26px; border-top: 1px solid rgba(255,255,255,0.09);">
-        <h3 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #9dffd6;">Used in personal projects</h3>
-        <p style="margin: 14px 0 0; font-size: 17px; line-height: 1.85; color: #c5c6d5;">{{SKILLS_PERSONAL_PROJECTS}}</p>
+      <div class="skills__group">
+        <h3 class="skills__group-title skills__group-title--personal">Used in personal projects</h3>
+        <p class="skills__list">{{SKILLS_PERSONAL_PROJECTS}}</p>
       </div>
     </section>
-      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
-        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
-        <div style="display: grid; gap: 14px;">
-          <a href="#backend" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span> Backend &amp; Platform</a>
-          <a href="#projects" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span> Independent Projects</a>
-          <a href="#xr" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span> XR / AR</a>
+      <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
+        <p class="elsewhere__title">Elsewhere in the system</p>
+        <div class="linklist">
+          <a href="#backend" class="elsewhere__link"><span class="elsewhere__num">01</span> Backend &amp; Platform</a>
+          <a href="#projects" class="elsewhere__link"><span class="elsewhere__num">02</span> Independent Projects</a>
+          <a href="#xr" class="elsewhere__link"><span class="elsewhere__num">03</span> XR / AR</a>
         </div>
       </nav>
-      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
-        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
-        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      <footer class="panel__footer">
+        <a href="cv.pdf" target="_blank" rel="noopener" class="cv-link">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" class="exit-link">← Back to system</a>
       </footer>
     </div>
   </div>
 </section>
 
-<canvas id="smoke" aria-hidden="true" style="position: fixed; inset: 0; z-index: 60; display: none; pointer-events: none;"></canvas>
+<canvas id="smoke" aria-hidden="true" class="smoke"></canvas>
 
 <script type="module" src="/src/main.ts"></script>
 </body>

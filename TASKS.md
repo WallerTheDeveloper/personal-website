@@ -38,12 +38,10 @@ Anything marked **ASK** must go back to the owner before you implement it.
 - [x] Confirm one `<h1>` per panel and the `aria-label` / `aria-labelledby` on every section.
       *5 `<h1>` total: one per panel plus the hub's in `#hub-head`. Both canvases still `aria-hidden`; `nav#labels[aria-label="Destinations"]` intact.*
 
-**Carried into Phase 3 on purpose:** every inline `style` attribute, plus 42
-`style-hover` and 23 `style-before` attributes. They are the *only* record of
-what the hover and `::before` rules must be — `support.js` was what interpreted
-them, so they are inert now and hover/`::before` have no effect until Phase 3
-rewrites them as real CSS and deletes them. The `<style>` block sits inline in
-`<head>` at exactly the position `styles.css` will take.
+**Carried into Phase 3 on purpose, and now resolved:** every inline `style`
+attribute, plus 42 `style-hover` and 23 `style-before` attributes. They were the
+*only* record of what the hover and `::before` rules had to be. Phase 3 rewrote
+them as real CSS and deleted them.
 
 **Expected intermediate state:** in a WebGL browser the page now goes black ~400 ms
 after load. The probe sets `data-dg-3d`, which fades `#fallback` out, and there is
@@ -53,12 +51,22 @@ With JS disabled or no WebGL, the text edition renders and is fully navigable.
 
 ## Phase 3 — Styles
 
-- [ ] `styles.css` with all tokens as `:root` custom properties.
-- [ ] Replace every inline style with classes; per-destination accents via `[data-panel="…"] { --accent: … }`.
-- [ ] Rewrite `style-hover` / `style-before` attributes as `:hover` / `::before` rules.
-- [ ] Carry over verbatim: `grainShift` keyframes, `html[data-dg-flat]` rules, the `prefers-reduced-motion` block, the whole `@media print` block.
-- [ ] Global `a` / `a:hover` defined.
-- [ ] Side-by-side diff against the prototype at 1440, 1024, 768 and 390 px wide. Zero visual drift.
+- [x] `styles.css` with all tokens as `:root` custom properties.
+      *Landed as `src/styles.css`, `<link>`ed from `index.html` at the position the inline `<style>` held — not imported from `main.ts`, which would flash unstyled content, and the text edition is the default state. Every colour in the document is a token: the README palette verbatim, plus named tokens for the ~25 one-off values the prototype used inline (`--ink-hub`, `--meta-2`, `--marker-xr`, `--violet-soft`, …). `--intro-te: #b6b7c8` and `--intro-bio: #b6b7c9` differ by one digit in the prototype; kept distinct rather than "tidied".*
+- [x] Replace every inline style with classes; per-destination accents via `[data-panel="…"] { --accent: … }`.
+      *312 style attributes, 125 distinct values. Converted by an exact-match table asserted against both counts, so a missed or duplicated mapping aborted rather than silently landing. Accents are keyed on `[data-panel="…"]`, `[data-planet="…"]` **and** `a[href="#…"]` in one rule set — the third selector is what tints the `01`/`02` numerals in the text edition and in each panel's "Elsewhere" list. Do not instead add `data-planet` to those links: the engine iterates `[data-planet]` and writes screen positions onto every match. Alpha variants come from `rgba(var(--accent-rgb), …)`.*
+- [x] Rewrite `style-hover` / `style-before` attributes as `:hover` / `::before` rules.
+      *All 65 deleted. Verified by forcing `:hover` through CDP on **every** `<a>` and `<button>` in the document and diffing computed colours against the prototype: 47 controls, 46 of which change under hover, all matching.*
+- [x] Carry over verbatim: `grainShift` keyframes, `html[data-dg-flat]` rules, the `prefers-reduced-motion` block, the whole `@media print` block.
+      *Byte-identical. The `!important` in the flat and print blocks is load-bearing — it is what overrides the inline `visibility`/`opacity` the router writes onto each panel.*
+- [x] Global `a` / `a:hover` defined.
+- [x] Side-by-side diff against the prototype at 1440, 1024, 768 and 390 px wide. Zero visual drift.
+      *Two passes against a served `design/index.dc.html`, with `unpkg.com/three@*` blocked so neither side has an engine (Phase 5 hasn't landed). Only that URL — the prototype's authoring runtime pulls React from unpkg too, and without it the page never renders.*
+      *Pixel diff, 8 states × 4 widths: hub pixel-identical at 1440/1024/768; everything else ≤ 0.15 %, entirely on the glyph rows of `{{TOKEN}}` text (see below). Computed-style parity walk — box plus 52 resolved properties and both pseudo-elements, over all 314 nodes × 3 states × 4 widths — surfaced exactly three classes of difference, all explained and none of them drift:*
+      1. *Sub-pixel widths (≤ 0.016 px) on shrink-to-fit boxes holding a token. The prototype's `{<!---->{` escape splits the text into two nodes, so Bodoni does not kern across the brace pair; the port's single text node does. Literal copy ("Backend & Platform") is identical to the pixel. Goes away when the owner fills the tokens.*
+      2. *The grain tile. The prototype's React runtime truncates the inline data URI to `url("data:image/svg+xml")` — the port renders what the file actually declares. Invisible either way: `mix-blend-mode: overlay` at `opacity: 0.16` over a near-black sky.*
+      3. *`rgba(2,3,8,0.92) 100%` → `rgba(2,3,8,0.92)` in the vignette. esbuild drops the redundant final stop when minifying; Chrome reserialises it to the same value.*
+      *One real drift was found and fixed: the text edition's "Download CV (PDF)" link. Its colour is inline in the prototype with no `style-hover`, so the inline value beats `a:hover` and it does **not** warm to `--hover` — unlike every other CV link. `.te__cv:hover` reproduces that. It reads like a prototype oversight; deleting that one rule is the whole change if the owner wants it to match. **ASK.***
 
 ## Phase 4 — Content plumbing
 
