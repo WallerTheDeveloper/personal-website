@@ -1,0 +1,11 @@
+# Normalise to LF in the repository. The design/ prototype and the acceptance
+# checks are line-oriented, and CRLF churn would show up as phantom diffs.
+* text=auto eol=lf
+
+# Binary — never touch.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.woff2 binary
+*.glb binary
+*.gltf binary
