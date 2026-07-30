@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Portfolio</title>
+<meta name="description" content="Portfolio: backend and platform engineering, XR and AR work, independent projects." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Portfolio" />
+<meta property="og:description" content="Backend and platform engineering, XR and AR work, independent projects." />
+<meta property="og:image" content="og.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="canonical" href="/" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Archivo:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #05060d; color: #e9e7f2; }
+  body { font-family: 'Archivo', 'Helvetica Neue', Helvetica, sans-serif; -webkit-font-smoothing: antialiased; overflow: hidden; text-wrap: pretty; }
+  a { color: #e9e7f2; text-decoration: none; }
+  a:hover { color: #ffb877; }
+  @keyframes grainShift {
+    0%   { transform: translate(0, 0); }
+    20%  { transform: translate(-3%, 2%); }
+    40%  { transform: translate(2%, -3%); }
+    60%  { transform: translate(-2%, -2%); }
+    80%  { transform: translate(3%, 1%); }
+    100% { transform: translate(0, 0); }
+  }
+  /* text-edition / no-WebGL: panels become one continuous document */
+  html[data-dg-flat] body { overflow: auto; }
+  html[data-dg-flat] [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; }
+  html[data-dg-flat] [data-hero] { display: none !important; }
+  html[data-dg-flat] [data-panel-top] { position: static !important; }
+  @media (prefers-reduced-motion: reduce) {
+    [data-grain] { animation: none !important; }
+  }
+  @media print {
+    body { overflow: visible; background: #fff; color: #111; }
+    [data-grain], #scene, #smoke, #reticle, [data-panel-top], [data-hero] { display: none !important; }
+    [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; }
+  }
+</style>
+<script>
+(function(){
+  var ok = false;
+  try {
+    var c = document.createElement('canvas');
+    ok = !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+  } catch (e) { ok = false; }
+  if (!ok) return;
+  document.documentElement.setAttribute('data-dg-3d', '1');
+  var s = document.createElement('style');
+  s.textContent = '[data-dg-3d] #fallback{opacity:0;pointer-events:none;transition:opacity 400ms ease}';
+  (document.head || document.documentElement).appendChild(s);
+})();
+</script>
+</helmet>
+
+<main id="stage" style="position: fixed; inset: 0; overflow: hidden; background: #05060d;">
+
+  <canvas id="scene" aria-hidden="true" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 900ms ease;"></canvas>
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 85% at 50% 42%, rgba(0,0,0,0) 42%, rgba(3,4,10,0.55) 78%, rgba(2,3,8,0.92) 100%);"></div>
+
+  <div data-grain="" aria-hidden="true" style="position: absolute; inset: -12%; pointer-events: none; opacity: 0.16; mix-blend-mode: overlay; animation: grainShift 1.1s steps(4) infinite; background-image: url(&quot;data:image/svg+xml;utf8,&lt;svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'&gt;&lt;filter id='n'&gt;&lt;feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/&gt;&lt;/filter&gt;&lt;rect width='180' height='180' filter='url(%23n)' opacity='0.55'/&gt;&lt;/svg&gt;&quot;);"></div>
+
+  <nav id="labels" aria-label="Destinations" style="position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 700ms ease;">
+    <a id="lbl-backend" href="#backend" data-planet="backend" style="position: absolute; left: 18%; top: 52%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
+      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(63,216,255,0), rgba(63,216,255,0.85)); transition: height 300ms ease;"></span>
+      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">01</span>
+      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">Backend &amp; Platform</span>
+      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">Services · Data · Delivery</span>
+    </a>
+    <a id="lbl-projects" href="#projects" data-planet="projects" style="position: absolute; left: 40%; top: 40%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
+      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(56,255,176,0), rgba(56,255,176,0.85)); transition: height 300ms ease;"></span>
+      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #38ffb0;">02</span>
+      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">Independent Projects</span>
+      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">Personal work</span>
+    </a>
+    <a id="lbl-xr" href="#xr" data-planet="xr" style="position: absolute; left: 60%; top: 58%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
+      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(178,107,255,0), rgba(178,107,255,0.85)); transition: height 300ms ease;"></span>
+      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #b26bff;">03</span>
+      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">XR / AR</span>
+      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">Unity · Spatial</span>
+    </a>
+    <a id="lbl-about" href="#about" data-planet="about" style="position: absolute; left: 82%; top: 46%; transform: translate(-50%, 0); display: grid; justify-items: center; gap: 0; padding: 6px 10px 8px; text-align: center; pointer-events: auto; outline-offset: 6px;">
+      <span data-leader="" aria-hidden="true" style="display: block; width: 1px; height: 26px; background: linear-gradient(to bottom, rgba(255,155,61,0), rgba(255,155,61,0.85)); transition: height 300ms ease;"></span>
+      <span style="display: block; margin-top: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #ff9b3d;">04</span>
+      <span data-name="" style="display: block; margin-top: 4px; font-family: 'Bodoni Moda', Georgia, serif; font-size: 20px; letter-spacing: 0.01em; color: #eceaf4; transition: color 300ms ease;">About &amp; Contact</span>
+      <span style="display: block; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #eceaf4;">CV · Languages</span>
+    </a>
+  </nav>
+
+  <header id="hub-head" style="position: absolute; left: clamp(20px, 4vw, 56px); top: clamp(20px, 4vh, 44px); z-index: 5; pointer-events: none; transition: opacity 300ms ease;">
+    <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.4vw, 32px); letter-spacing: 0.005em; line-height: 1.1; color: #f2f0f8;">{<!---->{FULL_NAME}}</h1>
+    <p style="margin: 10px 0 0; max-width: 34ch; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.6; letter-spacing: 0.09em; text-transform: uppercase; color: #9294ab;">{<!---->{ROLE_TAGLINE}}</p>
+    <p style="margin: 6px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; color: #8a8ca3;">{<!---->{LOCATION}}</p>
+  </header>
+
+  <div id="hub-foot" style="position: absolute; left: clamp(20px, 4vw, 56px); bottom: clamp(18px, 3vh, 34px); z-index: 5; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; transition: opacity 300ms ease;">
+    <a id="skip-scene" href="#about" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #83859c; border-bottom: 1px solid rgba(131,133,156,0.35); padding-bottom: 2px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Skip the scene → read the CV</a>
+    <button id="quality-toggle" type="button" style="appearance: none; background: transparent; border: 1px solid rgba(131,133,156,0.28); border-radius: 2px; padding: 5px 9px; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #9294ab;" style-hover="border-color: rgba(255,184,119,0.5); color: #ffb877;">Quality: high · <span id="fps-readout">--</span> fps</button>
+  </div>
+
+  <div id="hud-hint" aria-hidden="true" style="position: absolute; right: clamp(20px, 4vw, 56px); bottom: clamp(18px, 3vh, 34px); z-index: 5; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3; pointer-events: none; transition: opacity 400ms ease;">Drag / scroll to pan · Tab to cycle</div>
+
+  <div id="reticle" aria-hidden="true" style="position: absolute; left: 0; top: 0; z-index: 8; width: 34px; height: 34px; margin: -17px 0 0 -17px; border: 1px solid rgba(255,184,119,0.75); border-radius: 50%; opacity: 0; transform: scale(0.6); transition: opacity 200ms ease, transform 200ms ease; pointer-events: none; mix-blend-mode: screen;"></div>
+
+</main>
+
+<section id="fallback" style="position: fixed; inset: 0; z-index: 20; overflow-y: auto; overflow-x: hidden; background: linear-gradient(180deg, #05060d 0%, #080a15 60%, #05060d 100%); padding: clamp(28px, 7vh, 88px) clamp(20px, 6vw, 96px);">
+  <div style="max-width: 1080px; margin: 0 auto;">
+    <p style="margin: 0 0 clamp(28px, 6vh, 56px); font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: #8a8ca3;">Portfolio · Text edition</p>
+    <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 7vw, 84px); line-height: 1.02; letter-spacing: -0.01em; color: #f2f0f8;">{<!---->{FULL_NAME}}</h2>
+    <p style="margin: 18px 0 0; max-width: 46ch; font-size: clamp(16px, 1.6vw, 19px); line-height: 1.6; color: #b6b7c8;">{<!---->{ROLE_TAGLINE}} · {<!---->{LOCATION}}</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1px; margin-top: clamp(36px, 7vh, 72px); background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.07);">
+      <a href="#backend" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
+        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span>
+        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">Backend &amp; Platform</span>
+      </a>
+      <a href="#projects" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
+        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span>
+        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">Independent Projects</span>
+      </a>
+      <a href="#xr" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
+        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span>
+        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">XR / AR</span>
+      </a>
+      <a href="#about" style="display: block; padding: clamp(20px, 3vw, 30px); background: #070912;" style-hover="background: #0c1020;">
+        <span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span>
+        <span style="display: block; margin-top: 14px; font-family: 'Bodoni Moda', Georgia, serif; font-size: clamp(20px, 2.2vw, 26px); color: #eceaf4;">About &amp; Contact</span>
+      </a>
+    </div>
+    <p style="margin: clamp(28px, 5vh, 48px) 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #8a8ca3;">Full navigation without 3D. <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.4);">Download CV (PDF)</a></p>
+  </div>
+</section>
+
+<section id="panel-backend" data-panel="backend" data-screen-label="01 Backend" aria-label="Backend and Platform" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
+  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
+    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #3fd8ff;">01 · Backend &amp; Platform</span></span>
+  </div>
+  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
+    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
+    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #3fd8ff;">Arrived · Backend &amp; Platform</span>
+  </div>
+  <div style="position: relative; background: #05060d; min-height: 56vh;">
+    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
+      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">Backend &amp; Platform</h1>
+
+    <p style="margin: 22px 0 0; max-width: 60ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.65; color: #a9aabe;">{<!---->{BACKEND_INTRO}}</p>
+
+    <div style="height: 1px; margin: clamp(40px, 7vh, 68px) 0 0; background: linear-gradient(to right, rgba(63,216,255,0.55), rgba(255,255,255,0.05) 60%, rgba(255,255,255,0));"></div>
+
+    <section aria-label="Work">
+      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
+        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{<!---->{BACKEND_BLOCK_1_ORG}}</p>
+        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{<!---->{BACKEND_BLOCK_1_TITLE}}</h2>
+        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{<!---->{BACKEND_BLOCK_1_DATES}} · {<!---->{BACKEND_BLOCK_1_LOCATION}}</p>
+        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{BACKEND_BLOCK_1_SUMMARY}}</p>
+        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_1_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_1_POINT_2}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_1_POINT_3}}</li>
+        </ul>
+        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{BACKEND_BLOCK_1_STACK}}</p>
+      </article>
+
+      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
+        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{<!---->{BACKEND_BLOCK_2_ORG}}</p>
+        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{<!---->{BACKEND_BLOCK_2_TITLE}}</h2>
+        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{<!---->{BACKEND_BLOCK_2_DATES}} · {<!---->{BACKEND_BLOCK_2_LOCATION}}</p>
+        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{BACKEND_BLOCK_2_SUMMARY}}</p>
+        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_2_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_2_POINT_2}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_2_POINT_3}}</li>
+        </ul>
+        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{BACKEND_BLOCK_2_STACK}}</p>
+      </article>
+
+      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
+        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{<!---->{BACKEND_BLOCK_3_ORG}}</p>
+        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{<!---->{BACKEND_BLOCK_3_TITLE}}</h2>
+        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{<!---->{BACKEND_BLOCK_3_DATES}} · {<!---->{BACKEND_BLOCK_3_LOCATION}}</p>
+        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{BACKEND_BLOCK_3_SUMMARY}}</p>
+        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_3_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_3_POINT_2}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_3_POINT_3}}</li>
+        </ul>
+        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{BACKEND_BLOCK_3_STACK}}</p>
+      </article>
+
+      <article style="padding: clamp(28px, 4vw, 38px) 0; border-bottom: 1px solid rgba(255,255,255,0.07);">
+        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #3fd8ff;">{<!---->{BACKEND_BLOCK_4_ORG}}</p>
+        <h2 style="margin: 12px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(24px, 3vw, 30px); line-height: 1.2; color: #eeecf6;">{<!---->{BACKEND_BLOCK_4_TITLE}}</h2>
+        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{<!---->{BACKEND_BLOCK_4_DATES}} · {<!---->{BACKEND_BLOCK_4_LOCATION}}</p>
+        <p style="margin: 18px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{BACKEND_BLOCK_4_SUMMARY}}</p>
+        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_4_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_4_POINT_2}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{BACKEND_BLOCK_4_POINT_3}}</li>
+        </ul>
+        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{BACKEND_BLOCK_4_STACK}}</p>
+      </article>
+    </section>
+      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
+        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
+        <div style="display: grid; gap: 14px;">
+          <a href="#projects" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span> Independent Projects</a>
+          <a href="#xr" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span> XR / AR</a>
+          <a href="#about" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span> About &amp; Contact</a>
+        </div>
+      </nav>
+      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
+        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<section id="panel-projects" data-panel="projects" data-screen-label="02 Projects" aria-label="Independent Projects" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
+  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
+    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #38ffb0;">02 · Independent Projects</span></span>
+  </div>
+  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
+    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
+    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #38ffb0;">Arrived · Independent Projects</span>
+  </div>
+  <div style="position: relative; background: #05060d; min-height: 56vh;">
+    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
+      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">Independent Projects</h1>
+
+    <p role="note" style="margin: 24px 0 0; padding: 14px 18px; border: 1px solid rgba(56,255,176,0.38); background: rgba(56,255,176,0.06); font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.08em; text-transform: uppercase; color: #9dffd6;">Independent projects — personal work, not employment.</p>
+
+    <p style="margin: 24px 0 0; max-width: 60ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.65; color: #a9aabe;">{<!---->{PROJECTS_INTRO}}</p>
+
+    <section aria-label="Projects" style="display: grid; gap: 20px; margin-top: clamp(40px, 7vh, 68px);">
+
+      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{<!---->{PROJECT_1_TITLE}}</h2>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{<!---->{PROJECT_1_STATUS}}</span>
+        </div>
+        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{PROJECT_1_SUMMARY}}</p>
+        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_1_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_1_POINT_2}}</li>
+        </ul>
+        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{PROJECT_1_STACK}}</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
+          <a href="#" target="_blank" rel="noopener" data-repo="1" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="1" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        </div>
+      </article>
+
+      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{<!---->{PROJECT_2_TITLE}}</h2>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{<!---->{PROJECT_2_STATUS}}</span>
+        </div>
+        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{PROJECT_2_SUMMARY}}</p>
+        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_2_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_2_POINT_2}}</li>
+        </ul>
+        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{PROJECT_2_STACK}}</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
+          <a href="#" target="_blank" rel="noopener" data-repo="2" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="2" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        </div>
+      </article>
+
+      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{<!---->{PROJECT_3_TITLE}}</h2>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{<!---->{PROJECT_3_STATUS}}</span>
+        </div>
+        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{PROJECT_3_SUMMARY}}</p>
+        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_3_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_3_POINT_2}}</li>
+        </ul>
+        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{PROJECT_3_STACK}}</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
+          <a href="#" target="_blank" rel="noopener" data-repo="3" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="3" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        </div>
+      </article>
+
+      <article style="padding: clamp(24px, 3.4vw, 34px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(23px, 2.8vw, 28px); line-height: 1.2; color: #eeecf6;">{<!---->{PROJECT_4_TITLE}}</h2>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #38ffb0;">{<!---->{PROJECT_4_STATUS}}</span>
+        </div>
+        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{PROJECT_4_SUMMARY}}</p>
+        <ul style="margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_4_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #5e6076;">{<!---->{PROJECT_4_POINT_2}}</li>
+        </ul>
+        <p style="margin: 18px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{PROJECT_4_STACK}}</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 22px; margin-top: 18px;">
+          <a href="#" target="_blank" rel="noopener" data-repo="4" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Repository ↗</a>
+          <a href="#" target="_blank" rel="noopener" data-demo="4" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #9dffd6; border-bottom: 1px solid rgba(157,255,214,0.45); padding-bottom: 3px;" style-hover="color: #ffb877; border-bottom-color: rgba(255,184,119,0.6);">Live demo ↗</a>
+        </div>
+      </article>
+    </section>
+      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
+        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
+        <div style="display: grid; gap: 14px;">
+          <a href="#backend" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span> Backend &amp; Platform</a>
+          <a href="#xr" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span> XR / AR</a>
+          <a href="#about" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span> About &amp; Contact</a>
+        </div>
+      </nav>
+      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
+        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<section id="panel-xr" data-panel="xr" data-screen-label="03 XR" aria-label="XR and AR" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
+  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
+    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #b26bff;">03 · XR / AR</span></span>
+  </div>
+  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
+    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
+    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #b26bff;">Arrived · XR / AR</span>
+  </div>
+  <div style="position: relative; background: #05060d; min-height: 56vh;">
+    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
+      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">XR / AR</h1>
+
+    <p style="margin: 22px 0 0; max-width: 60ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.65; color: #a9aabe;">{<!---->{XR_INTRO}}</p>
+
+    <section aria-labelledby="employment-heading" style="margin-top: clamp(44px, 7vh, 72px);">
+      <h2 id="employment-heading" style="margin: 0 0 22px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #dcb6ff;">Employment</h2>
+
+      <article style="padding: 26px 0 34px; border-top: 2px solid #b26bff;">
+        <p style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #dcb6ff;">Employment · ZAUBAR</p>
+        <h3 style="margin: 14px 0 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(26px, 3.4vw, 34px); line-height: 1.15; color: #f2f0fa;">{<!---->{ZAUBAR_ROLE_TITLE}}</h3>
+        <p style="margin: 12px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #8b8da5;">{<!---->{ZAUBAR_DATES}} · {<!---->{ZAUBAR_LOCATION}}</p>
+        <p style="margin: 20px 0 0; font-size: 17px; line-height: 1.75; color: #c8c9d8;">{<!---->{ZAUBAR_SUMMARY}}</p>
+        <ul style="margin: 18px 0 0; padding: 0; list-style: none; display: grid; gap: 9px;">
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #6b5a9e;">{<!---->{ZAUBAR_POINT_1}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #6b5a9e;">{<!---->{ZAUBAR_POINT_2}}</li>
+          <li style="position: relative; padding-left: 20px; font-size: 16px; line-height: 1.65; color: #b0b1c4;" style-before="content: '—'; position: absolute; left: 0; color: #6b5a9e;">{<!---->{ZAUBAR_POINT_3}}</li>
+        </ul>
+        <p style="margin: 20px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{ZAUBAR_STACK}}</p>
+      </article>
+    </section>
+
+    <section aria-labelledby="xr-personal-heading" style="margin-top: clamp(44px, 7vh, 72px);">
+      <h2 id="xr-personal-heading" style="margin: 0 0 8px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">XR work — personal projects</h2>
+      <p style="margin: 0 0 24px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; line-height: 1.7; letter-spacing: 0.06em; text-transform: uppercase; color: #8a8ca3;">Personal work, not employment.</p>
+
+      <div style="display: grid; gap: 20px;">
+        <article style="padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{<!---->{XR_PROJECT_1_TITLE}}</h3>
+          <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">Independent · {<!---->{XR_PROJECT_1_DATES}}</p>
+          <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{XR_PROJECT_1_SUMMARY}}</p>
+          <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{XR_PROJECT_1_STACK}}</p>
+        </article>
+
+        <article style="padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{<!---->{XR_PROJECT_2_TITLE}}</h3>
+          <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">Independent · {<!---->{XR_PROJECT_2_DATES}}</p>
+          <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{XR_PROJECT_2_SUMMARY}}</p>
+          <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{XR_PROJECT_2_STACK}}</p>
+        </article>
+
+        <article style="padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+          <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{<!---->{XR_PROJECT_3_TITLE}}</h3>
+          <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">Independent · {<!---->{XR_PROJECT_3_DATES}}</p>
+          <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{XR_PROJECT_3_SUMMARY}}</p>
+          <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; line-height: 1.7; letter-spacing: 0.04em; color: #83859c;">Stack — {<!---->{XR_PROJECT_3_STACK}}</p>
+        </article>
+      </div>
+    </section>
+      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
+        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
+        <div style="display: grid; gap: 14px;">
+          <a href="#backend" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span> Backend &amp; Platform</a>
+          <a href="#projects" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span> Independent Projects</a>
+          <a href="#about" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #ff9b3d;">04</span> About &amp; Contact</a>
+        </div>
+      </nav>
+      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
+        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<section id="panel-about" data-panel="about" data-screen-label="04 About" aria-label="About and Contact" style="position: fixed; inset: 0; z-index: 45; overflow-y: auto; overflow-x: hidden; background: transparent; visibility: hidden; opacity: 0;">
+  <div data-panel-top="" style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(18px, 4vw, 44px); background: rgba(5,6,13,0.72); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.07);">
+    <a href="#" data-exit="" style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #b8b9c9;" style-hover="color: #ffb877;">← Back to system</a>
+    <span style="display: flex; align-items: center; gap: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #8a8ca3;"><span data-esc="" style="color: #5f6178;">Esc</span><span style="color: #ff9b3d;">04 · About &amp; Contact</span></span>
+  </div>
+  <div data-hero="" aria-hidden="true" style="position: relative; height: 44vh; min-height: 220px; pointer-events: none;">
+    <div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(5,6,13,0) 0%, rgba(5,6,13,0.1) 55%, rgba(5,6,13,0.75) 84%, #05060d 100%);"></div>
+    <span style="position: absolute; left: clamp(18px, 4vw, 44px); bottom: 18px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #ff9b3d;">Arrived · About &amp; Contact</span>
+  </div>
+  <div style="position: relative; background: #05060d; min-height: 56vh;">
+    <div style="max-width: 720px; margin: 0 auto; padding: clamp(28px, 5vh, 56px) clamp(20px, 5vw, 40px) clamp(60px, 10vh, 120px);">
+      <h1 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(38px, 6vw, 62px); line-height: 1.05; letter-spacing: -0.012em; color: #f4f2fa;">{<!---->{FULL_NAME}}</h1>
+
+    <p style="margin: 16px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #9294ab;">{<!---->{ROLE_TAGLINE}} · {<!---->{LOCATION}}</p>
+
+    <p style="margin: 26px 0 0; max-width: 62ch; font-size: clamp(17px, 1.9vw, 20px); line-height: 1.7; color: #b6b7c9;">{<!---->{ABOUT_BIO}}</p>
+
+    <section aria-labelledby="contact-heading" style="margin-top: clamp(40px, 7vh, 64px); padding: clamp(24px, 3.4vw, 32px); background: #080a13; border: 1px solid rgba(255,255,255,0.08);">
+      <h2 id="contact-heading" style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #ffd39a;">Contact</h2>
+      <div style="display: grid; gap: 14px;">
+        <a id="lnk-email" href="#" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #dcdde9;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">Email</span>{<!---->{EMAIL}}</a>
+        <a id="lnk-github" href="#" target="_blank" rel="noopener" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #dcdde9;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">GitHub</span>{<!---->{GITHUB_URL}} ↗</a>
+        <a id="lnk-linkedin" href="#" target="_blank" rel="noopener" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #dcdde9;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">LinkedIn</span>{<!---->{LINKEDIN_URL}} ↗</a>
+        <a href="cv.pdf" target="_blank" rel="noopener" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #ffd39a;" style-hover="color: #ffb877;"><span style="min-width: 92px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #9294ab;">CV</span>Download PDF ↗</a>
+      </div>
+    </section>
+
+    <section aria-labelledby="education-heading" style="margin-top: clamp(40px, 7vh, 64px);">
+      <h2 id="education-heading" style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">Education</h2>
+      <article style="padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.09);">
+        <h3 style="margin: 0; font-family: 'Bodoni Moda', Georgia, serif; font-weight: 400; font-size: clamp(22px, 2.6vw, 27px); line-height: 1.2; color: #eeecf6;">{<!---->{EDUCATION_QUALIFICATION}}</h3>
+        <p style="margin: 10px 0 0; font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.1em; color: #7b7d95;">{<!---->{EDUCATION_INSTITUTION}} · {<!---->{EDUCATION_DATES}} · {<!---->{EDUCATION_LOCATION}}</p>
+        <p style="margin: 16px 0 0; font-size: 17px; line-height: 1.75; color: #c2c3d3;">{<!---->{EDUCATION_NOTE}}</p>
+      </article>
+    </section>
+
+    <section aria-labelledby="languages-heading" style="margin-top: clamp(40px, 7vh, 64px);">
+      <h2 id="languages-heading" style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">Languages</h2>
+      <ul style="margin: 0; padding: 0; list-style: none; display: grid; gap: 0; border-top: 1px solid rgba(255,255,255,0.09);">
+        <li style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 17px; color: #c8c9d8;">{<!---->{LANGUAGE_1_NAME}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: #83859c;">{<!---->{LANGUAGE_1_CEFR}}</span></li>
+        <li style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 17px; color: #c8c9d8;">{<!---->{LANGUAGE_2_NAME}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: #83859c;">{<!---->{LANGUAGE_2_CEFR}}</span></li>
+        <li style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 17px; color: #c8c9d8;">{<!---->{LANGUAGE_3_NAME}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.14em; color: #83859c;">{<!---->{LANGUAGE_3_CEFR}}</span></li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="skills-heading" style="margin-top: clamp(40px, 7vh, 64px);">
+      <h2 id="skills-heading" style="margin: 0 0 22px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.26em; text-transform: uppercase; color: #9294ab;">Skills</h2>
+
+      <div style="padding: 22px 0 26px; border-top: 1px solid rgba(255,255,255,0.09);">
+        <h3 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #8ff0ff;">Used in production</h3>
+        <p style="margin: 14px 0 0; font-size: 17px; line-height: 1.85; color: #c5c6d5;">{<!---->{SKILLS_PRODUCTION}}</p>
+      </div>
+
+      <div style="padding: 22px 0 26px; border-top: 1px solid rgba(255,255,255,0.09);">
+        <h3 style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: #9dffd6;">Used in personal projects</h3>
+        <p style="margin: 14px 0 0; font-size: 17px; line-height: 1.85; color: #c5c6d5;">{<!---->{SKILLS_PERSONAL_PROJECTS}}</p>
+      </div>
+    </section>
+      <nav aria-label="Other destinations" data-elsewhere="" style="margin-top: clamp(48px, 8vh, 80px);">
+        <p style="margin: 0 0 20px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: #8a8ca3;">Elsewhere in the system</p>
+        <div style="display: grid; gap: 14px;">
+          <a href="#backend" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #3fd8ff;">01</span> Backend &amp; Platform</a>
+          <a href="#projects" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #38ffb0;">02</span> Independent Projects</a>
+          <a href="#xr" style="display: flex; align-items: baseline; gap: 14px; font-size: 18px; color: #d3d4e2;" style-hover="color: #ffb877;"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: #b26bff;">03</span> XR / AR</a>
+        </div>
+      </nav>
+      <footer style="margin-top: clamp(48px, 8vh, 80px); padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #9294ab;">
+        <a href="cv.pdf" target="_blank" rel="noopener" style="color: #a9aabd; border-bottom: 1px solid rgba(169,170,189,0.35); padding-bottom: 2px;" style-hover="color: #ffb877;">Download CV (PDF) ↗</a>
+        <a href="#" data-exit="" style="color: #9294ab;" style-hover="color: #ffb877;">← Back to system</a>
+      </footer>
+    </div>
+  </div>
+</section>
+
+<canvas id="smoke" aria-hidden="true" style="position: fixed; inset: 0; z-index: 60; display: none; pointer-events: none;"></canvas>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;composition&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;arc&quot;,&quot;drift&quot;,&quot;deep&quot;],&quot;default&quot;:&quot;arc&quot;,&quot;tsType&quot;:&quot;'arc' | 'drift' | 'deep'&quot;,&quot;section&quot;:&quot;Hub composition&quot;},&quot;warpColor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;planet&quot;,&quot;ice&quot;,&quot;amber&quot;,&quot;white&quot;],&quot;default&quot;:&quot;planet&quot;,&quot;tsType&quot;:&quot;'planet' | 'ice' | 'amber' | 'white'&quot;,&quot;section&quot;:&quot;Hyperspace&quot;},&quot;parallax&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;min&quot;:0,&quot;max&quot;:0.4,&quot;step&quot;:0.02,&quot;default&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Destination panels&quot;},&quot;showHud&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Hub composition&quot;}}">
+/* Single-document portfolio. The hub scene is created once and never torn
+   down; destinations are overlay panels routed by hash, so a jump costs a
+   warp animation and a class swap instead of a full document load. */
+
+/* Hover tint per destination: each planet's own accent, lifted toward white so
+   20px serif stays legible on the near-black sky. */
+const HOVER_TINT = {
+  backend: '#8ce7ff',
+  projects: '#84ffcb',
+  xr: '#d0a6ff',
+  about: '#ffc182',
+};
+
+const TITLES = {
+  backend: 'Backend & Platform',
+  projects: 'Independent Projects',
+  xr: 'XR / AR',
+  about: 'About & Contact',
+};
+
+class Component extends DCLogic {
+  /* <title> cannot hold a token in markup: it is RCDATA, so the {<!---->{…}}
+     comment escape would leak verbatim, and a bare {{…}} would be read as a
+     template hole. It is therefore assigned here, and re-asserted after the
+     helmet has mounted its own static <title>. */
+  wantTitle() {
+    return this.current ? TITLES[this.current] + ' — {{FULL_NAME}}' : this.baseTitle;
+  }
+
+  assertTitle() {
+    const want = this.wantTitle();
+    if (document.title !== want) document.title = want;
+  }
+
+  applyHeadTokens() {
+    this.baseTitle = '{{FULL_NAME}} — {{ROLE_TAGLINE}}';
+    this.assertTitle();
+    // The helmet injects its own <title> at an unpredictable point after mount,
+    // so this is self-healing rather than timed: whenever anything rewrites the
+    // title away from what we want, put it back.
+    this._titleObs = new MutationObserver(() => this.assertTitle());
+    this._titleObs.observe(document.head, { childList: true, characterData: true, subtree: true });
+    const set = (sel, v) => {
+      const m = document.head.querySelector(sel);
+      if (m) m.setAttribute('content', v);
+    };
+    set('meta[name="description"]', '{{META_DESCRIPTION}}');
+    set('meta[property="og:title"]', this.baseTitle);
+    set('meta[property="og:description"]', '{{META_DESCRIPTION}}');
+  }
+
+  componentDidMount() {
+    this.applyHeadTokens();
+    this.warpColor = this.props.warpColor || 'planet';
+    this.composition = this.props.composition || 'arc';
+    this.showHud = this.props.showHud !== false;
+    this._token = 0;
+    this.parallax = this.props.parallax != null ? this.props.parallax : 0.10;
+    this.current = null;
+
+    const $ = (s) => document.querySelector(s);
+    this.el = {
+      canvas: $('#scene'), labels: $('#labels'), fallback: $('#fallback'),
+      smoke: $('#smoke'), reticle: $('#reticle'), hint: $('#hud-hint'),
+      qBtn: $('#quality-toggle'), fps: $('#fps-readout'),
+      header: $('#hub-head'), foot: $('#hub-foot'),
+    };
+    this.anchors = Array.prototype.slice.call(document.querySelectorAll('#labels a'));
+    this.panels = {};
+    Array.prototype.forEach.call(document.querySelectorAll('[data-panel]'), (p) => {
+      this.panels[p.dataset.panel] = p;
+    });
+    if (!this.showHud && this.el.qBtn) this.el.qBtn.style.display = 'none';
+
+    this.bindRouting();
+
+    import('./warp.js')
+      .then((warpMod) => { this.warpMod = warpMod; return import('./space-engine.js'); })
+      .then((engine) => this.boot(engine))
+      .catch((e) => { console.warn('3D unavailable, using the text edition', e); this.flatten(); });
+  }
+
+  /* ------------------------------------------------------------------ boot */
+  boot(engine) {
+    this.engine = engine;
+    if (!engine.hasWebGL()) { this.flatten(); return; }
+    this.reduce = engine.reducedMotion();
+
+    const fb = this.el.fallback;
+    fb.style.transition = 'opacity 400ms ease';
+    fb.style.opacity = '0';
+    fb.style.pointerEvents = 'none';
+    setTimeout(() => { fb.style.display = 'none'; }, 420);
+    this.el.canvas.style.opacity = '1';
+
+    const hub = engine.initHub(this.el.canvas, {
+      composition: this.composition,
+      onLabels: (out) => this.placeLabels(out),
+      onFps: this.showHud ? (f) => { if (this.el.fps) this.el.fps.textContent = String(f); } : null,
+    });
+    this.hub = hub;
+    window.__dgHub = hub;
+    window.__dg3dReady = true;
+    if (this.el.qBtn && this.el.qBtn.firstChild) {
+      this.el.qBtn.firstChild.textContent = 'Quality: ' + hub.quality + ' · ';
+    }
+
+    this.hubAz = 0;
+    this.baseAz = 0;
+    this.bindPointer();
+    this.bindKeyboard();
+    this.bindPanels();
+    this.bindLifecycle();
+    this.startDrift();
+
+    // deep link: open the destination straight away, no warp on first paint
+    const id = this.hashId();
+    if (id) { this.commit(id); this.el.labels.style.opacity = '0'; }
+    else { this.el.labels.style.opacity = '1'; if (!this.reduce) this.hint(); }
+  }
+
+  /** No WebGL (or the engine failed): one continuous scrolling document. */
+  flatten() {
+    window.__dg3dReady = false;
+    document.documentElement.removeAttribute('data-dg-3d');
+    document.documentElement.setAttribute('data-dg-flat', '1');
+    const stage = document.getElementById('stage');
+    if (stage) stage.style.display = 'none';
+    const fb = this.el.fallback;
+    if (fb) { fb.style.position = 'static'; fb.style.opacity = '1'; fb.style.pointerEvents = 'auto'; }
+    // in-page anchors now scroll rather than route
+    Object.keys(this.panels).forEach((k) => { this.panels[k].id = k; });
+    this._flat = true;
+  }
+
+  /* --------------------------------------------------------------- routing */
+  hashId() {
+    const id = (location.hash || '').replace(/^#\/?/, '');
+    return this.panels[id] ? id : null;
+  }
+
+  bindRouting() {
+    this.onPop = () => { if (!this._flat) this.route(); };
+    window.addEventListener('popstate', this.onPop);
+    this.onHash = () => { if (!this._flat) this.route(); };
+    window.addEventListener('hashchange', this.onHash);
+  }
+
+  route() {
+    const target = this.hashId();
+    if (target === this.current) return;
+    this.jump(target);
+  }
+
+  /** Push a history entry and animate to it. The jump is driven directly rather
+      than waiting on a hashchange, so it runs even where history is sandboxed. */
+  go(id) {
+    if (this._flat) return;
+    if ((id || null) === this.current) return;
+    const url = id ? '#' + id : location.pathname + location.search;
+    try { history.pushState({ dg: id || null }, '', url); } catch (e) {}
+    this.jump(id || null);
+  }
+
+  /** Escape and "Back to system" mean the scene — always. Never history.back():
+      that replays the previously visited panel, and where the frame sandboxes
+      history it does nothing at all, stranding `current` on a closed panel. */
+  exit() {
+    if (this._flat) return;
+    this.go(null);
+  }
+
+  /* ------------------------------------------------- the hyperspace jump */
+  jump(target) {
+    target = target || null;
+    if (this._going || !this.hub) { this._pending = target; return; }
+    this._going = true;
+    const from = this.current;
+    const ref = this.engine.byId(target || from || 'backend');
+    const tint = this.warpColor === 'ice' ? '#9fd8ff'
+      : this.warpColor === 'amber' ? '#ffb066'
+      : this.warpColor === 'white' ? '#eaf4ff'
+      : ref.glow;
+
+    if (this.reduce) { this.commit(target); this._going = false; this.drainPending(); return; }
+
+    if (!from) {
+      this.el.labels.style.opacity = '0';
+      this.el.labels.style.pointerEvents = 'none';
+      this.setHover(null);
+    }
+    if (this.el.reticle) this.el.reticle.style.opacity = '0';
+
+    // one Warp owns the shared #smoke canvas at a time — a surviving previous
+    // instance would fight over its 2D transform, resize listener and rAF chain
+    if (this.warpFx) { this.warpFx.dispose(); this.warpFx = null; }
+    const warp = new this.warpMod.Warp(this.el.smoke, { accent: tint });
+    this.warpFx = warp;
+
+    const token = ++this._token;
+    let committed = false;
+    const commitOnce = () => { if (committed) return; committed = true; this.commit(target); };
+    /* Releasing _going only from warp.clear().then() means one stalled promise
+       wedges routing permanently. finish() is idempotent, is reachable from the
+       animation AND from a watchdog, and always leaves the router usable. */
+    const finish = () => {
+      if (token !== this._token) return;
+      clearTimeout(this._watchdog);
+      commitOnce();
+      if (this.warpFx === warp) { warp.dispose(); this.warpFx = null; }
+      this.el.smoke.style.display = 'none';
+      this._going = false;
+      this.drainPending();
+    };
+
+    const COVER = 900, CLEAR = 950;
+    this._watchdog = setTimeout(finish, COVER + CLEAR + 700);
+    const run = () => {
+      warp.cover({ duration: COVER, onOpaque: commitOnce });
+      setTimeout(() => { warp.clear(CLEAR).then(finish); }, COVER + 120);
+    };
+
+    // leaving the hub, the ship flies out first so the jump reads as departure
+    if (!from && target && !this.hub.isLaunching()) {
+      this.hub.launch(target, 1700);
+      setTimeout(run, 520);   // warp begins while the ship is still on screen
+    } else {
+      run();
+    }
+  }
+
+  drainPending() {
+    if (this._pending !== undefined) {
+      const t = this._pending;
+      this._pending = undefined;
+      if (t !== this.current) this.jump(t);
+    }
+  }
+
+  /** Swap what is on screen. Called while the warp is fully opaque. Idempotent:
+      callers guard with a per-jump flag, and re-running it is harmless anyway. */
+  commit(target) {
+    target = target || null;
+    if (!this.hub) return;
+    if (!this.current) this.hubAz = this.hub.azimuth;
+    if (this.reduce) this.hub.returnShip(); else this.hub.dockShip(1150);
+    this.hub.setHovered(null);
+    this.hub.setFocused(null);
+
+    Object.keys(this.panels).forEach((k) => {
+      const p = this.panels[k];
+      const on = k === target;
+      p.style.visibility = on ? 'visible' : 'hidden';
+      p.style.opacity = on ? '1' : '0';
+      if (on) p.scrollTop = 0;
+    });
+
+    const hubChrome = target ? '0' : '1';
+    if (this.el.header) this.el.header.style.opacity = hubChrome;
+    if (this.el.foot) this.el.foot.style.opacity = hubChrome;
+    if (this.el.foot) this.el.foot.style.pointerEvents = target ? 'none' : 'auto';
+    if (this.el.hint) this.el.hint.style.opacity = target ? '0' : (this._interacted ? '0' : '1');
+    this.el.labels.style.opacity = target ? '0' : '1';
+    /* The nav is a full-viewport container: giving it pointer-events swallows every
+       canvas click, so only the anchors ever become hit-testable (placeLabels). */
+    this.el.labels.style.pointerEvents = 'none';
+    this.anchors.forEach((a) => { a.style.pointerEvents = target ? 'none' : 'auto'; });
+
+    if (target) {
+      this.baseAz = this.engine.byId(target).theta;
+      this.hub.park(target);
+    } else {
+      this.baseAz = this.hubAz || 0;
+      this.hub.unpark();
+      this.hub.setAzimuth(this.baseAz, true);
+    }
+    this.current = target || null;
+    this.assertTitle();
+    this.scrollK = 0;
+  }
+
+  /* ------------------------------------- scene motion while a panel is open */
+  startDrift() {
+    const t0 = performance.now();
+    this.scrollK = 0;
+    const tick = (now) => {
+      this._drift = requestAnimationFrame(tick);
+      if (this._going || !this.hub) return;
+      // Parked view holds absolutely still: no drift, no scroll parallax. Camera
+      // motion belongs to the hub only.
+      if (this.current) this.hub.setAzimuth(this.baseAz);
+    };
+    this._drift = requestAnimationFrame(tick);
+  }
+
+  /* ---------------------------------------------------------- label sync */
+  placeLabels(out) {
+    if (this.current || this._going) return;
+    for (let i = 0; i < out.length; i++) {
+      const o = out[i], a = this.anchors[i];
+      if (!a) continue;
+      if (!o.visible) { a.style.opacity = '0'; a.style.pointerEvents = 'none'; continue; }
+      a.style.opacity = '1';
+      a.style.pointerEvents = 'auto';
+      a.style.left = o.x + 'px';
+      a.style.top = (o.y + o.pr + 10) + 'px';
+      const lead = a.querySelector('[data-leader]');
+      if (lead) lead.style.height = (a.dataset.planet === this.hovered ? 40 : 26) + 'px';
+    }
+  }
+
+  setHover(id) {
+    if (this.hovered === id) return;
+    this.hovered = id;
+    this.hub.setHovered(id);
+    this.anchors.forEach((a) => {
+      const name = a.querySelector('[data-name]');
+      if (name) name.style.color = a.dataset.planet === id ? (HOVER_TINT[a.dataset.planet] || '#ffd6ac') : '#eceaf4';
+    });
+    if (this.el.reticle) {
+      this.el.reticle.style.opacity = id ? '1' : '0';
+      this.el.reticle.style.transform = id ? 'scale(1)' : 'scale(0.6)';
+    }
+  }
+
+  /* -------------------------------------------------------------- input */
+  bindPointer() {
+    const c = this.el.canvas;
+    const coarse = window.matchMedia('(pointer: coarse)').matches;
+    if (!coarse) c.style.cursor = 'none';
+
+    this.onWheel = (e) => {
+      if (this.current) return;
+      e.preventDefault();
+      this.interacted();
+      const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      this.hub.nudge(d * 0.0011);
+      this.hubAz = this.hub.azimuth;
+    };
+    c.addEventListener('wheel', this.onWheel, { passive: false });
+
+    let dragging = false, lastX = 0, moved = 0;
+    // Guarded on `current` only. Gating input on `_going` turns any transition
+    // hiccup into permanently dead canvas input; re-entrant clicks are absorbed
+    // by jump()'s _pending queue instead.
+    this.onDown = (e) => {
+      if (this.current) return;
+      dragging = true; moved = 0; lastX = e.clientX;
+      c.setPointerCapture && c.setPointerCapture(e.pointerId);
+      this.interacted();
+    };
+    this.onMove = (e) => {
+      if (this.current || this._going) return;
+      if (this.el.reticle) {
+        this.el.reticle.style.left = e.clientX + 'px';
+        this.el.reticle.style.top = e.clientY + 'px';
+      }
+      const r = c.getBoundingClientRect();
+      this.hub.setPointer(
+        ((e.clientX - r.left) / r.width) * 2 - 1,
+        ((e.clientY - r.top) / r.height) * 2 - 1
+      );
+      if (dragging) {
+        const dx = e.clientX - lastX;
+        lastX = e.clientX; moved += Math.abs(dx);
+        this.hub.nudge(-dx * 0.0022);
+        this.hubAz = this.hub.azimuth;
+      } else if (!coarse) {
+        const now = performance.now();
+        if (now - (this._lastRay || 0) > 33) {
+          this._lastRay = now;
+          this.setHover(this.hub.isLaunching() ? null : this.hub.pick(e.clientX, e.clientY));
+        }
+      }
+    };
+    /* Two independent paths reach the same navigation, deduped by timestamp: the
+       pointerup pair (needed for the drag/click distinction) and a plain click on
+       the canvas (fires even if the pointerdown was swallowed by capture or an
+       overlapping label hit-box, which is how clicks intermittently went dead). */
+    const nav = (x, y) => {
+      const now = performance.now();
+      if (now - (this._navAt || 0) < 350) return;
+      const id = this.hub.pick(x, y);
+      if (!id) return;
+      this._navAt = now;
+      this.go(id);
+    };
+    this.onUp = (e) => {
+      if (!this.current && dragging && moved < 6) nav(e.clientX, e.clientY);
+      dragging = false;
+    };
+    this.onCanvasClick = (e) => {
+      if (this.current || moved > 6) return;
+      nav(e.clientX, e.clientY);
+    };
+    c.addEventListener('click', this.onCanvasClick);
+    c.addEventListener('pointerdown', this.onDown);
+    window.addEventListener('pointermove', this.onMove);
+    window.addEventListener('pointerup', this.onUp);
+    c.addEventListener('touchmove', (e) => { if (!this.current) e.preventDefault(); }, { passive: false });
+  }
+
+  bindKeyboard() {
+    this.onKey = (e) => {
+      if (e.key === 'Escape' && this.current) { e.preventDefault(); this.exit(); return; }
+      if (this.current) return;
+      if (e.key === 'ArrowLeft') { this.interacted(); this.hub.nudge(-0.1); this.hubAz = this.hub.azimuth; }
+      else if (e.key === 'ArrowRight') { this.interacted(); this.hub.nudge(0.1); this.hubAz = this.hub.azimuth; }
+    };
+    window.addEventListener('keydown', this.onKey);
+    this.anchors.forEach((a) => {
+      a.addEventListener('focus', () => {
+        if (this.current) return;
+        const id = a.dataset.planet;
+        this.hub.setFocused(id);
+        this.hub.focusPlanet(id);
+        this.setHover(id);
+      });
+      a.addEventListener('blur', () => { this.hub.setFocused(null); });
+    });
+  }
+
+  /** Every in-site hash link routes; nothing does a document load. */
+  bindPanels() {
+    this.onClick = (e) => {
+      const a = e.target.closest && e.target.closest('a');
+      if (!a || this._flat) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+      if (a.hasAttribute('data-exit')) { e.preventDefault(); this.exit(); return; }
+      const href = a.getAttribute('href') || '';
+      if (href.charAt(0) !== '#') return;
+      const id = href.slice(1);
+      e.preventDefault();
+      if (!id) this.exit();
+      else if (this.panels[id]) this.go(id);
+    };
+    document.addEventListener('click', this.onClick);
+
+    // panel scroll drives the parallax
+    Object.keys(this.panels).forEach((k) => {
+      this.panels[k].addEventListener('scroll', () => {
+        if (this.current !== k) return;
+        this.scrollK = 0; // panel scroll no longer drives the camera
+      }, { passive: true });
+    });
+  }
+
+  bindLifecycle() {
+    this.onVis = () => this.hub.pause(document.hidden);
+    document.addEventListener('visibilitychange', this.onVis);
+    this.onResize = () => this.hub.resize();
+    window.addEventListener('resize', this.onResize);
+  }
+
+  interacted() {
+    this._interacted = true;
+    if (this.el.hint) this.el.hint.style.opacity = '0';
+  }
+
+  hint() {
+    setTimeout(() => {
+      if (this._interacted || this.current) return;
+      this.hub.setAzimuth(0.17);
+      setTimeout(() => { if (!this._interacted && !this.current) this.hub.setAzimuth(0); }, 1500);
+    }, 900);
+  }
+
+  componentWillUnmount() {
+    cancelAnimationFrame(this._drift);
+    clearTimeout(this._watchdog);
+    this._titleObs && this._titleObs.disconnect();
+    window.removeEventListener('pointermove', this.onMove);
+    window.removeEventListener('pointerup', this.onUp);
+    window.removeEventListener('keydown', this.onKey);
+    window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('popstate', this.onPop);
+    window.removeEventListener('hashchange', this.onHash);
+    document.removeEventListener('visibilitychange', this.onVis);
+    document.removeEventListener('click', this.onClick);
+    this.warpFx && this.warpFx.dispose();
+    if (window.__dgHub) { window.__dgHub.dispose(); window.__dgHub = null; }
+  }
+
+  renderVals() { return {}; }
+}
+
+</script>
+</body>
+</html>
