@@ -25,13 +25,31 @@ Anything marked **ASK** must go back to the owner before you implement it.
 
 ## Phase 2 — Markup
 
-- [ ] Unwrap `design/index.dc.html` into `index.html`: drop `<x-dc>` and `support.js`, hoist `<helmet>` into a real `<head>`.
-- [ ] Real `<title>` in `<head>`. Delete `assertTitle()` and the head `MutationObserver`.
-- [ ] Canonical + OG image → `https://golosov-danylo.com`.
-- [ ] Keep the inline WebGL probe blocking in `<head>` (before first paint, or the text edition flashes).
-- [ ] Convert `{<!---->{TOKEN}}` → `{{TOKEN}}` throughout.
-- [ ] Verify the full DOM contract survives (id/`data-` list in `PORT_PLAN.md` step 2).
-- [ ] Confirm one `<h1>` per panel and the `aria-label` / `aria-labelledby` on every section.
+- [x] Unwrap `design/index.dc.html` into `index.html`: drop `<x-dc>` and `support.js`, hoist `<helmet>` into a real `<head>`.
+      *Prototype lines 65–482 (`<main id="stage">` … `<canvas id="smoke">`) carried over verbatim by script rather than retyped — 418 lines of dense inline styles are not worth the drift risk. `lang="en"` added to `<html>`; the prototype had none and axe requires it.*
+- [x] Real `<title>` in `<head>`. Delete `assertTitle()` and the head `MutationObserver`.
+      *Title is `{{FULL_NAME}} — {{ROLE_TAGLINE}}`, matching the `baseTitle` the prototype assigned from JS. The per-jump swap to `<Panel> — {{FULL_NAME}}` is Phase 4's `head.ts`, not markup.*
+- [x] Canonical + OG image → `https://golosov-danylo.com`.
+- [x] Keep the inline WebGL probe blocking in `<head>` (before first paint, or the text edition flashes).
+- [x] Convert `{<!---->{TOKEN}}` → `{{TOKEN}}` throughout.
+      *109 escapes converted, not the 98 estimated. 115 tokens in the document: 109 body + 6 head (title ×2, description, `og:title` ×2, `og:description`); 104 distinct.*
+- [x] Verify the full DOM contract survives (id/`data-` list in `PORT_PLAN.md` step 2).
+      *All 23 ids present exactly once. Counts: `data-panel` 4, `data-panel-top` 4, `data-hero` 4, `data-exit` 8, `data-planet` 4, `data-leader` 4, `data-name` 4, `data-grain` 1, `data-elsewhere` 4, `data-esc` 4, `data-screen-label` 4, `data-repo`/`data-demo` 1–4. Both `<html>` state hooks (`data-dg-3d`, `data-dg-flat`) and the `#fallback` fade rule intact. Re-checked against `dist/index.html` after `vite build` — no drift, probe still inline in `<head>`.*
+- [x] Confirm one `<h1>` per panel and the `aria-label` / `aria-labelledby` on every section.
+      *5 `<h1>` total: one per panel plus the hub's in `#hub-head`. Both canvases still `aria-hidden`; `nav#labels[aria-label="Destinations"]` intact.*
+
+**Carried into Phase 3 on purpose:** every inline `style` attribute, plus 42
+`style-hover` and 23 `style-before` attributes. They are the *only* record of
+what the hover and `::before` rules must be — `support.js` was what interpreted
+them, so they are inert now and hover/`::before` have no effect until Phase 3
+rewrites them as real CSS and deletes them. The `<style>` block sits inline in
+`<head>` at exactly the position `styles.css` will take.
+
+**Expected intermediate state:** in a WebGL browser the page now goes black ~400 ms
+after load. The probe sets `data-dg-3d`, which fades `#fallback` out, and there is
+no engine yet to draw the hub. Correct per the design — `#fallback` is the default
+state and the probe is the success path — and it resolves when Phase 5/7 land.
+With JS disabled or no WebGL, the text edition renders and is fully navigable.
 
 ## Phase 3 — Styles
 
