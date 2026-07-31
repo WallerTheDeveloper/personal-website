@@ -70,11 +70,31 @@ With JS disabled or no WebGL, the text edition renders and is fully navigable.
 
 ## Phase 4 — Content plumbing
 
-- [ ] `content.ts` with every token from README “Copy tokens”, values = the literal `{{TOKEN}}` strings. *(pending Phase 0 ASK)*
-- [ ] `head.ts`: title per route (`<Panel> — {{FULL_NAME}}`), description, `og:title`, `og:description`, `Person` JSON-LD (no seniority claim).
-- [ ] Apply project repo/demo hrefs to `[data-repo="n"]` / `[data-demo="n"]`.
-- [ ] Apply contact hrefs to `#lnk-email` (`mailto:`), `#lnk-github`, `#lnk-linkedin`.
-- [ ] `analytics.ts` — Umami, behind `VITE_UMAMI_SRC` / `VITE_UMAMI_ID`, no-op when either is unset (owner has not supplied them yet). Hash routing performs **zero** document loads, so auto-pageviews never fire: track explicitly from `commit()`, which is the one place a destination is actually swapped in. Must not run inside the click handler — see the < 8 ms budget in `ACCEPTANCE.md` B.
+- [x] `content.ts` with every token from README “Copy tokens”, values = the literal `{{TOKEN}}` strings.
+      *112 tokens: the 104 distinct ones the markup renders, plus the 8 `PROJECT_n_REPO_URL` / `_DEMO_URL` that can only live in an attribute. `tests/unit/content.test.ts` asserts the table and `index.html` agree **in both directions** — a token in the markup with no key fails, and a key nothing consumes fails — so the two cannot drift apart silently. Also exports `PANEL_IDS` / `PanelId` / `isPanelId()` and `TITLES` (literal copy, carried from the prototype), which Phase 7 imports rather than redeclaring.*
+- [x] `head.ts`: title per route (`<Panel> — {{FULL_NAME}}`), description, `og:title`, `og:description`, `Person` JSON-LD (no seniority claim).
+      *`titleFor()` is pure and unit-tested — including a guard that no title ever grows a seniority word, since the title is the one string rewritten at runtime and so the easiest to embellish by accident. `assertTitle()` and the `document.head` MutationObserver are **not** ported; a real `<head>` needs neither. JSON-LD carries exactly the five fields PORT_PLAN step 4 lists (`name`, `jobTitle` = `ROLE_TAGLINE` verbatim, `url`, `address`, `sameAs`) — no `email`, no `description`, nothing added. Injection is idempotent, via `textContent`, under `#person-jsonld`.*
+      *The head meta is mirrored from `content.ts` even though `index.html` already ships the same tokens statically. That is what makes `content.ts` the single file the owner edits; the markup copy is what a crawler with JS off reads.*
+- [x] Apply project repo/demo hrefs to `[data-repo="n"]` / `[data-demo="n"]`.
+- [x] Apply contact hrefs to `#lnk-email` (`mailto:`), `#lnk-github`, `#lnk-linkedin`.
+      *Applied **unconditionally**, literal `{{TOKEN}}` values included. This is the safer placeholder state, not an oversight: the markup ships all seven as `href="#"`, and the router intercepts every `href="#…"`, so leaving them would make “Repository”, “Live demo” and the three contact rows warp the visitor back to the hub. A dead link beats a link that navigates somewhere it never claimed to go. Verified afterwards that the only `href="#"` left in the document are the eight `[data-exit]` links, which are meant to be exits.*
+- [x] `analytics.ts` — Umami, behind `VITE_UMAMI_SRC` / `VITE_UMAMI_ID`, no-op when either is unset (owner has not supplied them yet). Hash routing performs **zero** document loads, so auto-pageviews never fire: track explicitly from `commit()`, which is the one place a destination is actually swapped in. Must not run inside the click handler — see the < 8 ms budget in `ACCEPTANCE.md` B.
+      *Ships `data-auto-track="false"` so Umami's own history patching cannot double-count against `go()`'s `pushState`. Views raised before the async script lands are queued and flushed on `load`; the queue is dropped on `error` with one warning, so a blocked tracker can neither retry-loop nor accumulate. `.env.example` documents both vars — neither is a secret, both are baked into the client bundle.*
+
+**Seams left for Phase 7** — `main.ts` calls `applyHead()` and `initAnalytics()` at
+mount and nothing else. The router must call `applyTitle(current)` and
+`trackView(current)` from `commit()`, and `trackView(null)` from `boot()` for the
+hub. Neither belongs in a click handler. Deep-load `/#xr` therefore still shows
+the base title until Phase 7 wires `commit()` — that is the seam, not a bug.
+
+**Verified:** `tsc --noEmit` clean; 9 unit tests green; `vite build` emits a
+2.69 kB / 1.15 kB gzip JS chunk. Driven in a real browser against the served
+`dist/` in both states — WebGL on and WebGL blocked at `getContext` — and the
+title, all three meta tags, the JSON-LD and all eleven hrefs apply identically in
+each: `head.ts` is not gated on WebGL, so the text edition gets the same
+treatment. No console errors, no page errors, and with no env vars set, zero
+Umami `<script>` tags. The one 404 in the trace is the browser's automatic
+`/favicon.ico` request — pre-existing, and Phase 9's to resolve.
 
 ## Phase 5 — Engine
 
@@ -118,6 +138,7 @@ With JS disabled or no WebGL, the text edition renders and is fully navigable.
 - [ ] `public/cv.pdf`, `public/og.png` (placeholders from `assets/`).
 - [ ] `robots.txt` + `sitemap.xml`: `https://example.com` → `https://golosov-danylo.com`.
 - [ ] `public/models/README.md` kept for the future glTF. Ship the primitive placeholder ship as-is.
+- [ ] A favicon. There is none, so every load spends a request on a 404 for `/favicon.ico`. Not in the handoff bundle — **ASK** whether the owner wants one, or just a `<link rel="icon">` pointing at an inline SVG.
 
 ## Phase 10 — Tests
 
