@@ -67,10 +67,11 @@ function setHref(selector: string, value: string): void {
 }
 
 /**
- * `index.html` already ships these tokens as static markup, which is what a
- * crawler with JS off reads. Mirroring them from `content.ts` on mount is what
- * makes `content.ts` the single place the owner edits: fill it, and the head
- * follows without a second pass over the markup.
+ * The runtime mirror of what `build/copy-tokens.ts` already wrote into the
+ * served HTML. Both read `content.ts`, so both produce the same string — the
+ * static copy is what a crawler with JS off gets, and this keeps the head
+ * correct if the markup is ever hand-edited out of step with the table.
+ * PORT_PLAN step 4 specifies these three; keep them in sync with it.
  */
 function applyMeta(): void {
   setMetaContent('meta[name="description"]', CONTENT.META_DESCRIPTION);

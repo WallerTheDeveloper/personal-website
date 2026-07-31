@@ -473,14 +473,14 @@ a:hover { color: var(--hover); }
   border-bottom: 1px solid var(--rule-cv-te);
 }
 
-/* This one link does not take the global a:hover. In the prototype its colour
-   is an inline declaration with no style-hover beside it, so the inline value
-   wins over `a:hover` and it stays --link-cv under the cursor. Every other CV
-   link (the panel footers, the contact row) does warm to --hover. That reads
-   like an oversight in the prototype rather than a decision, but Phase 3 is a
-   port, not a redesign — deleting this rule is the whole change if the owner
-   wants it to match the others. */
-.te__cv:hover { color: var(--link-cv); }
+/* No .te__cv:hover rule, on purpose — this is the port's one deliberate
+   deviation from the prototype, made on the owner's call.
+   In the prototype this link's colour is an inline declaration with no
+   style-hover beside it, so the inline value beat `a:hover` and "Download CV
+   (PDF)" was the only CV link that did not warm under the cursor. Phase 3
+   reproduced that faithfully; the owner confirmed it was a prototype
+   oversight, so the link now takes the global a:hover like the panel footers
+   and the contact row. Do not "restore fidelity" here. */
 
 /* ---------------------------------------------------------------------------
    Panel shell

@@ -66,7 +66,7 @@ With JS disabled or no WebGL, the text edition renders and is fully navigable.
       1. *Sub-pixel widths (≤ 0.016 px) on shrink-to-fit boxes holding a token. The prototype's `{<!---->{` escape splits the text into two nodes, so Bodoni does not kern across the brace pair; the port's single text node does. Literal copy ("Backend & Platform") is identical to the pixel. Goes away when the owner fills the tokens.*
       2. *The grain tile. The prototype's React runtime truncates the inline data URI to `url("data:image/svg+xml")` — the port renders what the file actually declares. Invisible either way: `mix-blend-mode: overlay` at `opacity: 0.16` over a near-black sky.*
       3. *`rgba(2,3,8,0.92) 100%` → `rgba(2,3,8,0.92)` in the vignette. esbuild drops the redundant final stop when minifying; Chrome reserialises it to the same value.*
-      *One real drift was found and fixed: the text edition's "Download CV (PDF)" link. Its colour is inline in the prototype with no `style-hover`, so the inline value beats `a:hover` and it does **not** warm to `--hover` — unlike every other CV link. `.te__cv:hover` reproduces that. It reads like a prototype oversight; deleting that one rule is the whole change if the owner wants it to match. **ASK.***
+      *One real drift was found: the text edition's "Download CV (PDF)" link. Its colour is inline in the prototype with no `style-hover`, so the inline value beats `a:hover` and it does **not** warm to `--hover` — unlike every other CV link. Phase 3 reproduced that with `.te__cv:hover`. **Resolved in Phase 4 — the owner confirmed it was a prototype oversight, and the rule is deleted.** `.te__cv` now warms to `#ffb877` like `.cv-link` and `.contact__row--cv`; its resting colour is untouched. This is the port's one deliberate deviation from the prototype — do not "restore fidelity" here.*
 
 ## Phase 4 — Content plumbing
 
@@ -81,13 +81,21 @@ With JS disabled or no WebGL, the text edition renders and is fully navigable.
 - [x] `analytics.ts` — Umami, behind `VITE_UMAMI_SRC` / `VITE_UMAMI_ID`, no-op when either is unset (owner has not supplied them yet). Hash routing performs **zero** document loads, so auto-pageviews never fire: track explicitly from `commit()`, which is the one place a destination is actually swapped in. Must not run inside the click handler — see the < 8 ms budget in `ACCEPTANCE.md` B.
       *Ships `data-auto-track="false"` so Umami's own history patching cannot double-count against `go()`'s `pushState`. Views raised before the async script lands are queued and flushed on `load`; the queue is dropped on `error` with one warning, so a blocked tracker can neither retry-loop nor accumulate. `.env.example` documents both vars — neither is a secret, both are baked into the client bundle.*
 
+- [x] **Owner decision** — how the copy reaches the body markup: **build-time
+      substitution**. `build/copy-tokens.ts` is a Vite `transformIndexHtml`
+      plugin that fills every `{{TOKEN}}` in `index.html` from `content.ts`, in
+      dev and in the build. The owner fills one file.
+      *Chosen over a runtime DOM walk because the text edition is the site's default state and must be complete with JS disabled — the copy has to be in the served HTML, not applied by a script that may never run. Every value is HTML-escaped (`& < > " '`), which is correct in both text and attribute positions, so an ampersand or a quote in real copy cannot break the markup. An undefined token **fails the build** rather than shipping as visible `{{TYPPO}}` text.*
+      *Two things deliberately do not come through the plugin: the `Person` JSON-LD is raw text inside a `<script>`, where HTML escaping would corrupt the JSON (`head.ts` uses `JSON.stringify`, which escapes itself), and the eleven hrefs stay in `head.ts` per PORT_PLAN step 4.*
+      *While every value is still its own literal token the transform is an **identity** — asserted directly in `tests/unit/copy-tokens.test.ts` — so Phase 3's verified pixel parity is untouched and `dist/index.html` still carries all 115 tokens. That also means broken wiring would be invisible, so it was proved live: adding an undefined token to `index.html` fails the build with the plugin's own message.*
+
 **Seams left for Phase 7** — `main.ts` calls `applyHead()` and `initAnalytics()` at
 mount and nothing else. The router must call `applyTitle(current)` and
 `trackView(current)` from `commit()`, and `trackView(null)` from `boot()` for the
 hub. Neither belongs in a click handler. Deep-load `/#xr` therefore still shows
 the base title until Phase 7 wires `commit()` — that is the seam, not a bug.
 
-**Verified:** `tsc --noEmit` clean; 9 unit tests green; `vite build` emits a
+**Verified:** `tsc --noEmit` clean; 17 unit tests green; `vite build` emits a
 2.69 kB / 1.15 kB gzip JS chunk. Driven in a real browser against the served
 `dist/` in both states — WebGL on and WebGL blocked at `getContext` — and the
 title, all three meta tags, the JSON-LD and all eleven hrefs apply identically in
