@@ -186,9 +186,51 @@ size the engine for real: **506.74 kB raw / 131.38 kB gzip** tree-shaken, so the
 
 ## Phase 6 — Warp
 
-- [ ] `warp.ts` from `warp.js`. Keep `MIN_COVER 900`, `MAX_COVER 2200`, `HOLD_CAP 3400`, `ACCENTS`, the whole `Warp` class, `dispose()`, `saveAzimuth`/`loadAzimuth`.
-- [ ] Delete `writeLaunch`, `readLaunch`, `whenLoaded`, `bindDepartures` (dead multi-page handoff).
-- [ ] Confirm the streak field allocates no textures and nothing is built inside a click handler.
+- [x] `warp.ts` from `warp.js`. Keep `MIN_COVER 900`, `MAX_COVER 2200`, `HOLD_CAP 3400`, `ACCENTS`, the whole `Warp` class, `dispose()`, `saveAzimuth`/`loadAzimuth`.
+      *All three durations, the `Warp` class surface (`cover`, `startHold`, `clear`,
+      `fill`, `dispose`, plus the public readonly `canvas`/`accent`/`count`) and the
+      `dg-az` session-storage pair carried over. Phase/geometry state is private —
+      nothing outside the class reads it. `ACCENTS` is a `Readonly<Record<PanelId |
+      'index', string>>`: five keys, `index` being the hub. The four destination
+      values **restate** each planet's glow rather than importing it — `hub.ts` is
+      the engine's single entry (Phase 5's rule) and importing it would drag three
+      into a 2D module, while reaching around it into `engine/planets.ts` breaks
+      that rule. A unit test pins the table equal to `PLANETS[].glow`, so the two
+      cannot drift silently.*
+- [x] Delete `writeLaunch`, `readLaunch`, `whenLoaded`, `bindDepartures` (dead multi-page handoff).
+      *All four gone, along with the `dg-launch` sessionStorage key they shared. A
+      test asserts none of the four names is exported.*
+- [x] Confirm the streak field allocates no textures and nothing is built inside a click handler.
+      *Mechanised, not eyeballed. The test's context stub **throws** on
+      `createPattern`, `createImageData`, `getImageData`, `putImageData` and
+      `drawImage`, and its document stub throws on `createElement`; a full
+      `cover()` + `clear()` cycle is then driven frame by frame and every context
+      call is asserted against an allow-list. Construction is asserted to issue
+      exactly one context call (`setTransform`) and schedule zero frames, so the
+      click that constructs a `Warp` does no work.*
+
+**Three deliberate deviations, all documented in-file — do not "restore fidelity":**
+
+1. **Streak colour is resolved at seed time, not rebuilt per frame.** It depends
+   only on the tint and the accent, both fixed for a streak's life, so the output
+   is byte-identical for ~460 fewer string builds per frame. Same move as Phase 5's
+   resolved handles.
+2. **`clear()` calls `start()`.** Only the animation resolves `clear()`'s promise,
+   so a `clear()` with no loop behind it would hang its caller forever — and the
+   router releases `_going` through there. A no-op on the normal path, where
+   `cover()` has already started the loop.
+3. **A `Warp` with no 2D context is inert** — phase `done`, one `console.warn`,
+   `clear()` resolves immediately — instead of throwing, and `dispose()` sets
+   `live = false` so a disposed instance stays disposed. Both exist so a jump can
+   never dead-lock; the transition degrades to a cut.
+
+Minor: the streak array is built by `push` rather than `new Array(count)` (holey
+arrays are the slower element kind); the alpha early-out moved above the trig in
+`paintStreaks` (pure math, identical output); `onClear` is nulled after resolving.
+
+**Verified:** `tsc --noEmit` clean; **68 unit tests green across 4 files** — the
+40 from Phase 5 and earlier, plus 28 new in `tests/unit/warp.test.ts`, which runs
+with no DOM at all and stubs `requestAnimationFrame` by hand at 16 ms.
 
 ## Phase 7 — Router
 
