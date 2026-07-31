@@ -106,11 +106,83 @@ Umami `<script>` tags. The one 404 in the trace is the browser's automatic
 
 ## Phase 5 — Engine
 
-- [ ] `hub.ts` from `space-engine.js`; `import * as THREE from 'three'`, pinned 0.160.x.
-- [ ] Type `Planet` and `HubApi`; type every export.
-- [ ] Delete `initPlanetBand` and the `href` field on `PLANETS` (multi-page leftovers).
-- [ ] Preserve exactly: `DAMP 0.08`, `AZ_LIMIT ±0.5`, hover scale `1.055`, 30 Hz raycast throttle, the 24 %-of-viewport park solve, bake sizes 640²/384² and 256²/160², DPR clamps, zero-allocation render loop.
-- [ ] Verify: hub renders, planets rotate, hover lights up, drag/scroll/arrows pan, azimuth persists across reload.
+- [x] `hub.ts` from `space-engine.js`; `import * as THREE from 'three'`, pinned 0.160.x.
+      *Landed as `src/hub.ts` (the module Phase 7 imports) over `src/engine/*`:
+      `shaders.ts`, `planets.ts`, `capabilities.ts`, `bake.ts`, `planet-mesh.ts`,
+      `ship.ts`, `sky.ts`. One file would have been ~1000 lines against an
+      800-line cap; `hub.ts` re-exports the whole public surface, so the split is
+      invisible to callers. The directory is `engine/`, not `hub/`, so there is
+      never an ambiguous `hub.ts` vs `hub/index.ts`.*
+      *`export { THREE }` **dropped** (PORT_PLAN step 5.2): `warp.ts` is a 2D
+      canvas and needs none of it, and re-exporting would defeat tree-shaking.*
+- [x] Type `Planet` and `HubApi`; type every export.
+      *Plus `HubOptions`, `Composition`, `LabelPlacement`, `ScreenPoint`,
+      `PlanetView`, `ShipView`, `Quality`, `PlanetFeature`, `SurfaceMode`.
+      `Planet.id` **is** `PanelId` from `content.ts`, so the engine table and the
+      router cannot drift apart, and `PLANETS` is a fixed 4-tuple so `byId()`'s
+      fallback needs no undefined check. `window.__dgHub` / `__dg3dReady` are
+      declared here since `HubApi` is; Phase 7 only assigns them.*
+- [x] Delete `initPlanetBand` and the `href` field on `PLANETS` (multi-page leftovers).
+      *Both gone; the `href` deletion is pinned by a unit test so it cannot creep back.*
+- [x] Preserve exactly: `DAMP 0.08`, `AZ_LIMIT ±0.5`, hover scale `1.055`, 30 Hz raycast throttle, the 24 %-of-viewport park solve, bake sizes 640²/384² and 256²/160², DPR clamps, zero-allocation render loop.
+      *All verified live, not just read: bakes measured at 640/256/512/192 (high)
+      and 384/160/320/192 (low); stars 3200/1800; DPR 3 → 2 desktop, 3 → 1.5 at
+      390×844; portrait FOV 62. The park solve lands on **0.2400** of viewport
+      height against the prototype's 0.2399 — the same eased quantity, sampled a
+      frame apart. Measure it after ~4 s: at 0.09/frame it is still visibly
+      converging at 2.6 s (0.2529) and that is not drift.*
+      *One deliberate structural change: `createPlanet()` returns resolved
+      handles (`PlanetView`) instead of a bare `Group`. The prototype re-found
+      the same children with `getObjectByName()` four times per planet per frame;
+      the objects never change. Same scene, same output, four fewer traversals
+      per frame — and it is what lets the loop index one array under
+      `noUncheckedIndexedAccess` without a null-check on children that exist.*
+- [x] Verify: hub renders, planets rotate, hover lights up, drag/scroll/arrows pan, azimuth persists across reload.
+      *Driven in real Chromium (SwiftShader) against a temporary `engine-check.html`
+      harness — deleted afterwards; `main.ts` still does not import the hub, which
+      is Phase 7's wiring. Spin per planet matches `spin × dt` to 4 dp; hover eases
+      scale → 1.055, aura → 0.5, rim 0.78 → 1.365, emissive → 0.07 and unwinds on
+      exit; wheel, drag and arrows all pan and clamp at ±0.5; `pick()` hits all
+      four bodies; `pause()` stops the loop dead and resumes; `dispose()` drops
+      textures 11 → 1 and geometries 24 → 1 without throwing. Reduced motion is
+      exact: spin ×0.08 (0.0452 → 0.0036 rad/s), zero camera bob, zero ship bob.*
+      *Then **diffed against the prototype's own live hub** (`design/index.dc.html`
+      exposes `__dgHub` too), same probe both sides: draw calls, drawable
+      inventory, park fraction, azimuth, FOV, camera height and camera distance
+      all identical. This is the check to repeat if the scene ever looks off.*
+      *`azimuth persists across reload` **cannot be met by Phase 5** — it is
+      `saveAzimuth`/`loadAzimuth` in `warp.js` (Phase 6), called by the router
+      (Phase 7). Nothing in the engine reads or writes session storage. Carried
+      to Phase 7's checklist rather than ticked here.*
+
+**Two hardening changes, both deliberate:** `localStorage` is read inside
+`try/catch`, not behind the prototype's `typeof localStorage !== 'undefined'` —
+a sandboxed iframe *throws on property access*, which that guard does not cover,
+and an exception there would take the scene down before it booted. And
+`dispose()` bumps the flight token, so a launch or dock still driving its own
+`requestAnimationFrame` chain stops instead of animating a disposed scene.
+
+**Inherited, not drift — for Phase 11, not for Phase 5:**
+
+1. **29 draw calls, against a ≤ 25 hard rule.** The prototype is also 29, from an
+   identical scene graph. 26 drawables, plus 3: three.js draws a `transparent` +
+   `DoubleSide` material in two passes, and there are three such objects — the
+   XR planet's outer and inner rings, and the ship's exhaust trail. Per subsystem:
+   ship 9, XR 7, backend 4, projects 4, about 3, stars 1, nebula 1. `forceSinglePass`
+   on those three materials would give 26, still one over; the ship is a
+   placeholder awaiting the glTF (Phase 9), which is where the rest would come
+   from. **ASK** the owner before changing anything — both options alter how the
+   rings read.
+2. **`detectQuality()` puts every non-Chromium desktop on `low`.** `deviceMemory`
+   is Chromium-only and the prototype's `|| 4` fallback then trips the `≤ 4`
+   test. Faithfully ported and pinned by a unit test so it stays a decision.
+
+**Verified:** `tsc --noEmit` clean; 40 unit tests green (17 existing + 23 new in
+`tests/unit/engine.test.ts` — `byId()` and the `detectQuality()` tiers, which
+Phase 10 lists but which are Phase 5's code); `vite build` unchanged at 2.69 kB
+because nothing imports the hub yet. Built against a temporary second entry to
+size the engine for real: **506.74 kB raw / 131.38 kB gzip** tree-shaken, so the
+< 900 KB transfer budget has comfortable headroom.
 
 ## Phase 6 — Warp
 
@@ -132,6 +204,9 @@ Umami `<script>` tags. The one 404 in the trace is the browser's automatic
 - [ ] `park()` / `unpark()` / `returnShip()` wired; scroll-driven parallax at `config.parallax`.
 - [ ] Deep link `/#xr` → panel open, camera parked, no warp.
 - [ ] Escape and every `[data-exit]` return to the hub.
+- [ ] Azimuth persists across reload — `saveAzimuth`/`loadAzimuth` (Phase 6) wired
+      from the router. Carried down from Phase 5's checklist: the engine holds no
+      session storage of its own, so this cannot be verified before Phase 6 + 7.
 
 ## Phase 8 — Fallbacks
 
@@ -150,14 +225,26 @@ Umami `<script>` tags. The one 404 in the trace is the browser's automatic
 
 ## Phase 10 — Tests
 
-- [ ] Vitest: `hashId()`, `byId()`, `detectQuality()` tiers, `finish()` token/idempotency.
+- [ ] Vitest: `hashId()`, ~~`byId()`~~, ~~`detectQuality()` tiers~~, `finish()` token/idempotency.
+      *`byId()` and the `detectQuality()` tiers landed with Phase 5 in
+      `tests/unit/engine.test.ts` — they are Phase 5's code, and they also pin the
+      `href` deletion and the non-Chromium `low` tier. `hashId()` and `finish()`
+      arrive with the router.*
 - [ ] Playwright: the suite in `ACCEPTANCE.md`.
 - [ ] Build-artifact test: no `{{` in `dist/` once real copy lands (skip while tokens are intentional).
 
 ## Phase 11 — Budget & ship
 
 - [ ] `vite build`; total transfer < 900 KB. `three` minified and tree-shaken.
-- [ ] `renderer.info.render.calls` ≤ 25 in the hub.
+      *Measured in Phase 5 against a temporary entry: 506.74 kB raw / 131.38 kB
+      gzip for engine + `three`. Headroom is fine; re-measure once the router
+      lands and the hub is actually on the main entry.*
+- [ ] `renderer.info.render.calls` ≤ 25 in the hub. **ASK** — it is **29** today,
+      and 29 in the prototype too, so this budget has never been met. See the
+      Phase 5 accounting: three transparent double-sided materials (XR's two
+      rings, the ship's trail) each cost two passes. `forceSinglePass` on those
+      gets it to 26; the last one has to come from the ship, which the glTF
+      replaces anyway. Both options change how the rings read — owner's call.
 - [ ] DPR clamps verified on a real phone.
 - [ ] Lighthouse a11y pass; axe clean on hub + all four panels + the text edition.
 - [ ] Deploy `dist/` (host per Phase 0 ASK).
