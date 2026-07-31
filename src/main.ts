@@ -4,14 +4,16 @@
 // already exists by the time it runs — no DOMContentLoaded wrapper needed for
 // the mount-time work below.
 //
-// PORT_PLAN.md step 6 adds the router here: boot() on DOMContentLoaded, dispose
-// on pagehide. Two seams are waiting for it —
-//   - applyTitle(current) from commit()
-//   - trackView(current)  from commit(), and trackView(null) from boot() for
-//     the hub. Neither goes in a click handler.
+// The router owns everything after this: it mounts on DOMContentLoaded, loads
+// the engine dynamically (so a no-WebGL device never downloads three), and
+// disposes on pagehide. It is also where `applyTitle(current)` and
+// `trackView(current)` are called from — both from `commit()`, never from a
+// click handler.
 
 import { initAnalytics } from './analytics';
 import { applyHead } from './head';
+import { startRouter } from './router';
 
 applyHead();
 initAnalytics();
+startRouter();

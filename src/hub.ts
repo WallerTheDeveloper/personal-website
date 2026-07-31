@@ -91,10 +91,18 @@ export interface HubOptions {
   onFps?: ((fps: number) => void) | null;
 }
 
+/**
+ * A planet's handles plus the screen-space slot it is projected into each
+ * frame. The slot is reused in place — read it, never hold it.
+ */
+export interface HubPlanet extends PlanetView {
+  readonly label: LabelPlacement;
+}
+
 export interface HubApi {
   readonly quality: Quality;
   readonly reduce: boolean;
-  readonly planets: readonly PlanetView[];
+  readonly planets: readonly HubPlanet[];
   readonly camera: THREE.PerspectiveCamera;
   readonly renderer: THREE.WebGLRenderer;
   readonly scene: THREE.Scene;
@@ -143,11 +151,6 @@ declare global {
     /** True once the scene has booted. Cleared if the context is lost. */
     __dg3dReady?: boolean;
   }
-}
-
-/** Per-planet handles plus its reused screen-space slot. */
-interface HubPlanet extends PlanetView {
-  readonly label: LabelPlacement;
 }
 
 interface HubState {

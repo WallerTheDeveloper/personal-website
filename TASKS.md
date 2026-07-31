@@ -234,21 +234,90 @@ with no DOM at all and stubs `requestAnimationFrame` by hand at 16 ms.
 
 ## Phase 7 — Router
 
-- [ ] `router.ts` from the prototype's logic class. `boot()` on `DOMContentLoaded`, dispose on `pagehide`, props → a `config` object (`composition`, `warpColor`, `parallax 0.10`, `showHud`).
-- [ ] One delegated `click` handler for every `href="#…"`.
-- [ ] `go(id)` pushes history **and** drives `jump()` directly.
-- [ ] `exit()` = `go(null)`. Never `history.back()`.
-- [ ] `jump()` stages: 380 ms ship head start → `cover()` → `commit()` at ~92 % opacity → `clear()`.
-- [ ] `finish()` idempotent + jump token + watchdog at `COVER + CLEAR + 700`.
-- [ ] Input gated on `current` only.
-- [ ] Both canvas nav paths into one deduped `nav()`.
-- [ ] `_pending` queues overlapping jumps.
-- [ ] `park()` / `unpark()` / `returnShip()` wired; scroll-driven parallax at `config.parallax`.
-- [ ] Deep link `/#xr` → panel open, camera parked, no warp.
-- [ ] Escape and every `[data-exit]` return to the hub.
-- [ ] Azimuth persists across reload — `saveAzimuth`/`loadAzimuth` (Phase 6) wired
+- [x] `router.ts` from the prototype's logic class. `boot()` on `DOMContentLoaded`, dispose on `pagehide`, props → a `config` object (`composition`, `warpColor`, `parallax 0.10`, `showHud`).
+      *`componentDidMount` split into `mount()` (DOM refs, delegated click,
+      `popstate`/`hashchange` — everything that does not need the engine) and
+      `boot(engine)`. Routing binds **before** the engine loads, so a hash change
+      during the download is not lost. `main.ts` now calls `startRouter()`, which
+      mounts on `DOMContentLoaded` and tears down on `pagehide` — `pagehide`
+      rather than `unload`, which mobile Safari ignores and which blocks the
+      back/forward cache everywhere else.*
+      *The engine is a **dynamic** `import('./hub')`, as in the prototype. A
+      device with no WebGL never downloads `three`: the entry is 20.90 kB and the
+      hub chunk 506.23 kB / 131.18 kB gzip beside it.*
+- [x] One delegated `click` handler for every `href="#…"`.
+      *On `document`, so panel links, the text edition and the hub labels are one
+      listener. Modified clicks (meta/ctrl/shift/non-primary) are left alone.*
+- [x] `go(id)` pushes history **and** drives `jump()` directly.
+- [x] `exit()` = `go(null)`. Never `history.back()`.
+- [x] `jump()` stages: 380 ms ship head start → `cover()` → `commit()` at ~92 % opacity → `clear()`.
+      *Head start is **520 ms**, not 380, and the ship's flight is 1700 ms, not
+      1150 — those are the prototype's numbers (`setTimeout(run, 520)`,
+      `launch(target, 1700)`); 1150 is the **dock** duration, which README and
+      ACCEPTANCE appear to have conflated. Prototype wins per CLAUDE.md. Worth
+      the owner's eye when the motion baselines get measured (Phase 0).*
+      *`COVER` is imported as `MIN_COVER` rather than restated. `CLEAR` is 950,
+      passed to `clear()` explicitly so the watchdog cannot disagree with it.*
+- [x] `finish()` idempotent + jump token + watchdog at `COVER + CLEAR + 700`.
+- [x] Input gated on `current` only.
+- [x] Both canvas nav paths into one deduped `nav()`.
+- [x] `_pending` queues overlapping jumps.
+- [x] `park()` / `unpark()` / `returnShip()` wired; ~~scroll-driven parallax at `config.parallax`~~.
+      *Park, unpark and the reduced-motion `returnShip()` are wired. **The
+      parallax is not, and that is the prototype's own decision, not drift.**
+      README "Parked scene" describes a sine wander plus a `scrollTop` offset at
+      `config.parallax`, and the prototype still carries the prop — but it
+      removed both behaviours and said so in its comments ("no drift, no scroll
+      parallax", "panel scroll no longer drives the camera"). Its `scroll`
+      listener only assigns `scrollK = 0`. Ported as: `config.parallax` kept as
+      the knob, the panel `scroll` listener **not** registered (an empty one
+      lies about what happens), and the reasoning recorded in `startDrift()`.
+      **ASK** the owner whether the README or the prototype is what ships.*
+- [x] Deep link `/#xr` → panel open, camera parked, no warp.
+- [x] Escape and every `[data-exit]` return to the hub.
+- [x] Azimuth persists across reload — `saveAzimuth`/`loadAzimuth` (Phase 6) wired
       from the router. Carried down from Phase 5's checklist: the engine holds no
       session storage of its own, so this cannot be verified before Phase 6 + 7.
+      *Restored instantly on boot, before the deep-link branch. Saved from
+      `destroy()` **and** on `visibilitychange → hidden`, because a backgrounded
+      mobile tab may be killed without ever firing `pagehide`. What is banked is
+      the **hub** angle, not the parked one — a panel is holding its planet's
+      `theta`, which is not where the visitor left the camera.*
+
+**Two deliberate departures from the prototype's structure:**
+
+1. **`labels.ts`.** `placeLabels` and the presentation half of `setHover` are
+   not routing, so they moved to a `LabelLayer`. The router keeps `hovered`,
+   because the hub has to be told about it too and that value needs one owner.
+   The prototype's `HOVER_TINT` table of four hexes went with it — those are
+   exactly `--accent-hover`, which every anchor already resolves through its own
+   `data-planet`, so the layer writes the custom property instead. Same rendered
+   colour, one fewer place for the accents to drift, and no magic hexes in JS.
+2. **Hover comes back through the engine.** The prototype kept its own 33 ms
+   raycast throttle in `pointermove`; the hub already has one (`rayThrottled`),
+   so the router calls that and takes the result via the `onHover` callback.
+   One throttle, one place `hovered` is written, and the DOM tint can no longer
+   disagree with the scene's own hover state.
+
+Minor: the projected screen slot is now on the public engine type
+(`HubPlanet`, `HubApi.planets`) rather than engine-private. It was already
+handed out every frame through `onLabels`; naming it lets the e2e helpers read
+planet positions against real types instead of a hand-written shape.
+
+**ASK — the quality button does not toggle anything.** README says it "both
+reports fps and toggles the quality tier"; the prototype only ever wrote its
+label, and this port does the same. A live toggle is not possible under the
+one-renderer-per-document rule — the tier is chosen at `initHub()` and changing
+it means re-initialising, which is forbidden. `setQuality()` already persists to
+`localStorage` and `detectQuality()` honours it, so the only honest wiring is
+*click → store the other tier → reload the page*. Owner's call: leave it as a
+readout (and drop the `<button>` for a `<span>`, since a button that does
+nothing is a genuine a11y defect), or accept the reload.
+
+**Verified:** `tsc --noEmit` clean; 68 unit tests still green; **31 Playwright
+tests green across three consecutive full runs** at 2 and 4 workers. Build:
+entry 20.90 kB, hub chunk 506.23 kB (131.18 kB gzip), CSS 15.82 kB, HTML
+21.60 kB — comfortably inside the 900 KB transfer budget.
 
 ## Phase 8 — Fallbacks
 
@@ -273,14 +342,31 @@ with no DOM at all and stubs `requestAnimationFrame` by hand at 16 ms.
       `href` deletion and the non-Chromium `low` tier. `hashId()` and `finish()`
       arrive with the router.*
 - [ ] Playwright: the suite in `ACCEPTANCE.md`.
+      *Group **C is complete** and part of B, landed with Phase 7:
+      `routing`, `exit`, `dead-input`, `resilience`, `queueing`, `session` —
+      31 tests. Still to write: `keyboard`, `fallback`, `reduced-motion`,
+      `visual`, `print`, `budget`.*
+      *Harness notes, so they are not rediscovered: `playwright.config.ts` now
+      resolves the newest **installed** Chromium rather than the exact build
+      `@playwright/test` pins (this machine has 1217, not the pinned one), and
+      launches with the SwiftShader flags — headless has no GPU, so without them
+      every test falls through to the text edition. Software WebGL runs at
+      roughly 22 fps, which is why `tests/e2e/helpers.ts` waits on **state**
+      (`waitForPanel`) and samples eased values across **real animation frames**
+      (`settledAzimuth`) instead of on wall-clock timers. Fixed waits flake here,
+      and they flake in a way that reads as a router bug.*
+      *`vite.config.ts` gained a `test.include` for `tests/unit` — the e2e specs
+      match Vitest's default glob, so `npm test` was collecting Playwright files
+      and reporting failing suites that had never run.*
 - [ ] Build-artifact test: no `{{` in `dist/` once real copy lands (skip while tokens are intentional).
 
 ## Phase 11 — Budget & ship
 
 - [ ] `vite build`; total transfer < 900 KB. `three` minified and tree-shaken.
-      *Measured in Phase 5 against a temporary entry: 506.74 kB raw / 131.38 kB
-      gzip for engine + `three`. Headroom is fine; re-measure once the router
-      lands and the hub is actually on the main entry.*
+      *Re-measured with the router landed: HTML 21.60 kB + CSS 15.82 kB + entry
+      20.90 kB + hub chunk 506.23 kB = **564.55 kB raw**, 146.67 kB gzip. The
+      hub is a separate chunk because the router imports it dynamically, so a
+      no-WebGL device pays 58 kB, not 565. Re-check after Phase 9's assets.*
 - [ ] `renderer.info.render.calls` ≤ 25 in the hub. **ASK** — it is **29** today,
       and 29 in the prototype too, so this budget has never been met. See the
       Phase 5 accounting: three transparent double-sided materials (XR's two
