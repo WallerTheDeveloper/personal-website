@@ -509,17 +509,29 @@ untouched by either change.
 
 ## Phase 10 — Tests
 
-- [ ] Vitest: `hashId()`, ~~`byId()`~~, ~~`detectQuality()` tiers~~, `finish()` token/idempotency.
+- [x] Vitest: `hashId()`, ~~`byId()`~~, ~~`detectQuality()` tiers~~, `finish()` token/idempotency.
       *`byId()` and the `detectQuality()` tiers landed with Phase 5 in
       `tests/unit/engine.test.ts` — they are Phase 5's code, and they also pin the
-      `href` deletion and the non-Chromium `low` tier. `hashId()` and `finish()`
-      arrive with the router.*
-- [ ] Playwright: the suite in `ACCEPTANCE.md`.
+      `href` deletion and the non-Chromium `low` tier.*
+      *The two remaining ones needed a seam, which PORT_PLAN step 11 anticipated
+      ("pure, extract it if needed"). Two small extractions; no behaviour moved:*
+      1. *`parseHash()` is now an exported pure function in `router.ts`, and
+         `hashId()` is that plus "and this document actually carries that panel".
+         9 tests in `tests/unit/router.test.ts`, mostly about what has to land on
+         the hub rather than open something: `#`, `#/xr`, `#XR`, `#xrq`,
+         `#panel-xr`, `#xr?utm_source=…`. There is no error route on a
+         single-document site.*
+      2. *`src/jump-guard.ts` states the two rules `finish()` is built on — the
+         commit runs exactly once per jump, and a superseded jump can no longer
+         settle — with `jump()` composing them from a `commit` and a `settle`
+         step. 9 tests, each a state this transition genuinely reaches and which
+         needs a stalled promise and precise timing to set up in a browser.*
+- [x] Playwright: the suite in `ACCEPTANCE.md`.
       *Group **C is complete** and part of B, landed with Phase 7:
       `routing`, `exit`, `dead-input`, `resilience`, `queueing`, `session` —
       31 tests. Phase 8 added `fallback`, `reduced-motion` and `print` — 14 more,
-      covering the rest of E and all of F. Still to write: `keyboard`, `visual`,
-      `budget`.*
+      covering the rest of E and all of F. Phase 10 adds `keyboard` (3),
+      `visual` (16) and `budget` (4), plus one more in `resilience`: **74 tests**.*
       *Harness notes, so they are not rediscovered: `playwright.config.ts` now
       resolves the newest **installed** Chromium rather than the exact build
       `@playwright/test` pins (this machine has 1217, not the pinned one), and
@@ -532,7 +544,130 @@ untouched by either change.
       *`vite.config.ts` gained a `test.include` for `tests/unit` — the e2e specs
       match Vitest's default glob, so `npm test` was collecting Playwright files
       and reporting failing suites that had never run.*
-- [ ] Build-artifact test: no `{{` in `dist/` once real copy lands (skip while tokens are intentional).
+- [x] Build-artifact test: no `{{` in `dist/` once real copy lands (skip while tokens are intentional).
+      *`tests/unit/build-artifact.test.ts` **builds the site itself**, into a
+      temp directory, in `beforeAll` — about 2 s — rather than reading whatever
+      happens to be in `dist/`. A test that measures a stale build, or skips
+      because nobody ran one, cannot fail, and this is the file standing between
+      the transfer budget and a dependency added on a Friday. 13 assertions live
+      plus the skipped one: the cold load's exact file list, the 900 KB gzip
+      budget, a no-WebGL load coming in under the hub chunk alone, ACCEPTANCE G's
+      "must not ship" strings read off the emitted bytes (`<x-dc>`, `<helmet>`,
+      `support.js`, `style-hover`, `{<!---->{`, `example.com`, any three CDN
+      URL), and no composer or pass anywhere in the JS.*
+      *The `{{` test is skipped **with its reason in the test body**: every value
+      in `content.ts` is still its own literal token, so it would fail for the
+      wrong reason today. Its complement runs — the built HTML carries the tokens,
+      which is what proves the copy is in the bytes a crawler reads rather than
+      applied by a script.*
+
+**The three new specs, and why two of them boot no hub.**
+
+- **`keyboard.spec.ts`** — ACCEPTANCE E's keyboard path, which matters more than
+  its size suggests: both canvases are `aria-hidden`, so those four anchors are
+  the *entire* navigation surface for a keyboard or a screen reader. Tab order
+  over the four labels then the two hub controls; the `outline-offset: 6px` ring
+  (the ring itself is the browser's own `:focus-visible`, deliberately not
+  restyled); focus taking the same treatment as hover — name warms to
+  `--accent-hover`, leader 26 → 40 px; the camera swinging to a focused planet;
+  Enter launching. Three boots, not six — every claim about the resting hub
+  shares one.
+- **`visual.spec.ts`** — ACCEPTANCE A at 1440/1024/768/390. **Not screenshot
+  comparison, and that is a decision rather than a shortcut.** Golden images want
+  a still frame; this page has a camera that sways forever, grain animating in
+  four steps a second, and type from a CDN, so a baseline would encode this
+  machine's rasteriser and this run's network. Phase 3 already did the pixel diff
+  against the served prototype at these four widths, plus a computed-style parity
+  walk over 314 nodes × 3 states — these 16 tests re-assert *that measurement's
+  numbers*, and they name the value that moved when they fail. The strongest are
+  the two sweeps over every rendered element: three font families and no more,
+  Bodoni always weight 400, `border-radius: 0` everywhere but the 2 px quality
+  button and the circular reticle, and **no shadow anywhere** — both editions.
+- **`budget.spec.ts`** — ACCEPTANCE D's runtime half: draw calls, the DPR clamps,
+  "baked once", and what the loop does while nobody is looking. The transfer half
+  is the build-artifact test above; bytes measured off the dev server, which
+  ships unbundled modules, would mean nothing.
+
+`visual.spec.ts` boots no hub at all. It replaces `main.ts` with an empty module,
+which leaves the head probe's `data-dg-3d` on `<html>` — so the panels are laid
+out as the fixed overlays they are at runtime — and reveals one by writing the
+same `visibility`/`opacity` pair `commit()` writes. Their presentation is CSS;
+the router's only contribution to it is that pair, and `routing.spec.ts` and
+`print.spec.ts` already prove the router writes it. All 16 run in **9 s** with no
+GPU, against roughly 4 s for a single hub boot.
+
+**Measured while writing `budget.spec.ts`:** 29 draw calls, DPR 3 → 2 on desktop
+and → 1.5 at 390×844, 11 textures and 24 geometries, none of which move across an
+8 s idle. Identical to Phase 5's live measurements, which is the point of pinning
+them. `deviceScaleFactor: 3` is set deliberately — at the default of 1 the clamps
+never bind and the assertion would pass on a renderer that had dropped them.
+
+**Two findings for the owner, neither of them drift:**
+
+1. **The renderer does not pause under an opaque warp cover.** CLAUDE.md
+   "Performance" and ACCEPTANCE D both say it should; the router only ever calls
+   `hub.pause()` from `visibilitychange`. **The prototype is the same** — its one
+   `pause()` call is `this.onVis = () => this.hub.pause(document.hidden)` — so
+   this was never built rather than lost in the port. It is also not free to add:
+   the park solve eases over frames, so a renderer stopped under the cover would
+   lift it onto a camera that had not moved yet. `budget.spec.ts` pins what is
+   true — pauses on `visibilitychange`, keeps rendering while parked behind a
+   panel — and the rest is an **ASK**.
+2. **The `finish()` token check cannot be caught from a browser.** An e2e test
+   was written for it and it passed with the check deleted. The reason is worth
+   keeping: a jump has three independent ways to land (`onOpaque`, the `clear()`
+   promise, its watchdog), so a stale `finish()` running against the live jump
+   does the cleanup that jump was about to do anyway, and the end state
+   converges. The damage is real but internal — an early `going = false` and an
+   early `drainPending()`, which is how two jumps come to interleave. The
+   contract is therefore pinned in `tests/unit/jump-guard.test.ts`, which *does*
+   fail on that deletion, and the e2e test was rewritten to claim only what it
+   proves: the stalled-then-superseded sequence does not wedge the router. A test
+   that cannot fail is worse than no test; it was rewritten rather than kept for
+   the count.
+
+**One deliberate ordering change in `jump()`,** from moving the teardown into the
+guard's `settle` step: `clearTimeout(this.watchdog)` now runs *after* the commit
+rather than before. On every reachable path the two are identical. Where they
+differ the new order is strictly better — a commit that threw used to leave
+`going` set with the watchdog already cancelled, which is a permanent wedge;
+now the watchdog survives to release it.
+
+**One knock-on in the unit suite, worth knowing about.** `npm test` now runs a
+`vite build`, and Vitest runs files in parallel workers — so that build competes
+with whatever else is running. It surfaced a latent cost in `warp.test.ts`'s
+"draws streaks without ever asking for a texture": 1200 ms of frames is ~75
+frames of ~460 streaks, and the test ran an `expect()` per recorded context call,
+so tens of thousands of assertions took 7.7 s against Vitest's 5 s default
+timeout on a loaded machine. It now reduces to the distinct call names and
+asserts once — the same claim, and the failure names the disallowed call instead
+of the first one it reached. The whole unit suite got faster.
+
+**And the harness trap repeated itself, exactly as Phase 9 predicted it would.**
+Adding 24 tests to the pool broke `session.spec.ts`'s "the hub camera angle
+survives a reload" — green at four workers, red at two, and reading like a
+router bug ("restored -0.139, expected -0.298"). It was not one. The test read
+`__dgHub.azimuth` over a round trip after the reload, and the **first-load
+hint** — the ~10° swing at 900 ms that only an already-interacting visitor
+cancels — had time to start, so the reading was a number easing toward
+`HINT_AZIMUTH`. It now captures the angle *inside the page*, on the first frame
+after boot, roughly 900 ms ahead of the hint. Same family as Phase 9's
+three-click fix, and worth restating: **anything that reads a live scene value
+after a round trip is racing the engine.** Nothing in the router changed.
+
+**Verified:** `tsc --noEmit` clean; **120 unit tests green** (89 + 9 `router`,
+9 `jump-guard`, 13 `build-artifact`) plus the one deliberately skipped `{{` test,
+and the whole suite still runs in under 2 s *including* the production build;
+**74 Playwright tests green** across three consecutive full runs — two at 4
+workers, one at 2 — in 4.8 minutes at 4 and 5.8 at 2. The slowest are still the
+ones that walk the whole site: `dead-input`'s tour, and `session`'s pair, the
+worse of which measured 44.7 s against the 60 s timeout before the fix above and
+27 s after it. Build: HTML 23.92 + CSS 16.14 + entry 21.44 + hub 506.16 =
+**567.66 kB raw**, the 0.24 kB being the guard and its comments. The artifact
+test measures the cold load at **144.4 kB gzip** against the 900 KB budget, of
+which the hub chunk is 131.2 — Vite's own banner says 147.8 for the same files,
+because it gzips at a different level. Either number has the same headroom;
+`du dist/` says 1351.5 kB and is, as ever, not the budget.
 
 ## Phase 11 — Budget & ship
 
@@ -546,13 +681,28 @@ untouched by either change.
       `dist/` (`og.png` 705, `cv.pdf` 108) but **none** of it to a cold load —
       the page references neither. Measure the budget from what the document
       actually fetches, not from `du dist/`.*
+      *Both of those are now assertions rather than notes —
+      `tests/unit/build-artifact.test.ts` builds and measures on every `npm test`,
+      including the one that fails if `dist/`'s weight on disk is ever mistaken
+      for the budget.*
 - [ ] `renderer.info.render.calls` ≤ 25 in the hub. **ASK** — it is **29** today,
       and 29 in the prototype too, so this budget has never been met. See the
       Phase 5 accounting: three transparent double-sided materials (XR's two
       rings, the ship's trail) each cost two passes. `forceSinglePass` on those
       gets it to 26; the last one has to come from the ship, which the glTF
       replaces anyway. Both options change how the rings read — owner's call.
+      *`budget.spec.ts` pins the 29 in the meantime, so the scene cannot grow a
+      draw call unnoticed, and tells you to tighten the ceiling if the count ever
+      comes inside the rule.*
+- [ ] **ASK** — should the renderer pause under an opaque warp cover? CLAUDE.md
+      and ACCEPTANCE D say it does; neither this port nor the prototype has ever
+      done it. Adding it means the park solve, which eases over frames, has to be
+      made instant or the cover lifts onto a camera that has not moved. See the
+      Phase 10 findings.
 - [ ] DPR clamps verified on a real phone.
+      *Clamped correctly in Chromium at `deviceScaleFactor: 3` — 2 desktop,
+      1.5 at 390×844, pinned in `budget.spec.ts`. A real handset is still the
+      check that counts.*
 - [ ] Lighthouse a11y pass; axe clean on hub + all four panels + the text edition.
 - [ ] Deploy `dist/` (host per Phase 0 ASK).
 

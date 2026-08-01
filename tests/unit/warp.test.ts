@@ -327,9 +327,13 @@ describe('cover', () => {
     advance(1200);
 
     expect(calls.length).toBeGreaterThan(100);
-    for (const call of calls) {
-      expect(ALLOWED_CONTEXT_CALLS).toContain(call.name);
-    }
+    // Reduced to the distinct names first, and asserted once. 1200 ms is 75
+    // frames of ~460 streaks, so an `expect()` per call is tens of thousands of
+    // assertions — 7.7 s of them on a loaded machine, against Vitest's 5 s
+    // default. Same claim, one assertion, and the failure now names the call
+    // that was not allowed instead of the first one it reached.
+    const asked = [...new Set(calls.map((call) => call.name))].sort();
+    expect(asked.filter((name) => !ALLOWED_CONTEXT_CALLS.has(name))).toEqual([]);
   });
 });
 
