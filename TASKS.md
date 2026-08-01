@@ -321,11 +321,106 @@ entry 20.90 kB, hub chunk 506.23 kB (131.18 kB gzip), CSS 15.82 kB, HTML
 
 ## Phase 8 — Fallbacks
 
-- [ ] Reduced motion: no drift/bob/parallax, ambient ~0, grain off, 200 ms cross-fade instead of the flight.
-- [ ] `webglcontextlost` restores the text edition.
-- [ ] `flatten()` produces one continuous scrolling document with heroes removed.
-- [ ] Print: whole CV prints as one document, no scene, no bars, no heroes.
-- [ ] JS disabled: the text edition is complete and navigable.
+**The organising change: the flat text edition is now a state the *document*
+ships in, not one the router assembles.** `index.html` carries
+`data-dg-flat="1"` on `<html>` and the head probe removes it — before first
+paint — only when it has just confirmed WebGL. Everything else follows from
+that: with JS off, with no WebGL, with the engine chunk unreachable, or after a
+lost context, the page is laid out correctly by CSS alone, and `flatten()` is
+left with the small job of undoing what the *3D* path wrote. It is the same rule
+the probe already followed, applied one level further out: the text edition is
+the default state and the scene is the thing that has to prove itself.
+
+- [x] Reduced motion: no drift/bob/parallax, ambient ~0, grain off, 200 ms cross-fade instead of the flight.
+      *Drift/bob/parallax and the ~0 ambient rotation were already exact in the
+      engine (Phase 5, measured: spin ×0.08 → 0.0036 rad/s, zero camera bob,
+      zero ship bob) and there is no parallax to suppress (Phase 7). Grain is
+      the CSS rule carried over verbatim. **The cross-fade is new, and it is the
+      one place the spec beats the prototype:** the prototype's reduce path is a
+      bare `commit()` — no flight, no warp, and no fade either — but README
+      "Reduced motion", CLAUDE.md's accessibility rules and ACCEPTANCE E all ask
+      for 200 ms, and accessibility here is a functional requirement, not
+      polish. It is not drift and it is not a prototype behaviour that was
+      "removed on purpose" like the parallax was; the prototype simply never
+      wrote it.*
+      *It lands as CSS, inside the `prefers-reduced-motion` block:
+      `.panel { transition: opacity 200ms ease, visibility 200ms ease }`, driven
+      by the same inline visibility/opacity `commit()` has always written. No
+      second timeline in the router that could disagree with the stylesheet, and
+      the warp path is untouched because the rule only exists under reduce.
+      `visibility` is transitioned deliberately — it is a discrete property, so
+      the outgoing panel holds `visible` for the full 200 ms and only then
+      flips, which is what makes it a cross-fade rather than a cut.*
+      *One fix on the way past: `hideReticle()` moved above the reduce branch in
+      `jump()`. It used to sit below, so the reduced-motion path left the
+      reticle floating over the open panel.*
+- [x] `webglcontextlost` restores the text edition.
+      *The engine's half shrank to what is genuinely its own: `preventDefault()`,
+      cancel the loop, pause, clear `__dg3dReady`, then raise a new
+      `onContextLost` option. It no longer touches `#fallback`, `#labels` or
+      `data-dg-3d` — the router's `flatten()` writes that DOM, and with both of
+      them writing it they were two owners of one restore. With no handler
+      supplied the engine warns rather than blanking silently.*
+      *The renderer is **not** disposed on context loss — one renderer per
+      document, disposed only from `destroy()` on `pagehide` (CLAUDE.md), and a
+      canvas that has lost its context cannot be given another anyway. Pinned by
+      a test.*
+      *`boot()`'s fade-out timer now checks `flat` before hiding `#fallback`: a
+      context lost inside that 420 ms window would otherwise have had the stale
+      timer hide the text edition that had just been handed back.*
+- [x] `flatten()` produces one continuous scrolling document with heroes removed.
+      *Rewritten around the shipped-flat default. The presentation moved
+      wholesale into `html[data-dg-flat]` in `styles.css` — including `#stage`
+      and `#smoke` hidden and `#fallback` unpinned, which used to be inline
+      writes and therefore invisible to a no-JS visitor. What is left in the
+      router is clearing the inline styles the 3D path wrote (the `#fallback`
+      fade, the panels' visibility/opacity) and standing routing down: drift
+      loop cancelled, watchdog cleared, live `Warp` disposed, `going` released.
+      It is idempotent now, because context loss can fire twice.*
+      *The re-id trick is **gone**. `flatten()` used to rename `panel-xr` → `xr`
+      so hashes would scroll, which no-JS never gets and which also fought the
+      `#panel-{id}` DOM contract in PORT_PLAN step 2. Each panel instead carries
+      a zero-height `<span id="xr" class="panel__anchor">` as its first child:
+      one static target that resolves in every edition, inert while routing
+      (`display: block; height: 0` generates no line box, so it cannot shift the
+      sticky bar below it). A unit test walks every `href="#…"` in the markup and
+      fails on any that names an id the document does not contain.*
+      *Mid-session loss scrolls the open panel into view — the visitor was
+      reading XR and should still be looking at XR.*
+- [x] Print: whole CV prints as one document, no scene, no bars, no heroes.
+      *Two additions to the block that was carried over verbatim, both real
+      defects rather than tidying. `#stage` is now hidden: the prototype hides
+      `#scene` but not its container, and the rest of the hub layer — labels,
+      header, foot, hint — is `position: fixed`, so printing from the hub
+      stamped all of it across page one of the CV. And `html[data-dg-flat] body`
+      outranks the print block's bare `body`, so printing the text edition kept
+      `overflow: auto`; it is forced back to `visible` for both editions.*
+- [x] JS disabled: the text edition is complete and navigable.
+      *This did not work before and could not have: with no JS nothing set
+      `data-dg-flat`, so every panel stayed `visibility: hidden` behind a fixed
+      `#fallback` whose four cards pointed at ids that did not exist. Now the
+      document ships flat and the anchors are static, so the whole CV is one
+      scrolling document and all nine in-page links resolve natively. Driven in
+      Playwright with `javaScriptEnabled: false`, not simulated.*
+
+**Also landed here, because the no-WebGL path went through it:** `mount()` reads
+`data-dg-3d` off `<html>` and flattens immediately when it is absent, instead of
+importing the engine and asking `hasWebGL()` afterwards. That makes Phase 7's
+claim — "a device with no WebGL never downloads `three`" — actually true; it was
+downloading all 506 kB and then discarding it. It also closes the window in
+which the router intercepted every hash link and dropped it (no hub to jump
+with) while that download was in flight. `boot()` still re-checks with the
+engine's own `hasWebGL()`, which is the stricter test.
+
+**Verified:** `tsc --noEmit` clean; **76 unit tests green** (68 + 8 new in
+`tests/unit/fallback-markup.test.ts`, which pins the no-JS contract in the
+served bytes: the shipped attribute, the probe removing it only on the success
+path, an anchor per destination, no dangling `href="#…"`, and the flat/print
+rules living in CSS). **45 Playwright tests green across two consecutive full
+runs**, at 4 and at 2 workers — the 31 from Phase 7 plus `fallback.spec.ts` (7),
+`reduced-motion.spec.ts` (4) and `print.spec.ts` (3). Build: HTML 23.04 kB, CSS
+16.14 kB, entry 21.24 kB, hub chunk 506.16 kB = **566.58 kB raw / 147.31 kB
+gzip**.
 
 ## Phase 9 — Assets
 
@@ -344,8 +439,9 @@ entry 20.90 kB, hub chunk 506.23 kB (131.18 kB gzip), CSS 15.82 kB, HTML
 - [ ] Playwright: the suite in `ACCEPTANCE.md`.
       *Group **C is complete** and part of B, landed with Phase 7:
       `routing`, `exit`, `dead-input`, `resilience`, `queueing`, `session` —
-      31 tests. Still to write: `keyboard`, `fallback`, `reduced-motion`,
-      `visual`, `print`, `budget`.*
+      31 tests. Phase 8 added `fallback`, `reduced-motion` and `print` — 14 more,
+      covering the rest of E and all of F. Still to write: `keyboard`, `visual`,
+      `budget`.*
       *Harness notes, so they are not rediscovered: `playwright.config.ts` now
       resolves the newest **installed** Chromium rather than the exact build
       `@playwright/test` pins (this machine has 1217, not the pinned one), and

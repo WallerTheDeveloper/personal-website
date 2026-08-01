@@ -1035,22 +1035,57 @@ a:hover { color: var(--hover); }
 
 /* ---------------------------------------------------------------------------
    Text edition / no-WebGL: panels become one continuous document.
-   Carried over verbatim from the prototype — behavioural, not decorative.
-   The !important is deliberate: it overrides the inline visibility/opacity the
-   router writes onto each panel.
+
+   The first four rules are carried over verbatim from the prototype —
+   behavioural, not decorative. The !important is deliberate: it overrides the
+   inline visibility/opacity the router writes onto each panel.
+
+   `data-dg-flat` ships on <html> and the head probe removes it, so this block
+   is also what the document renders as with scripting disabled. That is why the
+   last two rules exist: the prototype's `flatten()` hid #stage and unpinned
+   #fallback with inline styles, which no-JS never gets. Doing it here covers
+   every route into the flat state from one place — no JS, no WebGL, engine
+   import failed, or context lost.
    --------------------------------------------------------------------------- */
 
 html[data-dg-flat] body { overflow: auto; }
 html[data-dg-flat] [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; overflow: visible !important; }
 html[data-dg-flat] [data-hero] { display: none !important; }
 html[data-dg-flat] [data-panel-top] { position: static !important; }
+html[data-dg-flat] #stage, html[data-dg-flat] #smoke { display: none !important; }
+html[data-dg-flat] #fallback { position: static; opacity: 1; pointer-events: auto; }
+
+/* The in-page scroll target at the top of each panel. Zero-height and empty, so
+   it generates no line box and cannot shift the sticky panel bar below it. */
+.panel__anchor { display: block; height: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   [data-grain] { animation: none !important; }
+
+  /* A jump is a 200 ms cross-fade instead of the ship flight and the warp
+     (README "Reduced motion"). `commit()` writes the same inline
+     visibility/opacity it always does — under reduce there is no warp cover to
+     hide the swap, so these transitions *are* the transition.
+
+     visibility is transitioned on purpose: it is a discrete property, so the
+     outgoing panel holds `visible` for the whole 200 ms and only then flips,
+     while the incoming one turns visible immediately. Without it the outgoing
+     panel would vanish on the first frame and there would be nothing to fade. */
+  .panel { transition: opacity 200ms ease, visibility 200ms ease; }
 }
 
 @media print {
   body { overflow: visible; background: #fff; color: #111; }
   [data-grain], #scene, #smoke, #reticle, [data-panel-top], [data-hero] { display: none !important; }
   [data-panel] { position: static !important; visibility: visible !important; opacity: 1 !important; }
+  /* Printing from the text edition: `html[data-dg-flat] body` outranks the bare
+     `body` above, so without this the printed page keeps `overflow: auto` and
+     browsers have historically clipped paginated content under it. */
+  html[data-dg-flat] body { overflow: visible; }
+  /* The one addition to the prototype's block. It hides #scene but not #scene's
+     container, and the rest of the hub layer — labels, header, foot, hint — is
+     `position: fixed`, so printing from the hub stamped all of it across page
+     one of the CV. Everything inside #stage is scene chrome; none of it belongs
+     in a printed document. */
+  #stage { display: none !important; }
 }

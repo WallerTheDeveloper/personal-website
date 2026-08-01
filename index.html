@@ -1,5 +1,11 @@
 <!doctype html>
-<html lang="en">
+<!-- `data-dg-flat` ships ON. The flat text edition — every panel flowed into one
+     continuous document — is the state this file renders in with no scripting at
+     all, which is what makes the site complete and navigable with JS disabled.
+     The probe in <head> removes it the moment it knows the scene can run, before
+     first paint, so a WebGL browser never sees it. `flatten()` puts it back on
+     context loss. Never invert this: the text edition is the default. -->
+<html lang="en" data-dg-flat="1">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -27,9 +33,14 @@
 <link rel="stylesheet" href="/src/styles.css" />
 
 <!-- Inline and blocking, in <head>, on purpose. It must run before first paint
-     or the text edition flashes on every load. It sets data-dg-3d on <html> and
-     injects the rule that fades #fallback out. #fallback is the DEFAULT state;
-     this is the success path, not an error branch. -->
+     or the text edition flashes on every load. It sets data-dg-3d on <html>,
+     drops the data-dg-flat the document ships with, and injects the rule that
+     fades #fallback out. #fallback is the DEFAULT state; this is the success
+     path, not an error branch.
+
+     The early return matters as much as the success path: with scripting on but
+     no WebGL the document stays flat, so the text edition is laid out correctly
+     from the first paint instead of waiting for the module to decide. -->
 <script>
 (function(){
   var ok = false;
@@ -38,6 +49,7 @@
     ok = !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
   } catch (e) { ok = false; }
   if (!ok) return;
+  document.documentElement.removeAttribute('data-dg-flat');
   document.documentElement.setAttribute('data-dg-3d', '1');
   var s = document.createElement('style');
   s.textContent = '[data-dg-3d] #fallback{opacity:0;pointer-events:none;transition:opacity 400ms ease}';
@@ -127,6 +139,12 @@
 </section>
 
 <section id="panel-backend" data-panel="backend" data-screen-label="01 Backend" aria-label="Backend and Platform" class="panel">
+  <!-- The scroll target for `href="#backend"`. The section itself keeps its
+       `panel-` id (the DOM contract in PORT_PLAN step 2, and it is what stops
+       the hash matching a panel by accident while routing is live), so this
+       empty zero-height block is what makes every in-page link resolve when
+       nothing is routing them — JS disabled, or after a lost context. -->
+  <span id="backend" class="panel__anchor"></span>
   <div data-panel-top="" class="panel__top">
     <a href="#" data-exit="" class="panel__back">← Back to system</a>
     <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">01 · Backend &amp; Platform</span></span>
@@ -213,6 +231,7 @@
 </section>
 
 <section id="panel-projects" data-panel="projects" data-screen-label="02 Projects" aria-label="Independent Projects" class="panel">
+  <span id="projects" class="panel__anchor"></span>
   <div data-panel-top="" class="panel__top">
     <a href="#" data-exit="" class="panel__back">← Back to system</a>
     <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">02 · Independent Projects</span></span>
@@ -316,6 +335,7 @@
 </section>
 
 <section id="panel-xr" data-panel="xr" data-screen-label="03 XR" aria-label="XR and AR" class="panel">
+  <span id="xr" class="panel__anchor"></span>
   <div data-panel-top="" class="panel__top">
     <a href="#" data-exit="" class="panel__back">← Back to system</a>
     <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">03 · XR / AR</span></span>
@@ -391,6 +411,7 @@
 </section>
 
 <section id="panel-about" data-panel="about" data-screen-label="04 About" aria-label="About and Contact" class="panel">
+  <span id="about" class="panel__anchor"></span>
   <div data-panel-top="" class="panel__top">
     <a href="#" data-exit="" class="panel__back">← Back to system</a>
     <span class="panel__status"><span data-esc="" class="panel__esc">Esc</span><span class="panel__where">04 · About &amp; Contact</span></span>

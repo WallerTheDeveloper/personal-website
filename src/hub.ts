@@ -89,6 +89,13 @@ export interface HubOptions {
   onHover?: (id: PanelId | null) => void;
   /** `null` when the HUD is off, so the FPS counter costs nothing. */
   onFps?: ((fps: number) => void) | null;
+  /**
+   * The GPU took the context away. The scene is over — the engine stops its
+   * loop and clears `__dg3dReady`, and the owner restores the text edition.
+   * Nothing here re-initialises: one renderer per document, and a canvas that
+   * has lost its context cannot be given another.
+   */
+  onContextLost?: (() => void) | null;
 }
 
 /**
@@ -112,6 +119,7 @@ export interface HubApi {
   onLabels: (out: readonly LabelPlacement[]) => void;
   onHover: (id: PanelId | null) => void;
   onFps: ((fps: number) => void) | null;
+  onContextLost: (() => void) | null;
 
   /** Clamped to the current azimuth limit. `instant` skips the easing. */
   setAzimuth(a: number, instant?: boolean): void;
@@ -588,6 +596,7 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     onLabels: opts.onLabels ?? ((): void => {}),
     onHover: opts.onHover ?? ((): void => {}),
     onFps: opts.onFps ?? null,
+    onContextLost: opts.onContextLost ?? null,
 
     setAzimuth(a, instant) {
       S.azTarget = Math.max(-S.azLimit, Math.min(S.azLimit, a));
@@ -786,21 +795,24 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
 
   /* ------------------------------------------------------------ lifecycle */
 
-  // A lost context must not leave a black page — hand back to the text edition.
-  // Phase 8 owns the full fallback story; this is the engine's half of it.
+  // A lost context must not leave a black page. The engine stops — preventing
+  // the default is what would let a context be restored, and there is nothing
+  // to restore it to under the one-renderer rule — then hands over.
+  //
+  // Everything visible belongs to the caller: `router.flatten()` is the other
+  // half of this, and it is the only writer of the flat-document DOM. The engine
+  // deliberately does not touch #fallback or `data-dg-flat` itself, or the two
+  // would race each other over the same elements.
   canvas.addEventListener('webglcontextlost', (e) => {
     e.preventDefault();
     cancelAnimationFrame(raf);
+    S.paused = true;
     window.__dg3dReady = false;
-    document.documentElement.removeAttribute('data-dg-3d');
-    const fallback = document.getElementById('fallback');
-    if (fallback !== null) {
-      fallback.style.display = 'block';
-      fallback.style.opacity = '1';
-      fallback.style.pointerEvents = 'auto';
+    if (api.onContextLost === null) {
+      console.warn('[hub] WebGL context lost and no onContextLost handler; the scene is now blank');
+      return;
     }
-    const labelsEl = document.getElementById('labels');
-    if (labelsEl !== null) labelsEl.style.opacity = '0';
+    api.onContextLost();
   });
 
   ship.rotation.y = Math.PI;

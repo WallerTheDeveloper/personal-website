@@ -159,7 +159,6 @@ export class Router {
     fps: HTMLElement | null;
     header: HTMLElement | null;
     foot: HTMLElement | null;
-    stage: HTMLElement | null;
   };
   private panels: ReadonlyMap<PanelId, HTMLElement> = new Map();
 
@@ -214,7 +213,8 @@ export class Router {
       fps: document.querySelector('#fps-readout'),
       header: document.querySelector('#hub-head'),
       foot: document.querySelector('#hub-foot'),
-      stage: document.querySelector('#stage'),
+      // No `#stage` ref: hiding it is `html[data-dg-flat] #stage` in the
+      // stylesheet now, so that the no-JS document gets it too.
     };
 
     const panels = new Map<PanelId, HTMLElement>();
@@ -230,6 +230,18 @@ export class Router {
     window.addEventListener('popstate', this.onPop);
     window.addEventListener('hashchange', this.onHash);
     document.addEventListener('click', this.onClick);
+
+    // The head probe already answered this, before first paint, and wrote the
+    // answer onto <html>. Asking it here rather than after the import is what
+    // makes "a device with no WebGL never downloads three" true — and it closes
+    // the window in which this router would intercept every hash link, drop it
+    // (there is no hub to jump with), and only then find out it should have been
+    // flat all along. `boot()` still re-checks with the engine's own
+    // `hasWebGL()`, which is a stricter test than the probe's.
+    if (!document.documentElement.hasAttribute('data-dg-3d')) {
+      this.flatten();
+      return;
+    }
 
     void this.load();
   }
@@ -260,6 +272,9 @@ export class Router {
       fb.style.opacity = '0';
       fb.style.pointerEvents = 'none';
       window.setTimeout(() => {
+        // A context lost inside the fade window has already handed the text
+        // edition back; this stale timer would hide it again.
+        if (this.flat) return;
         fb.style.display = 'none';
       }, FALLBACK_FADE_MS + 20);
     }
@@ -281,6 +296,11 @@ export class Router {
             if (this.el.fps !== null) this.el.fps.textContent = String(fps);
           }
         : null,
+      // The GPU can take the context away at any moment — a driver reset, a
+      // laptop switching cards, too many live contexts in other tabs. The
+      // engine stops itself and this hands the visitor the text edition, which
+      // is the same document, flowed.
+      onContextLost: (): void => this.flatten(),
     });
     this.hub = hub;
     window.__dgHub = hub;
@@ -315,25 +335,60 @@ export class Router {
   }
 
   /**
-   * No WebGL, or the engine failed to load: one continuous scrolling document.
-   * Not a degraded mode so much as the other edition of the same content.
+   * No WebGL, the engine failed to load, or the context was lost mid-session:
+   * one continuous scrolling document. Not a degraded mode so much as the other
+   * edition of the same content — `index.html` ships in this state and the head
+   * probe leaves it there whenever the scene cannot run.
+   *
+   * The presentation is entirely `html[data-dg-flat]` in `styles.css`, including
+   * the `#stage` and `#fallback` rules that used to be written inline here: the
+   * flat document has to render identically with no JS at all, so CSS is the
+   * only place that can own it. What is left here is undoing the inline styles
+   * the *3D* path wrote, and standing the routing machinery down.
+   *
+   * Idempotent — context loss can fire more than once, and a lost context on a
+   * device that also failed `hasWebGL()` would arrive here twice.
    */
   flatten(): void {
+    if (this.flat) return;
+    this.flat = true;
     window.__dg3dReady = false;
     document.documentElement.removeAttribute('data-dg-3d');
     document.documentElement.setAttribute('data-dg-flat', '1');
-    if (this.el?.stage != null) this.el.stage.style.display = 'none';
+
+    // Stop driving the scene. The renderer itself is NOT disposed: one renderer
+    // per document, disposed only from `destroy()` on `pagehide` (CLAUDE.md).
+    cancelAnimationFrame(this.drift);
+    clearTimeout(this.watchdog);
+    this.warpFx?.dispose();
+    this.warpFx = null;
+    this.going = false;
+    this.pending = undefined;
+
+    // Inline styles beat the stylesheet, so the fade-out `boot()` wrote on the
+    // success path has to be cleared rather than overridden. Emptying them hands
+    // #fallback back to the flat rules instead of pinning a second set of
+    // values that would then have to agree with them.
     const fb = this.el?.fallback;
     if (fb != null) {
-      fb.style.position = 'static';
-      fb.style.opacity = '1';
-      fb.style.pointerEvents = 'auto';
+      fb.style.display = '';
+      fb.style.opacity = '';
+      fb.style.pointerEvents = '';
+      fb.style.transition = '';
     }
-    // Panels ship as `id="panel-xr"` so the hash never matches one by accident
-    // while routing is live. Flat, the hash *should* reach them: re-id each one
-    // and every `href="#…"` becomes an in-page scroll instead of a route.
-    for (const [id, panel] of this.panels) panel.id = id;
-    this.flat = true;
+    // Same for the panels: `commit()` wrote visibility/opacity on each. The flat
+    // rules carry `!important` and win regardless, but leaving stale inline
+    // state behind would make the DOM lie about what is on screen.
+    for (const panel of this.panels.values()) {
+      panel.style.visibility = '';
+      panel.style.opacity = '';
+    }
+
+    // Mid-session loss: keep the visitor where they were reading. The panel is
+    // now a section in the flow, and `#backend`/`#xr`/… are its anchors, so
+    // every in-page link resolves natively from here on.
+    if (this.current !== null) this.panels.get(this.current)?.scrollIntoView();
+
     if (!this.viewed) this.recordView(null);
   }
 
@@ -422,6 +477,22 @@ export class Router {
     const tint =
       config.warpColor === 'planet' ? ACCENTS[target ?? from ?? 'backend'] : WARP_TINTS[config.warpColor];
 
+    // The reticle stands in for the cursor over the scene; it has no business
+    // hanging over a panel. Hidden before the reduced-motion branch below, or
+    // that path would leave it floating there.
+    this.labels?.hideReticle();
+
+    /*
+     * Reduced motion: no ship flight and no warp — the destination swaps under
+     * a 200 ms cross-fade instead (README "Reduced motion"). The fade is the
+     * `.panel` transition in the `prefers-reduced-motion` block of styles.css,
+     * driven by the same inline visibility/opacity `commit()` always writes, so
+     * there is no second timeline here that could disagree with the CSS.
+     *
+     * `going` is released immediately and deliberately: nothing asynchronous is
+     * outstanding, and holding the flag across the fade would gain nothing but
+     * a new way to wedge routing.
+     */
     if (this.reduce) {
       this.commit(target);
       this.going = false;
@@ -433,7 +504,6 @@ export class Router {
       this.labels?.setVisible(false);
       this.setHover(null);
     }
-    this.labels?.hideReticle();
 
     // One Warp owns the shared #smoke canvas at a time. A surviving previous
     // instance would fight this one over its 2D transform, its resize listener
