@@ -424,10 +424,88 @@ gzip**.
 
 ## Phase 9 — Assets
 
-- [ ] `public/cv.pdf`, `public/og.png` (placeholders from `assets/`).
-- [ ] `robots.txt` + `sitemap.xml`: `https://example.com` → `https://golosov-danylo.com`.
-- [ ] `public/models/README.md` kept for the future glTF. Ship the primitive placeholder ship as-is.
-- [ ] A favicon. There is none, so every load spends a request on a 404 for `/favicon.ico`. Not in the handoff bundle — **ASK** whether the owner wants one, or just a `<link rel="icon">` pointing at an inline SVG.
+- [x] `public/cv.pdf`, `public/og.png` (placeholders from `assets/`).
+      *Copied byte-for-byte; `.gitattributes` already marks both binary, so
+      neither churns. `public/` is Vite's default `publicDir`, so the files are
+      served from the root in dev and copied to `dist/` verbatim on build — the
+      markup's relative `href="cv.pdf"` therefore resolves identically in both,
+      and under a hash, without a leading slash anywhere.*
+      *Neither file is fetched by the page: `og.png` is read by crawlers and
+      `cv.pdf` only when a visitor asks for it. They add 813 kB to `dist/` and
+      **nothing** to the cold-load transfer — see the re-measure below, and do
+      not let `dist/`'s total on disk be mistaken for the budget.*
+- [x] `robots.txt` + `sitemap.xml`: `https://example.com` → `https://golosov-danylo.com`.
+      *Both were still on the placeholder domain in the handoff bundle, which is
+      the last thing in ACCEPTANCE G left to satisfy. The sitemap carries
+      **exactly one** URL: destinations are `/#xr`, and a fragment is not a
+      separate URL to a crawler, so per-destination entries would be four claims
+      about one page. Pinned, along with the sitemap `<loc>` being byte-identical
+      to the canonical `<link>` — trailing slash included, since those two
+      disagreeing is the classic duplicate-URL own goal.*
+- [x] `public/models/README.md` kept for the future glTF. Ship the primitive placeholder ship as-is.
+      *The **Expected glTF** table is verbatim from `assets/models-README.md` —
+      it is the contract with whoever makes the model. The rest is corrected to
+      this port, and that is not tidying: it told the reader to edit
+      `space-engine.js` (does not exist here — it is `src/engine/ship.ts`) and to
+      hang the two glow meshes off `group.userData`, which Phase 5 replaced with
+      typed `ShipView` fields that `hub.ts` reads directly. Following it as
+      written would not have worked. Added: the served path, and the fact that
+      `hub.ts` parents the exhaust `trail` to the ship group, so a swap has to
+      re-parent it.*
+      *Note it is publicly reachable at `/models/README.md`. Nothing sensitive,
+      and it is what PORT_PLAN step 9 asks for.*
+- [x] ~~A favicon.~~ **ASK resolved — the owner chose the inline SVG data URI.**
+      *A `<link rel="icon">` in `<head>` holding a `data:image/svg+xml` URI: no
+      file, no request, and it cannot 404. A 7-radius disc of `--ember` on a 32²
+      of `--void` — the ship's engine glow, square because radii are 0
+      everywhere but the quality button and the reticle. Placeholder mark; the
+      owner replaces it with real branding.*
+      *Two encoding traps, both pinned by tests rather than trusted: `#` must be
+      `%23` or the URI truncates at the fragment and the tab silently goes
+      blank, and spaces are `%20` so the value is a strictly legal URL. The
+      colours are asserted **against `styles.css`**, not restated, so the mark
+      cannot drift from the palette. Safari ignores SVG data-URI icons — it
+      shows no icon there, but also no 404, which was the defect.*
+
+**Verified:** `tsc --noEmit` clean; **89 unit tests green** (76 + 13 new in
+`tests/unit/site-files.test.ts`); **50 Playwright tests green** (45 + 5 new in
+`tests/e2e/assets.spec.ts`) across two consecutive full runs at 4 workers, plus
+a 45-test run with the new spec excluded to attribute the flake below, and a
+50-test run at 2 workers. Build re-measured with `public/` in place: HTML 23.92 kB, CSS
+16.14 kB, entry 21.20 kB, hub chunk 506.16 kB = **567.42 kB raw / 147.79 kB
+gzip** cold load, unchanged but for the ~0.9 kB of head the favicon adds. The
+813 kB in `public/` sits outside that.
+
+**A harness fact worth not rediscovering.** The suite is now 50 tests, and the
+slowest — `dead-input`'s "the camera still pans after a full tour" — runs within
+seconds of the 60 s timeout *even with the machine to itself* (57.8 s measured).
+Adding five tests to the pool was enough to starve the neighbourhood: 3 failed at
+the default 6 workers and 2 at 4, while every one of them passed in isolation and
+all 50 passed at 2. The failures read as router bugs — a label that never
+appears, "planet is not fully on screen" — and none of them were.
+
+Two changes, and it took both:
+
+1. **The new spec no longer competes for the GPU.** It boots no hub and loads
+   with `waitUntil: 'domcontentloaded'`, because every claim in it is about
+   served bytes or URL resolution and neither involves the engine. Its slowest
+   test went 9.2 s → 1.1 s. **Before adding an e2e test, check whether it needs
+   `openHub()` — most do not.**
+2. **`queueing`'s three-click test no longer reads planet positions at click
+   time.** It captures all three points from the hub at rest and then clicks
+   fixed coordinates. Reading them live made it depend on the camera still
+   framing each planet several round-trips later, which it does not: the first
+   click launches the ship and, on commit, parks the camera. The 120 ms waits
+   are wall-clock, but a `mouse.click` plus an `evaluate` under four workers on
+   a software rasteriser costs much more, so the third read could land after the
+   park. Fixed coordinates are also the truer model — someone clicking three
+   times in half a second clicks where the planets *were*.
+
+Change 1 alone was not enough; the next 4-worker run still lost that test. This
+is the general shape of the trap, and it is worth stating plainly: **anything
+that reads a live scene position and then acts on it is racing the engine.**
+`waitForPanel` and `settledAzimuth` exist for the same reason. The router is
+untouched by either change.
 
 ## Phase 10 — Tests
 
@@ -463,6 +541,11 @@ gzip**.
       20.90 kB + hub chunk 506.23 kB = **564.55 kB raw**, 146.67 kB gzip. The
       hub is a separate chunk because the router imports it dynamically, so a
       no-WebGL device pays 58 kB, not 565. Re-check after Phase 9's assets.*
+      *Re-checked with Phase 9 landed: **567.42 kB raw / 147.79 kB gzip**, the
+      difference being the favicon's ~0.9 kB of head. `public/` adds 813 kB to
+      `dist/` (`og.png` 705, `cv.pdf` 108) but **none** of it to a cold load —
+      the page references neither. Measure the budget from what the document
+      actually fetches, not from `du dist/`.*
 - [ ] `renderer.info.render.calls` ≤ 25 in the hub. **ASK** — it is **29** today,
       and 29 in the prototype too, so this budget has never been met. See the
       Phase 5 accounting: three transparent double-sided materials (XR's two
