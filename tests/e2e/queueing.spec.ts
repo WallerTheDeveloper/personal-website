@@ -9,7 +9,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { clickElsewhere, clickLabel, clickPlanet, openHub, openPanel, waitForPanel } from './helpers';
+import { clickElsewhere, clickLabel, openHub, openPanel, planetPoint, waitForPanel } from './helpers';
 
 /**
  * Driven from an open panel rather than from the hub, on purpose: leaving the
@@ -39,11 +39,28 @@ test('a second request mid-jump wins, and only one panel ends up open', async ({
 test('three rapid canvas clicks leave the site settled and navigable', async ({ page }) => {
   await openHub(page);
 
-  await clickPlanet(page, 'backend');
-  await page.waitForTimeout(120);
-  await clickPlanet(page, 'projects');
-  await page.waitForTimeout(120);
-  await clickPlanet(page, 'xr');
+  // All three points are read from the hub at rest, *before* the first click,
+  // and then clicked as fixed coordinates.
+  //
+  // Reading each one at click time instead makes the test depend on the camera
+  // still framing that planet several round-trips later — and it does not: the
+  // first click launches the ship and, once the jump commits, parks the camera,
+  // which sweeps the others off screen. The 120 ms waits are wall-clock, but a
+  // `mouse.click` plus an `evaluate` under four parallel workers on a software
+  // rasteriser costs far more than that, so the third read could land after the
+  // park and fail with "planet is not fully on screen" — a starved browser
+  // reading as a router bug.
+  //
+  // Fixed coordinates are also the truer model of the thing under test: someone
+  // clicking three times in half a second is clicking where the planets were
+  // when they started, not where the engine has since moved them.
+  const targets: { x: number; y: number }[] = [];
+  for (const id of ['backend', 'projects', 'xr'] as const) targets.push(await planetPoint(page, id));
+
+  for (const [i, target] of targets.entries()) {
+    if (i > 0) await page.waitForTimeout(120);
+    await page.mouse.click(target.x, target.y);
+  }
 
   // The canvas nav path dedupes on a 350 ms window and the labels go
   // non-interactive the moment the first jump starts, so which target wins is
