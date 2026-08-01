@@ -24,7 +24,8 @@
  *   - `_going` is never released solely by `warp.clear().then(…)`. One stalled
  *     promise would wedge routing for good, so `finish()` is idempotent,
  *     carries a jump token, and is reachable from the animation *and* from a
- *     watchdog at `COVER + CLEAR + WATCHDOG_SLACK`.
+ *     watchdog at `COVER + CLEAR + WATCHDOG_SLACK`. The token and the
+ *     commit-once rule are `jump-guard.ts`, where they are unit-tested.
  *   - `go(id)` pushes history **and** drives `jump()` directly — it never waits
  *     on the resulting `hashchange`.
  *   - Exactly one live `Warp` owns `#smoke`; `jump()` disposes the previous
@@ -37,6 +38,7 @@
 import { isPanelId, PANEL_IDS, type PanelId } from './content';
 import { trackView } from './analytics';
 import { applyTitle } from './head';
+import { JumpGuard } from './jump-guard';
 import { LabelLayer } from './labels';
 import { ACCENTS, MIN_COVER, saveAzimuth, loadAzimuth, Warp } from './warp';
 import type { HubApi, Composition, LabelPlacement } from './hub';
@@ -109,6 +111,25 @@ const HINT_DELAY_MS = 900;
 const HINT_HOLD_MS = 1500;
 const HINT_AZIMUTH = 0.17;
 
+/* ------------------------------------------------------------------ hash */
+
+/**
+ * A location hash as a panel id, or `null` for the hub.
+ *
+ * Pure, and exported for its own unit tests: this is the one place a URL turns
+ * into routing state, so everything it must tolerate — an empty hash, a bare
+ * `#`, the `#/xr` form, a hash from a stale link, an id that is not a
+ * destination — has to be settled here rather than at each call site.
+ *
+ * Anything unrecognised is the hub. There is no error state to route to: an
+ * unknown hash on a single-document site means "the visitor is here", and the
+ * hub is what "here" looks like.
+ */
+export function parseHash(hash: string): PanelId | null {
+  const raw = (hash || '').replace(/^#\/?/, '');
+  return isPanelId(raw) ? raw : null;
+}
+
 /* ----------------------------------------------------------------- router */
 
 export class Router {
@@ -131,8 +152,8 @@ export class Router {
   private going = false;
   /** A jump requested mid-transition. `undefined` means "nothing queued". */
   private pending: PanelId | null | undefined = undefined;
-  /** Invalidates a superseded `finish()`. */
-  private token = 0;
+  /** Hands out the per-jump commit-once / superseded guard. See `jump-guard.ts`. */
+  private readonly jumps = new JumpGuard();
   private watchdog = 0;
   private drift = 0;
 
@@ -422,10 +443,15 @@ export class Router {
 
   /* --------------------------------------------------------------- routing */
 
-  /** The hash as a panel id, or `null` for the hub. Unknown hashes are the hub. */
+  /**
+   * The hash as a panel id, or `null` for the hub — and additionally `null` for
+   * a destination this document does not carry, which is the same recovery an
+   * unknown hash gets: show the hub rather than route to a panel that is not
+   * there.
+   */
   private hashId(): PanelId | null {
-    const raw = (window.location.hash || '').replace(/^#\/?/, '');
-    return isPanelId(raw) && this.panels.has(raw) ? raw : null;
+    const id = parseHash(window.location.hash);
+    return id !== null && this.panels.has(id) ? id : null;
   }
 
   private route(): void {
@@ -512,38 +538,33 @@ export class Router {
     const warp = new Warp(this.el.smoke, { accent: tint });
     this.warpFx = warp;
 
-    const token = ++this.token;
-    let committed = false;
-    const commitOnce = (): void => {
-      if (committed) return;
-      committed = true;
-      this.commit(target);
-    };
-
-    /**
+    /*
      * Releasing `going` only from `clear().then(…)` means one stalled promise
-     * wedges routing permanently. This is idempotent, carries the jump token,
-     * and is reachable from the animation *and* from the watchdog below — so
-     * it always leaves the router usable.
+     * wedges routing permanently. `finish` is therefore reachable from the
+     * animation *and* from the watchdog below, and the guard is what makes that
+     * safe: the commit runs exactly once however many paths reach it, and a
+     * jump this one has superseded can no longer finish anything. Both rules
+     * live in `jump-guard.ts`, with the reasoning.
      */
-    const finish = (): void => {
-      if (token !== this.token) return;
-      clearTimeout(this.watchdog);
-      commitOnce();
-      if (this.warpFx === warp) {
-        warp.dispose();
-        this.warpFx = null;
-      }
-      this.el.smoke.style.display = 'none';
-      this.going = false;
-      this.drainPending();
-    };
+    const jump = this.jumps.begin({
+      commit: () => this.commit(target),
+      settle: () => {
+        clearTimeout(this.watchdog);
+        if (this.warpFx === warp) {
+          warp.dispose();
+          this.warpFx = null;
+        }
+        this.el.smoke.style.display = 'none';
+        this.going = false;
+        this.drainPending();
+      },
+    });
 
-    this.watchdog = window.setTimeout(finish, COVER + CLEAR + WATCHDOG_SLACK);
+    this.watchdog = window.setTimeout(jump.finish, COVER + CLEAR + WATCHDOG_SLACK);
     const run = (): void => {
-      warp.cover({ duration: COVER, onOpaque: commitOnce });
+      warp.cover({ duration: COVER, onOpaque: jump.commit });
       window.setTimeout(() => {
-        void warp.clear(CLEAR).then(finish);
+        void warp.clear(CLEAR).then(jump.finish);
       }, CLEAR_DELAY);
     };
 
