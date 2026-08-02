@@ -133,6 +133,16 @@ export function createPlanet(
   aura.name = 'aura';
   group.add(aura);
 
+  // `forceSinglePass` on both bands below is the draw-call budget, not a style
+  // choice. three.js draws a `transparent` + `DoubleSide` material twice — back
+  // faces, then front — and these two were 2 of the 4 extra passes that put the
+  // hub at 29 against a rule of 25.
+  //
+  // The cost, A/B'd on a parked XR at 1440 with only this flag changing: the
+  // ring keeps its full sweep on both sides of the planet, but loses a little
+  // density, most visibly on the arc that crosses the planet's face. Owner
+  // accepted that trade in Phase 11. It is the reason the rings read slightly
+  // lighter here than they do in `design/`, which is not a porting error.
   if (planet.feature === 'ring') {
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(planet.r * 1.42, planet.r * 2.1, 128, 1),
@@ -141,6 +151,7 @@ export function createPlanet(
         transparent: true,
         opacity: 0.3,
         side: THREE.DoubleSide,
+        forceSinglePass: true,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       }),
@@ -157,6 +168,7 @@ export function createPlanet(
         transparent: true,
         opacity: 0.5,
         side: THREE.DoubleSide,
+        forceSinglePass: true,
         depthWrite: false,
       }),
     );

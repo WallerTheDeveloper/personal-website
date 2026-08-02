@@ -276,6 +276,10 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
+    // The third of the three double-sided transparent materials that cost two
+    // passes each — see the note in `planet-mesh.ts`. This one is additive on an
+    // open-ended cone, so a single pass is very close to indistinguishable.
+    forceSinglePass: true,
   });
   const trail = new THREE.Mesh(new THREE.ConeGeometry(0.034, 0.55, 12, 1, true), trailMaterial);
   trail.rotation.x = -Math.PI / 2;

@@ -8,6 +8,7 @@
  */
 
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 type GlowMesh = THREE.Mesh<THREE.SphereGeometry, THREE.MeshBasicMaterial>;
 
@@ -25,14 +26,22 @@ export function createShip(): ShipView {
   const hull = new THREE.MeshStandardMaterial({ color: 0x9aa0b2, roughness: 0.45, metalness: 0.6 });
   const dark = new THREE.MeshStandardMaterial({ color: 0x363b47, roughness: 0.7, metalness: 0.4 });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.085, 0.3, 4, 12), hull);
-  body.rotation.x = Math.PI / 2;
-  group.add(body);
-
-  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.26, 12), hull);
-  nose.rotation.x = Math.PI / 2;
-  nose.position.z = 0.3;
-  group.add(nose);
+  // Capsule and nose cone as one geometry rather than two meshes.
+  //
+  // They always shared `hull`, so this is one draw call instead of two and it is
+  // the call that brought the hub from 26 to the 25 the rule asks for. The
+  // transforms are baked in the same order a mesh applies them — rotate, then
+  // translate — so the output is the two meshes' output, pixel for pixel. Both
+  // primitives are indexed and carry the same three attributes (position,
+  // normal, uv), which is what `mergeGeometries` requires — it returns `null` on
+  // a mismatch, but both operands are built right here from fixed primitives, so
+  // there is no input that could drift. (`@types/three` declares the return
+  // non-nullable, so a guard would not compile against it anyway.)
+  const hullGeometry = mergeGeometries([
+    new THREE.CapsuleGeometry(0.085, 0.3, 4, 12).rotateX(Math.PI / 2),
+    new THREE.ConeGeometry(0.085, 0.26, 12).rotateX(Math.PI / 2).translate(0, 0, 0.3),
+  ]);
+  group.add(new THREE.Mesh(hullGeometry, hull));
 
   for (const side of [-1, 1]) {
     const fin = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.1, 0.16), dark);

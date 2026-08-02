@@ -18,22 +18,20 @@ import { expect, test, type Page } from '@playwright/test';
 import { openHub } from './helpers';
 
 /**
- * The draw calls the hub issues today.
+ * What ACCEPTANCE D and CLAUDE.md ask for, and what the hub now draws.
  *
- * The rule is **≤ 25** and this is 29 — inherited, not drift: the prototype
- * draws 29 from an identical scene graph. 26 drawables plus 3, because three.js
- * draws a `transparent` + `DoubleSide` material in two passes and there are
- * three such objects (the XR planet's two rings, the ship's exhaust trail).
- * `forceSinglePass` on those gets it to 26; the last one has to come from the
- * ship, which the glTF replaces anyway. Both options change how the rings read,
- * so it is an open **ASK** for the owner (TASKS.md Phase 11).
+ * This was 29 for the whole port — inherited, not drift: the prototype draws 29
+ * from an identical scene graph. 26 drawables plus 3, because three.js draws a
+ * `transparent` + `DoubleSide` material in two passes and three objects were
+ * both (the XR planet's two rings, the ship's exhaust trail). Phase 11 answered
+ * the ASK: `forceSinglePass` on those three took it to 26, and merging the
+ * ship's capsule and nose cone — they always shared one material — took the
+ * last one.
  *
- * Pinning the number that exists is what a test can usefully defend in the
- * meantime: it fails the moment the scene grows a draw call, which is the
- * regression that would otherwise arrive unnoticed.
+ * So this is a floor as well as a ceiling. It fails the moment the scene grows
+ * a draw call back, which is the regression that would otherwise arrive
+ * unnoticed, and it is the guard for the two engine changes above.
  */
-const DRAW_CALLS_TODAY = 29;
-/** What ACCEPTANCE D and CLAUDE.md ask for, once the ASK above is answered. */
 const DRAW_CALL_RULE = 25;
 
 /**
@@ -92,14 +90,13 @@ test('the desktop hub stays inside its draw-call, DPR and texture budgets', asyn
   // A renderer that has stopped, or never drew, reports zero calls and would
   // sail through every ceiling in this file.
   expect(first.calls).toBeGreaterThan(0);
-  expect(first.calls).toBeLessThanOrEqual(DRAW_CALLS_TODAY);
-  if (first.calls <= DRAW_CALL_RULE) {
-    // The ASK has been answered and the scene came down to the rule. Tighten
-    // `DRAW_CALLS_TODAY` to match, or this stops defending the new number.
-    expect(DRAW_CALLS_TODAY, 'draw calls are within the rule now — tighten the ceiling').toBe(
-      DRAW_CALL_RULE,
-    );
-  }
+  // Exact, not a ceiling. The resting desktop hub is the one deterministic
+  // reading in this file, so it can defend both directions: growth puts the
+  // budget back out of rule, and a drop means a drawable went missing — which
+  // is how a planet that failed to bake, or a ship part silently dropped in a
+  // refactor, would present. The two readings below stay ceilings; the phone
+  // runs a different quality tier and the parked scene a different camera.
+  expect(first.calls).toBe(DRAW_CALL_RULE);
   expect(first.dpr).toBeLessThanOrEqual(2);
 
   const cdp = await context.newCDPSession(page);
@@ -170,7 +167,7 @@ test('a parked scene behind an open panel keeps rendering', async ({ page }) => 
   await page.waitForTimeout(1_000);
   await waitForFrames(page, first.frame, 6);
   const second = await renderStats(page);
-  expect(second.calls).toBeLessThanOrEqual(DRAW_CALLS_TODAY);
+  expect(second.calls).toBeLessThanOrEqual(DRAW_CALL_RULE);
   expect(second.calls).toBeGreaterThan(0);
 });
 
@@ -185,6 +182,6 @@ test.describe('on a phone', () => {
     expect(stats.dpr).toBeLessThanOrEqual(1.5);
     // Smaller bakes, fewer stars: `isSmallViewport()` is what selects them.
     expect(await page.evaluate(() => window.__dgHub?.quality)).toBe('low');
-    expect(stats.calls).toBeLessThanOrEqual(DRAW_CALLS_TODAY);
+    expect(stats.calls).toBeLessThanOrEqual(DRAW_CALL_RULE);
   });
 });
