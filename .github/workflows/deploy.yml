@@ -1,0 +1,71 @@
+# Build the site and publish `dist/` to GitHub Pages.
+#
+# The custom domain lives in `public/CNAME`, which Vite copies to `dist/` — not
+# only in the repository's Pages settings. Keep it there: a deployment whose
+# artifact has no CNAME clears the custom domain, and the site answers on
+# github.io until someone notices.
+#
+# `base` in vite.config.ts stays `/`. That is correct for an apex domain; a
+# project-path base would break every asset URL on golosov-danylo.com.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one that has started — a Pages
+# deploy interrupted mid-upload can leave the live site on a partial artifact.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Matches the development machine.
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci
+
+      # The gate. `npm test` builds the site itself, into a temp directory, and
+      # asserts the < 900 KB cold-load transfer budget — so a dependency that
+      # blows the budget fails here rather than on the live site. It also covers
+      # ACCEPTANCE D and G's build-artifact claims.
+      #
+      # Playwright is deliberately not here. The suite needs `--workers=3` to be
+      # trustworthy (at the default 6 the baseline itself fails ~8 of 93 under
+      # software WebGL) and would put six minutes on every push. It stays a local
+      # pre-push check.
+      - run: npm test
+
+      # `tsc --noEmit && vite build` — the artifact that actually ships.
+      - run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
