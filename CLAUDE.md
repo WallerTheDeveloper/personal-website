@@ -40,7 +40,7 @@ hand-written CSS with custom properties · Vitest + Playwright · static `dist/`
 - **≤ 25 draw calls** in the hub. Glow is a back-face fresnel shell plus additive geometry — that is why there is no composer.
 - Planet textures are baked **once** at init. Nothing procedural runs per frame.
 - **Zero allocations in the render loop.**
-- DPR clamped to 2 desktop / 1.5 mobile. Renderer pauses on `visibilitychange` and under an opaque warp cover.
+- DPR clamped to 2 desktop / 1.5 mobile. Renderer pauses on `visibilitychange` — and **only** on `visibilitychange`. It keeps rendering under an opaque warp cover: the park solve eases over frames, so a renderer stopped under the cover lifts it onto a camera that has not moved. Pausing there would mean making the solve instant, which is the motion the cover exists to hide. An earlier draft of this file asked for that pause; it was never implemented, in this port or the prototype.
 - Nothing expensive in a click handler. An earlier warp baked sixteen 160² textures synchronously on click and the click felt like it hung; the current streak field is texture-free by design.
 
 **Accessibility** — treat as functional requirements, not polish.

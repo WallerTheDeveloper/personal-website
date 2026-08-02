@@ -11,7 +11,12 @@ Anything marked **ASK** must go back to the owner before you implement it.
       *Two statements there are superseded and must not be followed: self-hosting the fonts (README approves the Google Fonts CDN) and the five-entry Rollup config (PORT_PLAN step 1 mandates a single entry).*
 - [x] **ASK** — real URLs (`/xr`) or hash routes (`/#xr`)? → **hash routes**. Sitemap keeps one URL.
 - [x] **ASK** — copy in one typed `src/content.ts`, or `{{TOKEN}}` strings left inline in markup? → **one typed `src/content.ts`**, values = the literal `{{TOKEN}}` strings.
-- [x] **ASK** — final host. → **undecided; plain static `dist/`**, no host config.
+- [x] **ASK** — final host. → **GitHub Pages**, apex `golosov-danylo.com`.
+      *Answered in Phase 11, superseding this phase's original "undecided; plain
+      static `dist/`, no host config". The build is still a plain static `dist/`
+      and nothing in `src/` knows about the host; what the decision added is
+      `.github/workflows/deploy.yml` and `public/CNAME`. Pages serves no custom
+      headers — see the Phase 11 note.*
 - [x] **ASK** — analytics. → **Umami** (overrides README's "none included"). See Phase 4.
 
 ## Phase 1 — Scaffold
@@ -685,29 +690,56 @@ because it gzips at a different level. Either number has the same headroom;
       `tests/unit/build-artifact.test.ts` builds and measures on every `npm test`,
       including the one that fails if `dist/`'s weight on disk is ever mistaken
       for the budget.*
-- [ ] `renderer.info.render.calls` ≤ 25 in the hub. **ASK** — it is **29** today,
-      and 29 in the prototype too, so this budget has never been met. See the
-      Phase 5 accounting: three transparent double-sided materials (XR's two
-      rings, the ship's trail) each cost two passes. `forceSinglePass` on those
-      gets it to 26; the last one has to come from the ship, which the glTF
-      replaces anyway. Both options change how the rings read — owner's call.
-      *`budget.spec.ts` pins the 29 in the meantime, so the scene cannot grow a
-      draw call unnoticed, and tells you to tighten the ceiling if the count ever
-      comes inside the rule.*
-- [ ] **ASK** — should the renderer pause under an opaque warp cover? CLAUDE.md
-      and ACCEPTANCE D say it does; neither this port nor the prototype has ever
-      done it. Adding it means the park solve, which eases over frames, has to be
-      made instant or the cover lifts onto a camera that has not moved. See the
-      Phase 10 findings.
+- [x] `renderer.info.render.calls` ≤ 25 in the hub. **ASK answered — bring it to
+      25.** It was **29**, and 29 in the prototype too, so this budget had never
+      been met. Three transparent double-sided materials (XR's two rings, the
+      ship's trail) each cost two passes; `forceSinglePass` on all three took it
+      to 26. The last one came off the ship: `body` (capsule) and `nose` (cone)
+      always shared the `hull` material, so they merge into one geometry with
+      their transforms baked in the order a mesh applies them. That is
+      pixel-identical and unconditional — 25 at rest, parked, and mid-launch.
+      *The rings are the visible cost. A/B'd on a parked XR at 1440 with only the
+      flag changing: full sweep on both sides of the planet, slightly less
+      density, most visible on the arc crossing the planet's face. Owner accepted
+      it. The rings reading lighter than `design/` is now correct, not a porting
+      error.*
+      *`budget.spec.ts` asserts the resting desktop hub is **exactly** 25 — a
+      floor as well as a ceiling, so a drawable going missing fails too. The
+      phone and parked-panel readings stay ceilings; different quality tier,
+      different camera.*
+- [x] **ASK** — should the renderer pause under an opaque warp cover? → **No.
+      Amend the docs; do not implement.** CLAUDE.md, ACCEPTANCE D and README all
+      claimed it did; neither this port nor the prototype has ever done it.
+      Adding it means the park solve, which eases over frames, has to be made
+      instant, or the cover lifts onto a camera that has not moved — and that
+      motion is the thing the cover exists to hide. All three documents now say
+      what the code does and why, so it cannot be re-derived as a bug.
 - [ ] DPR clamps verified on a real phone.
       *Clamped correctly in Chromium at `deviceScaleFactor: 3` — 2 desktop,
       1.5 at 390×844, pinned in `budget.spec.ts`. A real handset is still the
       check that counts.*
 - [ ] Lighthouse a11y pass; axe clean on hub + all four panels + the text edition.
-- [ ] Deploy `dist/` (host per Phase 0 ASK).
+- [x] Deploy `dist/` (host per Phase 0 ASK). **ASK answered — GitHub Pages**,
+      apex `golosov-danylo.com`. `.github/workflows/deploy.yml` builds on push to
+      `master` and publishes `dist/`; `public/CNAME` carries the domain into the
+      artifact, which is what stops a deploy from clearing it. `base` stays `/` —
+      correct for an apex domain, and a project-path base would break every asset
+      URL. `public/robots.txt` and `public/sitemap.xml` already named the apex
+      domain, so nothing else moved.
+      *The gate is `npm test` + `npm run build`, not Playwright. `npm test`
+      builds into a temp directory and asserts the transfer budget itself, so the
+      budget is CI-enforced; the e2e suite needs `--workers=3` to be trustworthy
+      and would put six minutes on every push.*
+      *Known cost of this host: **GitHub Pages serves no custom headers**, so
+      `Cache-Control` cannot be tuned. Vite's content-hashed asset names still
+      cache well and `index.html` gets Pages' short default TTL. This is the
+      price of the choice, not a defect to go hunting for later.*
 
 ## Owner's pre-launch list (not the developer's)
 
+- [ ] Point apex DNS at GitHub Pages: `A` → 185.199.108–111.153, plus the `AAAA`
+      records, then *Settings → Pages → Enforce HTTPS* once the cert issues.
+      Nobody but the owner has the registrar.
 - [ ] Fill every `{{TOKEN}}`, including the ones in the content table.
 - [ ] Final `cv.pdf`.
 - [ ] Regenerate `og.png` with the real name and role.

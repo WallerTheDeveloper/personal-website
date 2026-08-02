@@ -61,7 +61,7 @@ this handoff, so:
 | Styles | Hand-written CSS with custom properties, one `styles.css` |
 | Routing | Hash routes, exactly as the prototype (`#backend`, `#projects`, `#xr`, `#about`) |
 | Tests | **Vitest** for units, **Playwright** for end-to-end |
-| Output | Plain static `dist/` — host-agnostic |
+| Output | Plain static `dist/`, deployed to GitHub Pages (apex `golosov-danylo.com`) |
 | Fonts | Google Fonts CDN (approved; do not spend time self-hosting) |
 
 Why no framework: the site has one page, four overlay panels, and a WebGL scene
@@ -534,7 +534,7 @@ Non-negotiable — the owner listed it as a must-preserve:
 - DPR clamped to **2** desktop / **1.5** mobile.
 - **Zero allocations in the render loop.**
 - `detectQuality()` drops texture resolution, star count and particle count on small or low-core devices; the hub's quality readout doubles as an fps meter.
-- Renderer pauses on `visibilitychange`; pauses under the warp cover the moment nothing visible is behind it; keeps running while parked behind a panel.
+- Renderer pauses on `visibilitychange`; keeps running while parked behind a panel, and under the warp cover. (This last clause read "pauses under the warp cover the moment nothing visible is behind it" until Phase 11. That pause was never built — the park solve eases over frames, and stopping the renderer under the cover would lift it onto a camera that had not moved.)
 
 ## Files in this bundle
 
@@ -569,12 +569,29 @@ in the prototype. Note that planet-label positions in `index.dc.html` markup are
 initial values the engine overwrites, so the screenshots and the markup disagree
 on purpose.
 
-## Open questions for the owner
+## Open questions for the owner — all answered
 
-Raise these before implementing the affected part; do not guess.
+These were the five open decisions this document shipped with. The owner has
+settled all of them; they are recorded here so nobody re-asks. Only item 5 is
+still outstanding work, and it is the owner's, not the developer's.
 
-1. **Real URLs (`/xr`) instead of hash routes (`/#xr`)?** Better for sharing and crawling; costs a prerender step. The routing code already funnels through `route()` / `go()` / `hashId()` — only `hashId()` would read `pathname` instead.
-2. **Analytics** — the answer was "port only", so none is included. Confirm.
-3. **Where the copy lives** — one typed `content.ts`, or tokens left inline in the markup?
-4. **Host** — undecided, so the build is plain static `dist/`. Naming a host lets us add its config and headers.
-5. **`cv.pdf` and `og.png`** are placeholders. Final files needed before launch.
+1. **Real URLs (`/xr`) instead of hash routes (`/#xr`)?** → **Hash routes.** The
+   sitemap keeps one URL. The routing code funnels through `route()` / `go()` /
+   `hashId()`; if this is ever revisited, only `hashId()` reads `pathname`.
+2. **Analytics** → **Umami**, overriding this document's original "port only,
+   none included". Hash routing means no document loads, so route changes are
+   tracked manually on each jump rather than by auto-pageviews. Script `src` and
+   website ID are still needed from the owner.
+3. **Where the copy lives** → **one typed `src/content.ts`**, values being the
+   literal `{{TOKEN}}` strings. Substitution is **build-time**, via the
+   `transformIndexHtml` plugin in `build/copy-tokens.ts` — not a runtime DOM
+   walk. The text edition is the default state and must be complete with JS
+   disabled, so the copy has to be in the served HTML. This document and
+   `PORT_PLAN.md` describe only the runtime path in places; do not "fix" the
+   plugin back to it.
+4. **Host** → **GitHub Pages**, apex `golosov-danylo.com`, via
+   `.github/workflows/deploy.yml` and `public/CNAME`. The build is still a plain
+   static `dist/`. Pages serves no custom headers, so `Cache-Control` cannot be
+   tuned — content-hashed asset names carry the caching story instead.
+5. **`cv.pdf` and `og.png`** are still placeholders. Final files needed before
+   launch — see the owner's pre-launch list at the end of `TASKS.md`.

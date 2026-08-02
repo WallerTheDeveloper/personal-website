@@ -46,12 +46,22 @@ motion, not frame-exact numbers.
 ## D — Performance budget
 
 - [ ] Total transfer < **900 KB** (production build, gzip, cold load).
-- [ ] `renderer.info.render.calls` ≤ **25** in the hub.
+- [x] `renderer.info.render.calls` ≤ **25** in the hub.
+      *Exactly 25, pinned in `budget.spec.ts`. Was 29 for the whole port (and 29
+      in the prototype): `forceSinglePass` on the three double-sided transparent
+      materials, then merging the ship's capsule and nose cone, which already
+      shared a material.*
 - [ ] No effect composer / post-processing in the bundle.
 - [ ] DPR ≤ 2 desktop, ≤ 1.5 mobile.
 - [ ] Steady-state render loop allocates nothing: heap stays flat over 30 s idle in the hub (±1 MB).
 - [ ] Planet textures baked once — no bake calls after init (spy on `createPlanet`/`bake`).
-- [ ] Renderer pauses on `visibilitychange` and while fully covered by the warp; keeps rendering while parked behind a panel.
+- [x] Renderer pauses on `visibilitychange`; keeps rendering while parked behind a panel **and under the warp cover**.
+      *Amended in Phase 11 — the original clause asked for a pause under full
+      cover. Neither this port nor the prototype has ever done it, and it is not
+      a defect to fix: the park solve eases over frames, so a renderer stopped
+      under the cover would lift it onto a camera that had not moved. Pausing
+      would mean making the solve instant, which is the motion the cover exists
+      to hide.*
 - [ ] Low-quality tier engages on a small/low-core device and drops texture, star and particle counts.
 - [ ] 60 fps in the hub on a mid-range laptop; no jank spike > 50 ms during a jump.
 
