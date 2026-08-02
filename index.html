@@ -119,6 +119,21 @@
 
   <div id="reticle" aria-hidden="true" class="reticle"></div>
 
+  <!-- Covers the boot gap: the probe above has already faded #fallback out, and
+       the canvas does not come up until the engine has downloaded and baked ten
+       planet textures. Without this the visitor watches an empty --void.
+
+       Inside #stage on purpose — the flat and print rules already hide #stage,
+       so this needs no teardown of its own in either. `aria-hidden` and no
+       focusable node: the tab ring is exactly six stops and #fallback is what
+       assistive tech reads while this is up. The router fades it on the first
+       painted frame; a stall past the timeout flattens the document instead. -->
+  <div id="loading" aria-hidden="true" class="loading">
+    <p class="loading__name">{{FULL_NAME}}</p>
+    <p class="loading__status">{{LOADING_LABEL}}</p>
+    <div class="loading__bar"><span class="loading__fill"></span></div>
+  </div>
+
 </main>
 
 <section id="fallback" class="te">

@@ -51,6 +51,8 @@ export const CONTENT = {
   ROLE_TAGLINE: '{{ROLE_TAGLINE}}',
   LOCATION: '{{LOCATION}}',
   META_DESCRIPTION: '{{META_DESCRIPTION}}',
+  /** The micro-label under the wordmark on the loading screen. */
+  LOADING_LABEL: '{{LOADING_LABEL}}',
 
   // ----------------------------------------------------------------- backend
   // Neutral, non-employment blocks. If one becomes employment it moves to the

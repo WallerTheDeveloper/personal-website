@@ -25,10 +25,28 @@ const LEADER_ACTIVE_PX = 40;
 /** The label hangs this far below the projected planet edge, CSS px. */
 const LABEL_GAP_PX = 10;
 
+/** Reticle scale at rest, and while it is over something clickable. */
+const RETICLE_REST = 'scale(0.6)';
+const RETICLE_GROWN = 'scale(1)';
+
 export class LabelLayer {
   private readonly nav: HTMLElement;
   private readonly anchors: readonly HTMLAnchorElement[];
   private readonly reticle: HTMLElement | null;
+
+  /**
+   * Everything the reticle reacts to. Three independent inputs — is the pointer
+   * on the hub at all, is it over a planet, is it over a link — reaching one
+   * writer, for the same reason the router keeps a single owner for `hovered`:
+   * with each input writing `opacity`/`transform` for itself, whichever fired
+   * last won and the reticle disagreed with what was under the pointer.
+   *
+   * `armed` starts false and only the first real pointer position sets it. The
+   * reticle is `left: 0; top: 0` until something moves it, so showing it before
+   * then puts a ring in the corner of the viewport — which is exactly what
+   * tabbing to a label before touching the mouse used to do.
+   */
+  private readonly ret = { armed: false, planet: false, link: false };
 
   constructor(nav: HTMLElement, reticle: HTMLElement | null) {
     this.nav = nav;
@@ -82,22 +100,53 @@ export class LabelLayer {
       if (name === null) continue;
       name.style.color = a.dataset['planet'] === hovered ? 'var(--accent-hover)' : 'var(--ink-label)';
     }
-    if (this.reticle !== null) {
-      this.reticle.style.opacity = hovered === null ? '0' : '1';
-      this.reticle.style.transform = hovered === null ? 'scale(0.6)' : 'scale(1)';
-    }
+    this.ret.planet = hovered !== null;
+    this.applyReticle();
   }
 
-  /** Follow the pointer. The reticle replaces the cursor over the canvas. */
+  /**
+   * Follow the pointer, and arm on the way.
+   *
+   * Arming here rather than at the call site is the point: knowing where the
+   * pointer is *is* the precondition for drawing something at it, so the two
+   * cannot fall out of step.
+   */
   moveReticle(clientX: number, clientY: number): void {
     if (this.reticle === null) return;
     this.reticle.style.left = `${clientX}px`;
     this.reticle.style.top = `${clientY}px`;
+    this.setArmed(true);
   }
 
-  hideReticle(): void {
+  /**
+   * Whether the pointer is on the hub at all. Taken away when a panel opens, on
+   * a jump, and when the pointer leaves the window — in every one of those the
+   * OS cursor is back or there is nothing to point at, and a ring left frozen
+   * mid-screen would be a stale one.
+   */
+  setArmed(on: boolean): void {
+    if (this.ret.armed === on) return;
+    this.ret.armed = on;
+    this.applyReticle();
+  }
+
+  /**
+   * Over a real link or button in the hub chrome. With the OS cursor gone from
+   * the whole stage, this is what is left to say "clickable" — the reticle takes
+   * the same grown state a planet gives it.
+   */
+  setLinkHover(on: boolean): void {
+    if (this.ret.link === on) return;
+    this.ret.link = on;
+    this.applyReticle();
+  }
+
+  /** The one place the reticle's opacity and transform are written. */
+  private applyReticle(): void {
     if (this.reticle === null) return;
-    this.reticle.style.opacity = '0';
+    const grown = this.ret.planet || this.ret.link;
+    this.reticle.style.opacity = this.ret.armed ? '1' : '0';
+    this.reticle.style.transform = this.ret.armed && grown ? RETICLE_GROWN : RETICLE_REST;
   }
 
   /**

@@ -96,6 +96,20 @@ const DOCK_MS = 1150;
 /** Fade-out of the text edition once the scene is up, ms. Matches styles.css. */
 const FALLBACK_FADE_MS = 400;
 
+/** Fade-out of the loading screen once the first frame has painted, ms. */
+const LOADER_FADE_MS = 400;
+/**
+ * How long the loading screen may hold the viewport before the document gives
+ * up and flattens.
+ *
+ * A failed `import()` rejects and `load()` already catches it. This covers the
+ * other shape: a request that neither completes nor errors, which on a stalled
+ * connection would otherwise leave a visitor watching a sweeping hairline
+ * forever. Flattening hands them the text edition — the same content, and the
+ * state this document ships in — rather than merely uncovering an empty void.
+ */
+const LOADER_TIMEOUT_MS = 12_000;
+
 /* ------------------------------------------------------------------ input */
 
 /** Pointer travel, CSS px, above which a press is a drag and not a click. */
@@ -156,6 +170,9 @@ export class Router {
   private readonly jumps = new JumpGuard();
   private watchdog = 0;
   private drift = 0;
+  /** Loading-screen stall timer, and the once-only guard on its dismissal. */
+  private loaderTimer = 0;
+  private loaderDone = false;
 
   /** Where the hub camera was left, so a panel visit does not lose it. */
   private hubAz = 0;
@@ -168,11 +185,14 @@ export class Router {
   private moved = 0;
   private navAt = 0;
   private coarse = false;
+  /** The hub chrome carrying the reticle's link affordance, kept for teardown. */
+  private hoverEls: readonly Element[] = [];
 
   private el!: {
     canvas: HTMLCanvasElement;
     labels: HTMLElement;
     fallback: HTMLElement | null;
+    loader: HTMLElement | null;
     smoke: HTMLCanvasElement;
     reticle: HTMLElement | null;
     hint: HTMLElement | null;
@@ -193,6 +213,9 @@ export class Router {
   private readonly onMove = (e: PointerEvent): void => this.handleMove(e);
   private readonly onUp = (e: PointerEvent): void => this.handleUp(e);
   private readonly onCanvasClick = (e: MouseEvent): void => this.handleCanvasClick(e);
+  private readonly onLinkEnter = (): void => this.labels?.setLinkHover(true);
+  private readonly onLinkLeave = (): void => this.labels?.setLinkHover(false);
+  private readonly onPointerLeave = (): void => this.labels?.setArmed(false);
   private readonly onTouchMove = (e: TouchEvent): void => {
     if (this.current === null) e.preventDefault();
   };
@@ -228,6 +251,7 @@ export class Router {
       smoke,
       labels,
       fallback: document.querySelector('#fallback'),
+      loader: document.querySelector('#loading'),
       reticle: document.querySelector('#reticle'),
       hint: document.querySelector('#hud-hint'),
       qBtn: document.querySelector('#quality-toggle'),
@@ -264,6 +288,10 @@ export class Router {
       return;
     }
 
+    // Armed before the import, not after: the stall this guards against is the
+    // request itself never settling, so the clock has to start with it.
+    this.loaderTimer = window.setTimeout(() => this.flatten(), LOADER_TIMEOUT_MS);
+
     void this.load();
   }
 
@@ -278,6 +306,12 @@ export class Router {
   }
 
   private boot(engine: Engine): void {
+    // The import has already resolved by the time this runs, and the stall
+    // watchdog may have flattened the document while it was in flight. Booting
+    // a scene into a flattened document would re-hide #fallback behind a canvas
+    // the visitor has already been told is not coming.
+    if (this.flat) return;
+
     this.engine = engine;
     if (!engine.hasWebGL()) {
       this.flatten();
@@ -353,6 +387,38 @@ export class Router {
       this.recordView(null);
       if (!this.reduce) this.hint();
     }
+
+    // Two frames, not one, and not `__dg3dReady` above. `initHub()` returns
+    // having only *scheduled* its first rAF, and that first frame is where the
+    // scene's shader programs actually compile — the longest single stall in the
+    // boot. The inner callback runs after it has been composited, which is the
+    // first moment there is genuinely something behind the loading screen.
+    requestAnimationFrame(() => requestAnimationFrame(() => this.dismissLoader()));
+  }
+
+  /**
+   * Take the loading screen down.
+   *
+   * Mirrors the `#fallback` fade above deliberately: opacity and pointer-events
+   * first, `display: none` only after the transition, and the timer re-checks
+   * the flat flag because a context lost inside the fade window has already
+   * handed the document over. Idempotent — reachable from the first painted
+   * frame, from `flatten()`, and from `destroy()`.
+   */
+  private dismissLoader(): void {
+    if (this.loaderDone) return;
+    this.loaderDone = true;
+    clearTimeout(this.loaderTimer);
+
+    const el = this.el?.loader;
+    if (el == null) return;
+    el.style.transition = `opacity ${LOADER_FADE_MS}ms ease`;
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    window.setTimeout(() => {
+      if (this.flat) return;
+      el.style.display = 'none';
+    }, LOADER_FADE_MS + 20);
   }
 
   /**
@@ -381,6 +447,8 @@ export class Router {
     // per document, disposed only from `destroy()` on `pagehide` (CLAUDE.md).
     cancelAnimationFrame(this.drift);
     clearTimeout(this.watchdog);
+    clearTimeout(this.loaderTimer);
+    this.loaderDone = true;
     this.warpFx?.dispose();
     this.warpFx = null;
     this.going = false;
@@ -396,6 +464,17 @@ export class Router {
       fb.style.opacity = '';
       fb.style.pointerEvents = '';
       fb.style.transition = '';
+    }
+    // The loading screen is hidden here by `html[data-dg-flat] #stage`, but a
+    // half-finished fade would leave inline values pinned over it. Same reason
+    // as #fallback above: hand the element back to the stylesheet rather than
+    // keep a second set of values that then has to agree with it.
+    const ld = this.el?.loader;
+    if (ld != null) {
+      ld.style.display = '';
+      ld.style.opacity = '';
+      ld.style.pointerEvents = '';
+      ld.style.transition = '';
     }
     // Same for the panels: `commit()` wrote visibility/opacity on each. The flat
     // rules carry `!important` and win regardless, but leaving stale inline
@@ -417,6 +496,7 @@ export class Router {
     saveAzimuth(this.currentHubAzimuth());
     cancelAnimationFrame(this.drift);
     clearTimeout(this.watchdog);
+    clearTimeout(this.loaderTimer);
     window.removeEventListener('popstate', this.onPop);
     window.removeEventListener('hashchange', this.onHash);
     window.removeEventListener('keydown', this.onKey);
@@ -425,6 +505,12 @@ export class Router {
     window.removeEventListener('pointerup', this.onUp);
     document.removeEventListener('click', this.onClick);
     document.removeEventListener('visibilitychange', this.onVisibility);
+    document.removeEventListener('pointerleave', this.onPointerLeave);
+    for (const el of this.hoverEls) {
+      el.removeEventListener('pointerenter', this.onLinkEnter);
+      el.removeEventListener('pointerleave', this.onLinkLeave);
+    }
+    this.hoverEls = [];
     if (this.el !== undefined) {
       this.el.canvas.removeEventListener('wheel', this.onWheel);
       this.el.canvas.removeEventListener('pointerdown', this.onDown);
@@ -506,7 +592,7 @@ export class Router {
     // The reticle stands in for the cursor over the scene; it has no business
     // hanging over a panel. Hidden before the reduced-motion branch below, or
     // that path would leave it floating there.
-    this.labels?.hideReticle();
+    this.labels?.setArmed(false);
 
     /*
      * Reduced motion: no ship flight and no warp — the destination swaps under
@@ -617,6 +703,12 @@ export class Router {
     }
     this.labels?.setVisible(target === null);
     this.labels?.tint(null);
+    // Opening a panel hands the OS cursor back — the panel is a sibling of
+    // #stage, so `cursor: none` does not reach it. Disarm, or the ring stays
+    // frozen wherever the pointer was when the jump started. The next real
+    // pointer move on the hub arms it again.
+    this.labels?.setLinkHover(false);
+    if (target !== null) this.labels?.setArmed(false);
 
     if (target !== null) {
       this.baseAz = this.engine?.byId(target).theta ?? 0;
@@ -675,8 +767,9 @@ export class Router {
   private bindPointer(): void {
     const c = this.el.canvas;
     this.coarse = window.matchMedia('(pointer: coarse)').matches;
-    // The reticle stands in for the cursor over the scene.
-    if (!this.coarse) c.style.cursor = 'none';
+    // `cursor: none` is the stylesheet's now, on the whole stage rather than the
+    // canvas, so that the labels and the chrome do not hand the OS cursor back
+    // mid-sweep. It is gated on the same `(pointer: coarse)` this line reads.
 
     c.addEventListener('wheel', this.onWheel, { passive: false });
     c.addEventListener('pointerdown', this.onDown);
@@ -684,6 +777,30 @@ export class Router {
     c.addEventListener('touchmove', this.onTouchMove, { passive: false });
     window.addEventListener('pointermove', this.onMove);
     window.addEventListener('pointerup', this.onUp);
+    // Leaving the window is the one way the pointer can stop existing without a
+    // final move to tell us. Without this the ring stays pinned to the edge.
+    document.addEventListener('pointerleave', this.onPointerLeave);
+
+    if (!this.coarse) this.bindHoverAffordance();
+  }
+
+  /**
+   * The hub's clickable chrome — four planet anchors, the skip link, the quality
+   * button — told to the reticle.
+   *
+   * Scoped to `#stage` rather than listed by id: everything interactive inside
+   * it is hub chrome by definition, and a fifth control added later gets the
+   * affordance without having to remember this. Nothing outside `#stage` is
+   * covered by `cursor: none`, so nothing outside it needs the treatment.
+   */
+  private bindHoverAffordance(): void {
+    const stage = document.querySelector('#stage');
+    if (stage === null) return;
+    this.hoverEls = Array.from(stage.querySelectorAll('a, button'));
+    for (const el of this.hoverEls) {
+      el.addEventListener('pointerenter', this.onLinkEnter);
+      el.addEventListener('pointerleave', this.onLinkLeave);
+    }
   }
 
   private handleWheel(e: WheelEvent): void {
@@ -706,7 +823,11 @@ export class Router {
 
   private handleMove(e: PointerEvent): void {
     if (this.current !== null || this.going || this.hub === null) return;
-    this.labels?.moveReticle(e.clientX, e.clientY);
+    // Coarse pointers get neither the reticle nor `cursor: none`: there is no
+    // cursor to replace, and a ring trailing a finger is just a smudge. Moving
+    // it anyway — as this used to, before the `coarse` guard further down —
+    // armed it on touch as soon as arming became a side effect of moving.
+    if (!this.coarse) this.labels?.moveReticle(e.clientX, e.clientY);
 
     const r = this.el.canvas.getBoundingClientRect();
     this.hub.setPointer(

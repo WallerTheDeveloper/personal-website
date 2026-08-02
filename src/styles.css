@@ -76,6 +76,18 @@
   --display: 'Bodoni Moda', Georgia, serif;
   --sans:    'Archivo', 'Helvetica Neue', Helvetica, sans-serif;
   --mono:    'IBM Plex Mono', monospace;
+
+  /* Every font-size in this file runs through this multiplier, base values kept
+     at their authored numbers so the prototype stays readable against them. The
+     stylesheet has no `rem` anywhere, so `html { font-size }` would be a no-op
+     and `zoom` would desync the engine — it reads `clientWidth`, projects the
+     planets to px and writes them back to the labels, all in real pixels.
+     Deliberately TYPE only: `44vh` heroes, column max-widths and every padding
+     clamp are untouched, because the parked-planet solve in hub.ts
+     (PARK_HEIGHT_FRACTION) is hand-tuned against them.
+     Letter-spacing (em), the four `ch` max-widths and unitless line-heights all
+     follow from this on their own. */
+  --type-scale: 1.5;
 }
 
 /* Per-destination accents. One rule set, not four copies of every rule.
@@ -162,6 +174,22 @@ a:hover { color: var(--hover); }
   background: var(--void);
 }
 
+/* The reticle is the pointer on the hub, so the OS cursor comes off the whole
+   stage rather than the canvas alone. Hidden on #scene only, the pointer led a
+   double life: the system hand over the labels and the chrome, the reticle over
+   a planet, and nothing whatsoever over empty sky — which read as the cursor
+   being lost rather than as a deliberate treatment.
+
+   Gated on `data-dg-3d` because the flat document has no reticle to stand in
+   for it, and negated for coarse pointers to mirror the `matchMedia('(pointer:
+   coarse)')` the router gates arming on. The two have to agree or a touch
+   device gets no cursor and no reticle either. `not all and` rather than the
+   Level 4 `not (…)`, which is newer than the browsers this has to be safe on. */
+@media not all and (pointer: coarse) {
+  [data-dg-3d] .stage,
+  [data-dg-3d] .stage * { cursor: none; }
+}
+
 /* Faded up to 1 by the engine once the scene has booted. */
 .scene {
   position: absolute;
@@ -204,7 +232,9 @@ a:hover { color: var(--hover); }
   display: grid;
   justify-items: center;
   gap: 0;
-  padding: 6px 10px 8px;
+  /* Scaled with the type: this is the label's own hit-box, and the four sit
+     close enough at 390 that a fixed inset would let them touch. */
+  padding: calc(6px * var(--type-scale)) calc(10px * var(--type-scale)) calc(8px * var(--type-scale));
   text-align: center;
   pointer-events: auto;
   outline-offset: 6px;
@@ -231,7 +261,7 @@ a:hover { color: var(--hover); }
   display: block;
   margin-top: 8px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--accent);
@@ -242,7 +272,7 @@ a:hover { color: var(--hover); }
   display: block;
   margin-top: 4px;
   font-family: var(--display);
-  font-size: 20px;
+  font-size: calc(20px * var(--type-scale));
   letter-spacing: 0.01em;
   color: var(--ink-label);
   transition: color 300ms ease;
@@ -252,7 +282,7 @@ a:hover { color: var(--hover); }
   display: block;
   margin-top: 2px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink-label);
@@ -271,7 +301,7 @@ a:hover { color: var(--hover); }
   margin: 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(22px, 2.4vw, 32px);
+  font-size: clamp(calc(22px * var(--type-scale)), calc(2.4vw * var(--type-scale)), calc(32px * var(--type-scale)));
   letter-spacing: 0.005em;
   line-height: 1.1;
   color: var(--ink-hub);
@@ -281,7 +311,7 @@ a:hover { color: var(--hover); }
   margin: 10px 0 0;
   max-width: 34ch;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   line-height: 1.6;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -291,7 +321,7 @@ a:hover { color: var(--hover); }
 .hub-head__location {
   margin: 6px 0 0;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--dim);
@@ -311,7 +341,7 @@ a:hover { color: var(--hover); }
 
 .skip-scene {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
@@ -330,10 +360,12 @@ a:hover { color: var(--hover); }
   background: transparent;
   border: 1px solid var(--rule-btn);
   border-radius: 2px;
-  padding: 5px 9px;
+  /* Padding tracks the type or the button reads as a cramped chip. The 2px
+     radius does not — it is one of the two permitted radii, as a literal. */
+  padding: calc(5px * var(--type-scale)) calc(9px * var(--type-scale));
   cursor: pointer;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--chrome);
@@ -350,12 +382,44 @@ a:hover { color: var(--hover); }
   bottom: clamp(18px, 3vh, 34px);
   z-index: 5;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--dim);
   pointer-events: none;
   transition: opacity 400ms ease;
+}
+
+/* The bottom chrome is two opposite corners, which only holds while both fit on
+   one line. They stop fitting below ~1150px once the type is scaled, and the
+   hint then runs straight through the quality button — which it already did at
+   phone widths before the type was scaled at all, so this fixes a standing bug
+   as well as the one the scale introduced.
+
+   Above the foot rather than beside it: the hint is the only guidance a first
+   visitor gets that the scene can be dragged, and phone widths — where dragging
+   *is* the interaction — are the worst place to drop it.
+
+   The one width breakpoint in this file. Everything else is fluid by clamp(),
+   and this stays a breakpoint because the thing being avoided is a collision
+   between two independently-sized boxes, which no single clamp can express.
+   `3em` is of the hint's own font-size, so the clearance tracks the scale; the
+   left edge lets a long hint wrap upward instead of running off the viewport. */
+@media (max-width: 1200px) {
+  .hud-hint {
+    left: clamp(20px, 4vw, 56px);
+    bottom: calc(clamp(18px, 3vh, 34px) + 3em);
+    text-align: right;
+  }
+}
+
+/* Narrower still, the foot runs out of room for the skip link and the quality
+   button side by side and wraps to two rows of its own, so the hint has two to
+   clear rather than one. Same rule, one row further up. */
+@media (max-width: 640px) {
+  .hud-hint {
+    bottom: calc(clamp(18px, 3vh, 34px) + 6em);
+  }
 }
 
 /* The other permitted radius. Tracks the cursor; the engine writes left/top. */
@@ -374,6 +438,88 @@ a:hover { color: var(--hover); }
   transition: opacity 200ms ease, transform 200ms ease;
   pointer-events: none;
   mix-blend-mode: screen;
+}
+
+/* ---------------------------------------------------------------------------
+   Loading screen
+
+   Owns the viewport from first paint until the engine's first rendered frame.
+   It is the 3D path's counterpart to #fallback: the text edition is what a
+   visitor without WebGL gets immediately, this is what a visitor *with* WebGL
+   looks at while three.js downloads and the ten planet textures bake.
+
+   Display is gated on `data-dg-3d`, which the head probe sets before first
+   paint. That gate is the whole no-JS story — with scripting off the attribute
+   is never set, this stays `display: none` with no script having run, and the
+   flat document's links are not covered by a full-bleed overlay.
+
+   z-index clears the panel shell (45) and the warp canvas (60): `.stage` is
+   `position: fixed` with `z-index: auto` and so is not a stacking context,
+   which is what lets a value here compete in the root context. A deep link
+   commits its panel inside `boot()`, and this has to stay over it until the
+   scene behind it is actually up.
+   --------------------------------------------------------------------------- */
+
+.loading {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  background: var(--void);
+  transition: opacity 400ms ease;
+  pointer-events: none;
+}
+
+[data-dg-3d] .loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading__name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: calc(32px * var(--type-scale));
+  letter-spacing: 0.005em;
+  line-height: 1.1;
+  color: var(--ink-hub);
+}
+
+.loading__status {
+  margin: 14px 0 0;
+  font-family: var(--mono);
+  font-size: calc(10px * var(--type-scale));
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* A hairline, not a bar with a fill percentage: there is nothing honest to
+   measure. `import()` reports no progress and the bakes are synchronous, so a
+   determinate readout would be a decoration pretending to be data. */
+.loading__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  overflow: hidden;
+  background: var(--rule);
+}
+
+.loading__fill {
+  display: block;
+  width: 34%;
+  height: 100%;
+  background: var(--hover);
+  animation: loadSweep 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes loadSweep {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(394%); }
 }
 
 /* ---------------------------------------------------------------------------
@@ -401,7 +547,7 @@ a:hover { color: var(--hover); }
 .te__eyebrow {
   margin: 0 0 clamp(28px, 6vh, 56px);
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--dim);
@@ -411,7 +557,7 @@ a:hover { color: var(--hover); }
   margin: 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(38px, 7vw, 84px);
+  font-size: clamp(calc(38px * var(--type-scale)), calc(7vw * var(--type-scale)), calc(84px * var(--type-scale)));
   line-height: 1.02;
   letter-spacing: -0.01em;
   color: var(--ink-hub);
@@ -420,7 +566,7 @@ a:hover { color: var(--hover); }
 .te__tagline {
   margin: 18px 0 0;
   max-width: 46ch;
-  font-size: clamp(16px, 1.6vw, 19px);
+  font-size: clamp(calc(16px * var(--type-scale)), calc(1.6vw * var(--type-scale)), calc(19px * var(--type-scale)));
   line-height: 1.6;
   color: var(--intro-te);
 }
@@ -428,7 +574,9 @@ a:hover { color: var(--hover); }
 /* The 1px gap plus the container background is what draws the grid hairlines. */
 .te__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  /* The track floor scales with the card title, or a 39px display heading wraps
+     mid-word before auto-fit ever decides to drop a column. */
+  grid-template-columns: repeat(auto-fit, minmax(calc(240px * var(--type-scale)), 1fr));
   gap: 1px;
   margin-top: clamp(36px, 7vh, 72px);
   background: var(--rule);
@@ -446,7 +594,7 @@ a:hover { color: var(--hover); }
 .te__card-num {
   display: block;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.2em;
   color: var(--accent);
 }
@@ -455,14 +603,14 @@ a:hover { color: var(--hover); }
   display: block;
   margin-top: 14px;
   font-family: var(--display);
-  font-size: clamp(20px, 2.2vw, 26px);
+  font-size: clamp(calc(20px * var(--type-scale)), calc(2.2vw * var(--type-scale)), calc(26px * var(--type-scale)));
   color: var(--ink-label);
 }
 
 .te__note {
   margin: clamp(28px, 5vh, 48px) 0 0;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--dim);
@@ -516,7 +664,7 @@ a:hover { color: var(--hover); }
 
 .panel__back {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--bar-link);
@@ -527,7 +675,7 @@ a:hover { color: var(--hover); }
   align-items: center;
   gap: 18px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--dim);
@@ -555,7 +703,7 @@ a:hover { color: var(--hover); }
   left: clamp(18px, 4vw, 44px);
   bottom: 18px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--accent);
@@ -577,7 +725,7 @@ a:hover { color: var(--hover); }
   margin: 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(38px, 6vw, 62px);
+  font-size: clamp(calc(38px * var(--type-scale)), calc(6vw * var(--type-scale)), calc(62px * var(--type-scale)));
   line-height: 1.05;
   letter-spacing: -0.012em;
   color: var(--ink);
@@ -586,7 +734,7 @@ a:hover { color: var(--hover); }
 .intro {
   margin: 22px 0 0;
   max-width: 60ch;
-  font-size: clamp(17px, 1.9vw, 20px);
+  font-size: clamp(calc(17px * var(--type-scale)), calc(1.9vw * var(--type-scale)), calc(20px * var(--type-scale)));
   line-height: 1.65;
   color: var(--intro);
 }
@@ -602,7 +750,7 @@ a:hover { color: var(--hover); }
   flex-wrap: wrap;
   gap: 10px 26px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--chrome);
@@ -628,7 +776,7 @@ a:hover { color: var(--hover); }
 .section-title {
   margin: 0 0 20px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   font-weight: 500;
   letter-spacing: 0.26em;
   text-transform: uppercase;
@@ -643,14 +791,14 @@ a:hover { color: var(--hover); }
 .meta {
   margin: 10px 0 0;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   letter-spacing: 0.1em;
   color: var(--meta);
 }
 
 .summary {
   margin: 16px 0 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--type-scale));
   line-height: 1.75;
   color: var(--body);
 }
@@ -665,8 +813,9 @@ a:hover { color: var(--hover); }
 
 .bullets > li {
   position: relative;
-  padding-left: 20px;
-  font-size: 16px;
+  /* Clears the em-dash marker at left: 0, which grows with the type. */
+  padding-left: calc(20px * var(--type-scale));
+  font-size: calc(16px * var(--type-scale));
   line-height: 1.65;
   color: var(--bullet);
 }
@@ -681,7 +830,7 @@ a:hover { color: var(--hover); }
 .stack {
   margin: 16px 0 0;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   line-height: 1.7;
   letter-spacing: 0.04em;
   color: var(--muted);
@@ -714,7 +863,7 @@ a:hover { color: var(--hover); }
   margin: 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(22px, 2.6vw, 27px);
+  font-size: clamp(calc(22px * var(--type-scale)), calc(2.6vw * var(--type-scale)), calc(27px * var(--type-scale)));
   line-height: 1.2;
   color: var(--ink-head);
 }
@@ -726,7 +875,7 @@ a:hover { color: var(--hover); }
   border: 1px solid rgba(var(--accent-rgb), 0.38);
   background: rgba(var(--accent-rgb), 0.06);
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   line-height: 1.7;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -736,7 +885,7 @@ a:hover { color: var(--hover); }
 .note {
   margin: 0 0 24px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   line-height: 1.7;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -763,7 +912,7 @@ a:hover { color: var(--hover); }
 .entry__org {
   margin: 0;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--accent);
@@ -773,7 +922,7 @@ a:hover { color: var(--hover); }
   margin: 12px 0 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(24px, 3vw, 30px);
+  font-size: clamp(calc(24px * var(--type-scale)), calc(3vw * var(--type-scale)), calc(30px * var(--type-scale)));
   line-height: 1.2;
   color: var(--ink-head);
 }
@@ -800,14 +949,14 @@ a:hover { color: var(--hover); }
   margin: 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(23px, 2.8vw, 28px);
+  font-size: clamp(calc(23px * var(--type-scale)), calc(2.8vw * var(--type-scale)), calc(28px * var(--type-scale)));
   line-height: 1.2;
   color: var(--ink-head);
 }
 
 .project__status {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--accent);
@@ -822,7 +971,7 @@ a:hover { color: var(--hover); }
 
 .project__link {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--mint);
@@ -850,7 +999,7 @@ a:hover { color: var(--hover); }
 .employment__org {
   margin: 0;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--violet-soft);
@@ -860,7 +1009,7 @@ a:hover { color: var(--hover); }
   margin: 14px 0 0;
   font-family: var(--display);
   font-weight: 400;
-  font-size: clamp(26px, 3.4vw, 34px);
+  font-size: clamp(calc(26px * var(--type-scale)), calc(3.4vw * var(--type-scale)), calc(34px * var(--type-scale)));
   line-height: 1.15;
   color: var(--ink-xr);
 }
@@ -868,14 +1017,14 @@ a:hover { color: var(--hover); }
 .employment__meta {
   margin: 12px 0 0;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   letter-spacing: 0.1em;
   color: var(--meta-2);
 }
 
 .employment__summary {
   margin: 20px 0 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--type-scale));
   line-height: 1.75;
   color: var(--body-2);
 }
@@ -889,7 +1038,7 @@ a:hover { color: var(--hover); }
 .about__meta {
   margin: 16px 0 0;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--chrome);
@@ -898,7 +1047,7 @@ a:hover { color: var(--hover); }
 .bio {
   margin: 26px 0 0;
   max-width: 62ch;
-  font-size: clamp(17px, 1.9vw, 20px);
+  font-size: clamp(calc(17px * var(--type-scale)), calc(1.9vw * var(--type-scale)), calc(20px * var(--type-scale)));
   line-height: 1.7;
   color: var(--intro-bio);
 }
@@ -907,16 +1056,18 @@ a:hover { color: var(--hover); }
   display: flex;
   align-items: baseline;
   gap: 14px;
-  font-size: 18px;
+  font-size: calc(18px * var(--type-scale));
   color: var(--link-2);
 }
 
 .contact__row--cv { color: var(--amber); }
 
 .contact__label {
-  min-width: 92px;
+  /* The label column is sized to the longest mono label, so it has to grow with
+     it or the value beside it stops aligning. */
+  min-width: calc(92px * var(--type-scale));
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--chrome);
@@ -943,13 +1094,13 @@ a:hover { color: var(--hover); }
   gap: 16px;
   padding: 14px 0;
   border-bottom: 1px solid var(--rule);
-  font-size: 17px;
+  font-size: calc(17px * var(--type-scale));
   color: var(--body-2);
 }
 
 .langs__level {
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: calc(12px * var(--type-scale));
   letter-spacing: 0.14em;
   color: var(--muted);
 }
@@ -963,7 +1114,7 @@ a:hover { color: var(--hover); }
 .skills__group-title {
   margin: 0;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -974,7 +1125,7 @@ a:hover { color: var(--hover); }
 
 .skills__list {
   margin: 14px 0 0;
-  font-size: 17px;
+  font-size: calc(17px * var(--type-scale));
   line-height: 1.85;
   color: var(--body-3);
 }
@@ -988,7 +1139,7 @@ a:hover { color: var(--hover); }
 .elsewhere__title {
   margin: 0 0 20px;
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--dim);
@@ -1003,13 +1154,13 @@ a:hover { color: var(--hover); }
   display: flex;
   align-items: baseline;
   gap: 14px;
-  font-size: 18px;
+  font-size: calc(18px * var(--type-scale));
   color: var(--link);
 }
 
 .elsewhere__num {
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: calc(11px * var(--type-scale));
   letter-spacing: 0.2em;
   color: var(--accent);
 }
@@ -1061,6 +1212,11 @@ html[data-dg-flat] #fallback { position: static; opacity: 1; pointer-events: aut
 
 @media (prefers-reduced-motion: reduce) {
   [data-grain] { animation: none !important; }
+
+  /* The sweep is the one animation on the loading screen. Stopped, the hairline
+     still has to read as "something is happening", so the fill spans the bar
+     rather than sitting as a stalled third of it. */
+  .loading__fill { animation: none !important; width: 100%; opacity: 0.5; }
 
   /* A jump is a 200 ms cross-fade instead of the ship flight and the warp
      (README "Reduced motion"). `commit()` writes the same inline

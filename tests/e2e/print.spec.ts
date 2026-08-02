@@ -13,7 +13,20 @@ import { expect, test, type Page } from '@playwright/test';
 import { clickLabel, openHub, PANELS, waitForPanel } from './helpers';
 
 /** Nothing from the scene, the transition, or the sticky chrome may print. */
-const HIDDEN = ['#stage', '#scene', '#smoke', '#reticle', '[data-grain]', '[data-panel-top]', '[data-hero]'];
+const HIDDEN = [
+  '#stage',
+  '#scene',
+  '#smoke',
+  '#reticle',
+  // Covered by `#stage { display: none }` rather than by a rule of its own —
+  // which is exactly why it is asserted here. The loading screen lives inside
+  // #stage so that the flat and print states need no teardown for it, and this
+  // is what would notice if it were ever moved out.
+  '#loading',
+  '[data-grain]',
+  '[data-panel-top]',
+  '[data-hero]',
+];
 
 async function expectPrintsAsOneDocument(page: Page): Promise<void> {
   for (const selector of HIDDEN) {

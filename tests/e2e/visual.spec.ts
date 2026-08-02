@@ -38,6 +38,34 @@ import { PANELS, type Panel } from './helpers';
 const HEIGHTS: Readonly<Record<number, number>> = { 1440: 900, 1024: 768, 768: 900, 390: 844 };
 
 /**
+ * `--type-scale` in `styles.css`.
+ *
+ * Every font-size in the site is authored at the value measured off the
+ * prototype and multiplied by this one token, so the numbers below stay the
+ * measured ones and the scale is stated once, here. That is the whole reason it
+ * is a token: the prototype in `design/` remains the thing these were taken
+ * from, and it is still legible against this file.
+ *
+ * Type only. The hero's `44vh`, the column measures and every padding clamp are
+ * *not* scaled — the parked-planet solve in `hub.ts` is hand-tuned against them
+ * — and the assertions further down that pin those unscaled are what prove the
+ * scope held.
+ */
+const TYPE_SCALE = 1.5;
+
+/** A prototype font-size, as the browser reports it once scaled. */
+const size = (base: number): string => `${base * TYPE_SCALE}px`;
+
+/**
+ * A prototype letter-spacing, resolved. It is authored in `em`, so it follows
+ * the font-size on its own — which is the point, and what this re-checks.
+ * Rounded because `0.14 × 16.5` is not exact in binary and Chromium's
+ * serialisation and JavaScript's do not have to agree on the tail.
+ */
+const track = (em: number, base: number): number =>
+  Math.round(em * base * TYPE_SCALE * 1000) / 1000;
+
+/**
  * The routed document, with the scene stood down.
  *
  * The head probe still runs — it is inline and blocking — so `<html>` carries
@@ -91,7 +119,7 @@ async function typeOf(page: Page, selector: string) {
       family: s.fontFamily.split(',')[0]?.replace(/["']/g, '') ?? '',
       size: s.fontSize,
       weight: s.fontWeight,
-      spacing: s.letterSpacing,
+      spacing: Math.round(parseFloat(s.letterSpacing) * 1000) / 1000,
       transform: s.textTransform,
       colour: s.color,
     };
@@ -105,9 +133,9 @@ test.describe('the hub chrome', () => {
     // Bodoni for the display line, always weight 400 (CLAUDE.md "Styling").
     expect(await typeOf(page, '.hub-head__name')).toEqual({
       family: 'Bodoni Moda',
-      size: '32px', // clamp(22px, 2.4vw, 32px), capped at 1440
+      size: size(32), // clamp(22px, 2.4vw, 32px), capped at 1440
       weight: '400',
-      spacing: '0.16px', // 0.005em
+      spacing: track(0.005, 32),
       transform: 'none',
       colour: 'rgb(242, 240, 248)', // --ink-hub
     });
@@ -115,25 +143,25 @@ test.describe('the hub chrome', () => {
     // Mono, uppercase, for every piece of chrome.
     expect(await typeOf(page, '.hub-head__role')).toEqual({
       family: 'IBM Plex Mono',
-      size: '12px',
+      size: size(12),
       weight: '400',
-      spacing: '1.08px', // 0.09em
+      spacing: track(0.09, 12),
       transform: 'uppercase',
       colour: 'rgb(146, 148, 171)', // --chrome
     });
     expect(await typeOf(page, '#skip-scene')).toEqual({
       family: 'IBM Plex Mono',
-      size: '11px',
+      size: size(11),
       weight: '400',
-      spacing: '1.54px', // 0.14em
+      spacing: track(0.14, 11),
       transform: 'uppercase',
       colour: 'rgb(131, 133, 156)', // --muted
     });
     expect(await typeOf(page, '#hud-hint')).toEqual({
       family: 'IBM Plex Mono',
-      size: '10px',
+      size: size(10),
       weight: '400',
-      spacing: '1.6px', // 0.16em
+      spacing: track(0.16, 10),
       transform: 'uppercase',
       colour: 'rgb(138, 140, 163)', // --dim, the dimmest text the palette allows
     });
@@ -149,17 +177,17 @@ test.describe('the hub chrome', () => {
     for (const [i, id] of PANELS.entries()) {
       expect(await typeOf(page, `#lbl-${id} .label__index`), id).toEqual({
         family: 'IBM Plex Mono',
-        size: '11px',
+        size: size(11),
         weight: '400',
-        spacing: '2.42px', // 0.22em
+        spacing: track(0.22, 11),
         transform: 'uppercase',
         colour: accents[i]!,
       });
       expect(await typeOf(page, `#lbl-${id} .label__name`), id).toEqual({
         family: 'Bodoni Moda',
-        size: '20px',
+        size: size(20),
         weight: '400',
-        spacing: '0.2px', // 0.01em
+        spacing: track(0.01, 20),
         transform: 'none',
         colour: 'rgb(236, 234, 244)', // --ink-label, the resting tint
       });
@@ -267,9 +295,9 @@ test.describe('the panels', () => {
 
     expect(await typeOf(page, '[data-panel="backend"] h1')).toEqual({
       family: 'Bodoni Moda',
-      size: '62px', // clamp(38px, 6vw, 62px), capped at 1440
+      size: size(62), // clamp(38px, 6vw, 62px), capped at 1440
       weight: '400',
-      spacing: '-0.744px', // -0.012em
+      spacing: track(-0.012, 62),
       transform: 'none',
       colour: 'rgb(244, 242, 250)', // --ink
     });
@@ -311,8 +339,11 @@ test.describe('the text edition', () => {
       // clamp(20px, 6vw, 96px) of page padding either side of a 1080px column.
       const pad = Math.min(96, Math.max(20, width * 0.06));
       expect(te.colWidth).toBeCloseTo(Math.min(1080, width - pad * 2), 0);
-      // clamp(38px, 7vw, 84px).
-      expect(parseFloat(te.heading)).toBeCloseTo(Math.min(84, Math.max(38, width * 0.07)), 1);
+      // clamp(38px, 7vw, 84px), every leg through --type-scale.
+      expect(parseFloat(te.heading)).toBeCloseTo(
+        Math.min(84, Math.max(38, width * 0.07)) * TYPE_SCALE,
+        1,
+      );
       // The hairlines *are* the 1px gap: the grid's background shows through
       // between cards. Nothing here draws a border per card. Chromium collapses
       // an equal row/column gap to one value.
