@@ -718,7 +718,20 @@ because it gzips at a different level. Either number has the same headroom;
       *Clamped correctly in Chromium at `deviceScaleFactor: 3` — 2 desktop,
       1.5 at 390×844, pinned in `budget.spec.ts`. A real handset is still the
       check that counts.*
-- [ ] Lighthouse a11y pass; axe clean on hub + all four panels + the text edition.
+- [x] Lighthouse a11y pass; axe clean on hub + all four panels + the text edition.
+      *`@axe-core/playwright` added; `tests/e2e/a11y.spec.ts` scans all six
+      documents on the WCAG 2.0/2.1 A and AA tags with nothing disabled.
+      Lighthouse accessibility is **100** against `vite preview`.*
+      *The text edition is scanned by denying WebGL rather than by disabling JS:
+      axe-core runs inside the page, so with JS off there is nothing to run it.
+      Same `html[data-dg-flat]` document either way — the no-JS route is covered
+      structurally, without axe, by `fallback.spec.ts`.*
+      *Found and fixed: the Esc hint at 3.33:1, under the 4.5:1 floor. It is the
+      only place the site advertises how to close a panel from the keyboard.*
+      *`blockWebGL()` now lives in `tests/e2e/helpers.ts`. Five specs
+      (`fallback`, `visual`, `print`, `loading`, `cursor`) still carry their own
+      copy from before it was shared; they can adopt it when next touched — not
+      rewritten here, mid-ship, for no functional gain.*
 - [x] Deploy `dist/` (host per Phase 0 ASK). **ASK answered — GitHub Pages**,
       apex `golosov-danylo.com`. `.github/workflows/deploy.yml` builds on push to
       `master` and publishes `dist/`; `public/CNAME` carries the domain into the

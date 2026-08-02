@@ -43,7 +43,9 @@
   --meta-2:    #8b8da5;  /* employment dates / location */
   --marker:    #5e6076;  /* decoration only: list markers, hairlines */
   --marker-xr: #6b5a9e;  /* …and their violet variant, employment only */
-  --esc:       #5f6178;  /* the "Esc" hint in the sticky bar */
+  --esc:       #8a8ca3;  /* the "Esc" hint — chrome text, so it sits at --dim */
+                         /* Was #5f6178 = 3.33:1, under the 4.5:1 floor. See
+                            .panel__esc before dimming it again. */
 
   /* Accents */
   --ember:       #ff9a4d;         /* engine glow — set in the scene, not in CSS */
@@ -681,6 +683,20 @@ a:hover { color: var(--hover); }
   color: var(--dim);
 }
 
+/*
+ * The Esc hint is the only place the site advertises how to close a panel from
+ * the keyboard, and it is text — so it takes the 4.5:1 floor like the rest of
+ * the chrome, not the decoration exemption that --marker gets.
+ *
+ * It shipped at #5f6178 (3.33:1) and `a11y.spec.ts` caught it in the text
+ * edition. Routed, axe reports it *incomplete* rather than failing: the hint
+ * sits over the transparent hero with the live scene behind it, so there is no
+ * background to measure. That makes the routed case worse, not exempt — the
+ * backdrop there is a moving starfield.
+ *
+ * --esc stays its own token so the hint can be brightened independently later.
+ * It cannot go below --dim.
+ */
 .panel__esc { color: var(--esc); }
 
 .panel__where { color: var(--accent); }

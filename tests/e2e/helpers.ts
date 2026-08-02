@@ -26,6 +26,29 @@ export const JUMP_MS = 3400;
  * quietly go stale.
  */
 
+/**
+ * Turn every WebGL context request into `null`, leaving 2D alone — which is
+ * what a device without WebGL looks like to the head probe and to the engine.
+ *
+ * Always an init script, never a browser flag: the flag would change what the
+ * rest of the suite runs against, and the probe has to see the same failure the
+ * engine would.
+ *
+ * `fallback`, `visual`, `print`, `loading` and `cursor` each carry their own
+ * copy of this, written before it was worth sharing. New specs should use this
+ * one; the five copies can adopt it whenever one of them is next touched.
+ */
+export async function blockWebGL(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const real = HTMLCanvasElement.prototype.getContext;
+    const blocked = new Set(['webgl', 'webgl2', 'experimental-webgl']);
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
+      if (blocked.has(String(args[0]))) return null;
+      return (real as (...a: unknown[]) => unknown).apply(this, args);
+    } as typeof real;
+  });
+}
+
 /** Load a URL and wait for the WebGL hub to be up. */
 export async function openHub(page: Page, path = '/'): Promise<void> {
   await page.goto(path);

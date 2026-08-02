@@ -67,7 +67,19 @@ motion, not frame-exact numbers.
 
 ## E — Accessibility and text edition
 
-- [ ] axe/Lighthouse clean on the hub, all four panels, and the text edition.
+- [x] axe/Lighthouse clean on the hub, all four panels, and the text edition.
+      *`a11y.spec.ts` runs axe over all six, on `wcag2a`/`wcag2aa`/`wcag21a`/
+      `wcag21aa`, with nothing disabled — `color-contrast` included. Lighthouse
+      accessibility scores **100** against `vite preview`, with no automated
+      failure; its remaining items are the always-manual checklist, and the
+      focus ones (`focusable-controls`, `logical-tab-order`, `managed-focus`,
+      `focus-traps`) are covered by `keyboard.spec.ts`.*
+      *One real finding, now fixed: `--esc`, the "Esc to close" hint, shipped at
+      `#5f6178` = **3.33:1**, under the 4.5:1 floor CLAUDE.md sets for chrome
+      text. Only the text edition failed — routed, the hint sits over the
+      transparent hero with the live scene behind it, so axe reports it
+      *incomplete* rather than failing. That made the routed case worse, not
+      exempt. Raised to `--dim` `#8a8ca3` = 6.1:1.*
 - [ ] Both canvases `aria-hidden="true"`.
 - [ ] Tab from load reaches all four planet labels in DOM order with a visible focus ring (`outline-offset: 6px`) and the hover treatment; Enter launches.
 - [ ] Escape closes any panel.
@@ -122,7 +134,19 @@ tests/e2e/
                         at 1440 / 1024 / 768 / 390
   print.spec.ts         emulate print media → one continuous document
   budget.spec.ts        transfer size, draw calls, idle heap flat
+  a11y.spec.ts          axe over hub + 4 panels + text edition, WCAG 2.0/2.1
+                        A and AA, nothing disabled
+  loading.spec.ts       loading screen up until the hub's second frame, and
+                        the stall watchdog that falls back to the text edition
+  cursor.spec.ts        the cursor stays visible; the reticle has one writer
+  session.spec.ts       the hub camera angle survives a reload
+  assets.spec.ts        public/ files reachable over HTTP at the paths the
+                        document asks for (cv.pdf above all)
 ```
+
+The list above is what the suite actually contains, not the original plan —
+`exit`, `dead-input` and `queueing` were written as specified; the rest were
+added as the port turned up things worth pinning.
 
 Block WebGL for `fallback.spec.ts` by overriding
 `HTMLCanvasElement.prototype.getContext` in an init script — do not rely on a
