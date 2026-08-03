@@ -33,10 +33,6 @@ export const JUMP_MS = 3400;
  * Always an init script, never a browser flag: the flag would change what the
  * rest of the suite runs against, and the probe has to see the same failure the
  * engine would.
- *
- * `fallback`, `visual`, `print`, `loading` and `cursor` each carry their own
- * copy of this, written before it was worth sharing. New specs should use this
- * one; the five copies can adopt it whenever one of them is next touched.
  */
 export async function blockWebGL(page: Page): Promise<void> {
   await page.addInitScript(() => {

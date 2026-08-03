@@ -10,7 +10,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { clickLabel, openHub, PANELS, waitForPanel } from './helpers';
+import { blockWebGL, clickLabel, openHub, PANELS, waitForPanel } from './helpers';
 
 /** Nothing from the scene, the transition, or the sticky chrome may print. */
 const HIDDEN = [
@@ -82,14 +82,7 @@ test('an open panel prints as the whole CV, not just itself', async ({ page }) =
 });
 
 test('the text edition prints the same document', async ({ page }) => {
-  await page.addInitScript(() => {
-    const real = HTMLCanvasElement.prototype.getContext;
-    const blocked = new Set(['webgl', 'webgl2', 'experimental-webgl']);
-    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
-      if (blocked.has(String(args[0]))) return null;
-      return (real as (...a: unknown[]) => unknown).apply(this, args);
-    } as typeof real;
-  });
+  await blockWebGL(page);
   await page.goto('/');
   await page.emulateMedia({ media: 'print' });
   await expectPrintsAsOneDocument(page);

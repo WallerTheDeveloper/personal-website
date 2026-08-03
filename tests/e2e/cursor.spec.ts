@@ -17,7 +17,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { clickLabel, openHub, planetPoint, waitForPanel } from './helpers';
+import { blockWebGL, clickLabel, openHub, planetPoint, waitForPanel } from './helpers';
 
 /** Somewhere on the canvas with no planet under it. */
 async function emptySky(page: Page): Promise<{ x: number; y: number }> {
@@ -67,14 +67,7 @@ test.describe('the OS cursor', () => {
   });
 
   test('is left alone in the text edition', async ({ page }) => {
-    await page.addInitScript(() => {
-      const real = HTMLCanvasElement.prototype.getContext;
-      const blocked = new Set(['webgl', 'webgl2', 'experimental-webgl']);
-      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
-        if (blocked.has(String(args[0]))) return null;
-        return (real as (...a: unknown[]) => unknown).apply(this, args);
-      } as typeof real;
-    });
+    await blockWebGL(page);
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('html')).toHaveAttribute('data-dg-flat', '1');
 

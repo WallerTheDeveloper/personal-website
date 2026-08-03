@@ -24,7 +24,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { openHub, waitForPanel } from './helpers';
+import { blockWebGL, openHub, waitForPanel } from './helpers';
 
 /** `LOADER_TIMEOUT_MS` in `src/router.ts`. */
 const LOADER_TIMEOUT_MS = 12_000;
@@ -194,14 +194,7 @@ test.describe('the editions that never see it', () => {
   });
 
   test('a browser without WebGL never shows it', async ({ page }) => {
-    await page.addInitScript(() => {
-      const real = HTMLCanvasElement.prototype.getContext;
-      const blocked = new Set(['webgl', 'webgl2', 'experimental-webgl']);
-      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
-        if (blocked.has(String(args[0]))) return null;
-        return (real as (...a: unknown[]) => unknown).apply(this, args);
-      } as typeof real;
-    });
+    await blockWebGL(page);
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     await expect(page.locator('html')).toHaveAttribute('data-dg-flat', '1');

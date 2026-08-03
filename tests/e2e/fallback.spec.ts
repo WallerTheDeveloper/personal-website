@@ -13,19 +13,7 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { clickLabel, openHub, PANELS, waitForPanel } from './helpers';
-
-/** Turn every WebGL context request into `null`, leaving 2D alone. */
-async function blockWebGL(page: Page): Promise<void> {
-  await page.addInitScript(() => {
-    const real = HTMLCanvasElement.prototype.getContext;
-    const blocked = new Set(['webgl', 'webgl2', 'experimental-webgl']);
-    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
-      if (blocked.has(String(args[0]))) return null;
-      return (real as (...a: unknown[]) => unknown).apply(this, args);
-    } as typeof real;
-  });
-}
+import { blockWebGL, clickLabel, openHub, PANELS, waitForPanel } from './helpers';
 
 /**
  * Everything that makes the flat document the flat document, asserted in one

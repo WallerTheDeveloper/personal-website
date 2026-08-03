@@ -32,7 +32,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 import { WIDTHS } from '../../playwright.config';
-import { PANELS, type Panel } from './helpers';
+import { blockWebGL, PANELS, type Panel } from './helpers';
 
 /** Portrait for the phone width, landscape for the rest. */
 const HEIGHTS: Readonly<Record<number, number>> = { 1440: 900, 1024: 768, 768: 900, 390: 844 };
@@ -97,14 +97,7 @@ async function reveal(page: Page, id: Panel): Promise<void> {
 
 /** The text edition: WebGL blocked, so the document stays in the state it ships in. */
 async function openTextEdition(page: Page, width: number): Promise<void> {
-  await page.addInitScript(() => {
-    const real = HTMLCanvasElement.prototype.getContext;
-    const blocked = new Set(['webgl', 'webgl2', 'experimental-webgl']);
-    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...args: unknown[]) {
-      if (blocked.has(String(args[0]))) return null;
-      return (real as (...a: unknown[]) => unknown).apply(this, args);
-    } as typeof real;
-  });
+  await blockWebGL(page);
   await page.setViewportSize({ width, height: HEIGHTS[width] ?? 900 });
   await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('html')).toHaveAttribute('data-dg-flat', '1');
