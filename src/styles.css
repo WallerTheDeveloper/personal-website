@@ -69,7 +69,7 @@
   --rule-soft:   rgba(255, 255, 255, 0.05);  /* the fade in the accent divider */
   --rule-0:      rgba(255, 255, 255, 0);     /* …and where it ends */
   --rule-chrome: rgba(131, 133, 156, 0.35);  /* skip-scene underline */
-  --rule-btn:    rgba(131, 133, 156, 0.28);  /* quality button */
+  --rule-btn:    rgba(131, 133, 156, 0.28);  /* fps chip */
   --rule-cv:     rgba(169, 170, 189, 0.35);  /* CV underline, panel footers */
   --rule-cv-te:  rgba(169, 170, 189, 0.4);   /* CV underline, text edition */
   --bar:         rgba(5, 6, 13, 0.72);       /* sticky bar, blur(10px) */
@@ -356,26 +356,22 @@ a:hover { color: var(--hover); }
   border-bottom-color: rgba(var(--hover-rgb), 0.6);
 }
 
-/* One of the two permitted radii. */
-.quality {
-  appearance: none;
-  background: transparent;
+/* One of the two permitted radii.
+
+   No :hover rule, and no `cursor: pointer`: this is an inert readout, and an
+   affordance on something that does not respond is the defect that got the
+   quality toggle it used to live inside removed. */
+.fps {
   border: 1px solid var(--rule-btn);
   border-radius: 2px;
-  /* Padding tracks the type or the button reads as a cramped chip. The 2px
-     radius does not — it is one of the two permitted radii, as a literal. */
+  /* Padding tracks the type or the chip reads as cramped. The 2px radius does
+     not — it is one of the two permitted radii, as a literal. */
   padding: calc(5px * var(--type-scale)) calc(9px * var(--type-scale));
-  cursor: pointer;
   font-family: var(--mono);
   font-size: calc(10px * var(--type-scale));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--chrome);
-}
-
-.quality:hover {
-  border-color: rgba(var(--hover-rgb), 0.5);
-  color: var(--hover);
 }
 
 .hud-hint {
@@ -394,7 +390,7 @@ a:hover { color: var(--hover); }
 
 /* The bottom chrome is two opposite corners, which only holds while both fit on
    one line. They stop fitting below ~1150px once the type is scaled, and the
-   hint then runs straight through the quality button — which it already did at
+   hint then runs straight through the fps chip — which it already did at
    phone widths before the type was scaled at all, so this fixes a standing bug
    as well as the one the scale introduced.
 
@@ -415,9 +411,9 @@ a:hover { color: var(--hover); }
   }
 }
 
-/* Narrower still, the foot runs out of room for the skip link and the quality
-   button side by side and wraps to two rows of its own, so the hint has two to
-   clear rather than one. Same rule, one row further up. */
+/* Narrower still, the foot runs out of room for the skip link and the fps chip
+   side by side and wraps to two rows of its own, so the hint has two to clear
+   rather than one. Same rule, one row further up. */
 @media (max-width: 640px) {
   .hud-hint {
     bottom: calc(clamp(18px, 3vh, 34px) + 6em);

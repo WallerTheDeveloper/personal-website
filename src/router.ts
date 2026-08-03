@@ -56,7 +56,7 @@ export interface RouterConfig {
   warpColor: WarpColor;
   /** Panel-scroll parallax amount. See `startDrift()` — currently inert. */
   parallax: number;
-  /** The quality/fps readout and the drag hint. */
+  /** The fps readout and the drag hint. */
   showHud: boolean;
 }
 
@@ -196,7 +196,9 @@ export class Router {
     smoke: HTMLCanvasElement;
     reticle: HTMLElement | null;
     hint: HTMLElement | null;
-    qBtn: HTMLElement | null;
+    /** The chip, hidden wholesale when the HUD is off… */
+    fpsBox: HTMLElement | null;
+    /** …and the number inside it, rewritten twice a second. */
     fps: HTMLElement | null;
     header: HTMLElement | null;
     foot: HTMLElement | null;
@@ -254,7 +256,7 @@ export class Router {
       loader: document.querySelector('#loading'),
       reticle: document.querySelector('#reticle'),
       hint: document.querySelector('#hud-hint'),
-      qBtn: document.querySelector('#quality-toggle'),
+      fpsBox: document.querySelector('#fps'),
       fps: document.querySelector('#fps-readout'),
       header: document.querySelector('#hub-head'),
       foot: document.querySelector('#hub-foot'),
@@ -270,7 +272,7 @@ export class Router {
     this.panels = panels;
 
     this.labels = new LabelLayer(labels, this.el.reticle);
-    if (!config.showHud && this.el.qBtn !== null) this.el.qBtn.style.display = 'none';
+    if (!config.showHud && this.el.fpsBox !== null) this.el.fpsBox.style.display = 'none';
 
     window.addEventListener('popstate', this.onPop);
     window.addEventListener('hashchange', this.onHash);
@@ -360,10 +362,6 @@ export class Router {
     this.hub = hub;
     window.__dgHub = hub;
     window.__dg3dReady = true;
-
-    // The label is the button's first text node: "Quality: high · <span>--</span> fps".
-    const qLabel = this.el.qBtn?.firstChild;
-    if (qLabel != null) qLabel.textContent = `Quality: ${hub.quality} · `;
 
     // Session-scoped, written by this router alone — the engine keeps no storage.
     const saved = loadAzimuth();
@@ -785,13 +783,15 @@ export class Router {
   }
 
   /**
-   * The hub's clickable chrome — four planet anchors, the skip link, the quality
-   * button — told to the reticle.
+   * The hub's clickable chrome — four planet anchors and the skip link — told to
+   * the reticle.
    *
    * Scoped to `#stage` rather than listed by id: everything interactive inside
-   * it is hub chrome by definition, and a fifth control added later gets the
+   * it is hub chrome by definition, and a control added later gets the
    * affordance without having to remember this. Nothing outside `#stage` is
-   * covered by `cursor: none`, so nothing outside it needs the treatment.
+   * covered by `cursor: none`, so nothing outside it needs the treatment. The
+   * `a, button` selector is also what keeps the inert fps chip out of the set —
+   * a readout must not grow the ring as though it could be clicked.
    */
   private bindHoverAffordance(): void {
     const stage = document.querySelector('#stage');

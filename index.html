@@ -27,7 +27,7 @@
 <!-- Favicon, inline: no file, no request, and it cannot 404. Without any
      rel="icon" the browser asks for /favicon.ico on every load and gets one.
      Decoded, it is a 7r disc of --ember on a 32² of --void — the ship's engine
-     glow, square because radii are 0 everywhere but the quality button and the
+     glow, square because radii are 0 everywhere but the fps chip and the
      reticle. Placeholder mark; the owner replaces it with real branding.
      `#` must be %23 or the URI truncates at the fragment and the tab goes
      blank; spaces are %20 so the value is a strictly legal URL. Safari ignores
@@ -112,7 +112,10 @@
 
   <div id="hub-foot" class="hub-foot">
     <a id="skip-scene" href="#about" class="skip-scene">Skip the scene → read the CV</a>
-    <button id="quality-toggle" type="button" class="quality">Quality: high · <span id="fps-readout">--</span> fps</button>
+    <!-- A readout, not a control. `aria-hidden` for the same reason as
+         #hud-hint below: a number that changes twice a second is diagnostic
+         chrome, not content. -->
+    <div id="fps" aria-hidden="true" class="fps"><span id="fps-readout">--</span> fps</div>
   </div>
 
   <div id="hud-hint" aria-hidden="true" class="hud-hint">Drag / scroll to pan · Tab to cycle</div>

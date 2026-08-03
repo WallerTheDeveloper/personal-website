@@ -11,7 +11,7 @@ motion, not frame-exact numbers.
 - [ ] Hub at 1440×900: header, foot, HUD hint and all four labels match the prototype in position, size, colour, letter-spacing and case.
 - [ ] Each of the four panels matches the prototype at 1440, 1024, 768 and 390 px wide — column width, `clamp()` paddings, hairline colours, card backgrounds, accent usage.
 - [ ] Type: three families only; Bodoni Moda always weight 400; every size from the README scale.
-- [ ] Radii 0 except the 2 px quality button and the circular reticle. **No shadows anywhere.**
+- [ ] Radii 0 except the 2 px fps chip and the circular reticle. **No shadows anywhere.**
 - [ ] Grain: `opacity .16`, `mix-blend-mode: overlay`, animating in 4 steps over 1.1 s; off under reduced motion.
 - [ ] Vignette gradient exact.
 - [ ] Hover: label name goes to that destination's hover tint, leader line extends, reticle appears at the pointer.

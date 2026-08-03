@@ -16,7 +16,8 @@ Anything marked **ASK** must go back to the owner before you implement it.
       24 geometries at 1440. `devicePixelRatio` 3 → renderer **2** desktop and
       **1.5** at 390×844, where the tier is `low`, FOV 62 and the scene is 26
       calls. Tab order is the four labels in DOM order then `#skip-scene` and
-      `#quality-toggle`. Drag and wheel both pan; arrow-key hammering approaches
+      `#quality-toggle` — the sixth stop is gone in the port, see the answered
+      ASK in Phase 7. Drag and wheel both pan; arrow-key hammering approaches
       the ±0.5 clamp asymptotically (0.489 / −0.4748) rather than snapping to it.
       Hover eases a planet up from 1.0 toward 1.055 and unwinds on exit. Escape
       lands on the **hub** both from a direct visit and after a cross-link, Back
@@ -362,15 +363,27 @@ Minor: the projected screen slot is now on the public engine type
 handed out every frame through `onLabels`; naming it lets the e2e helpers read
 planet positions against real types instead of a hand-written shape.
 
-**ASK — the quality button does not toggle anything.** README says it "both
-reports fps and toggles the quality tier"; the prototype only ever wrote its
-label, and this port does the same. A live toggle is not possible under the
-one-renderer-per-document rule — the tier is chosen at `initHub()` and changing
-it means re-initialising, which is forbidden. `setQuality()` already persists to
-`localStorage` and `detectQuality()` honours it, so the only honest wiring is
-*click → store the other tier → reload the page*. Owner's call: leave it as a
-readout (and drop the `<button>` for a `<span>`, since a button that does
-nothing is a genuine a11y defect), or accept the reload.
+**~~ASK~~ — the quality button does not toggle anything. → ANSWERED: drop the
+control, keep the readout.** README said it "both reports fps and toggles the
+quality tier"; the prototype only ever wrote its label, and this port did the
+same. A live toggle is not possible under the one-renderer-per-document rule —
+the tier is chosen at `initHub()` and changing it means re-initialising, which
+is forbidden.
+
+The owner chose the readout over the reload, keeping the bordered chip. So
+`<button id="quality-toggle">` is now `<div id="fps" aria-hidden="true">` with
+the same box and the same 2 px radius, minus the hover state, the
+`cursor: pointer` and the tab stop. The `Quality: high · ` prefix is gone with
+it — it existed only to name a control that was never wired.
+
+`capabilities.ts` is deliberately untouched: `setQuality()` and `storedQuality()`
+are now application-dead, but `detectQuality()` still honours a stored tier, so
+`localStorage.setItem('dg-quality','low')` remains a working escape hatch and
+`engine.test.ts` still covers it.
+
+**Third deliberate deviation from the prototype** (after the reduced-motion
+cross-fade and the print `#stage` fix): the tab order is now five stops, not the
+six recorded in the Phase 0 baseline above.
 
 **Verified:** `tsc --noEmit` clean; 68 unit tests still green; **31 Playwright
 tests green across three consecutive full runs** at 2 and 4 workers. Build:
@@ -806,6 +819,12 @@ because it gzips at a different level. Either number has the same headroom;
       `Cache-Control` cannot be tuned. Vite's content-hashed asset names still
       cache well and `index.html` gets Pages' short default TTL. This is the
       price of the choice, not a defect to go hunting for later.*
+
+## Phase 12 — Post-launch pass, from a live sitting
+
+- [x] **Drop the quality toggle, keep the fps readout.** Resolves the Phase 7
+      ASK; the full answer is recorded there. `#quality-toggle` → `#fps`, same
+      chip, no control. Tab order six stops → five.
 
 ## Owner's pre-launch list (not the developer's)
 

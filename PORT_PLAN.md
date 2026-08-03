@@ -88,7 +88,7 @@ Take `design/index.dc.html` and unwrap the authoring layer:
 
 **The DOM contract.** The engine and router select on these; keep every one:
 `#stage`, `#scene`, `#smoke`, `#labels`, `#reticle`, `#hub-head`, `#hub-foot`,
-`#hud-hint`, `#quality-toggle`, `#fps-readout`, `#skip-scene`, `#fallback`,
+`#hud-hint`, `#fps`, `#fps-readout`, `#skip-scene`, `#fallback`,
 `#panel-{backend,projects,xr,about}`, `[data-panel]`, `[data-panel-top]`,
 `[data-hero]`, `[data-exit]`, `[data-planet]`, `[data-leader]`, `[data-name]`,
 `[data-grain]`, `[data-elsewhere]`, `[data-repo="n"]`, `[data-demo="n"]`,

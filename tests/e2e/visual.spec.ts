@@ -387,9 +387,9 @@ test.describe('house rules, over the whole document', () => {
 
     expect(seen.families).toEqual(['Archivo', 'Bodoni Moda', 'IBM Plex Mono']);
     expect(seen.heavyDisplay).toEqual([]);
-    // The only two radii in the site: the 2px quality button and the circular
+    // The only two radii in the site: the 2px fps chip and the circular
     // reticle. Anything else is a rule being relaxed.
-    expect(seen.radii).toEqual(['button#quality-toggle.quality → 2px', 'div#reticle.reticle → 50%']);
+    expect(seen.radii).toEqual(['div#fps.fps → 2px', 'div#reticle.reticle → 50%']);
     // "No shadows anywhere" is the load-bearing half of the look — depth comes
     // from the scene, the gradients and the hairlines.
     expect(seen.shadows).toEqual([]);
@@ -401,7 +401,7 @@ test.describe('house rules, over the whole document', () => {
 
     expect(seen.families).toEqual(['Archivo', 'Bodoni Moda', 'IBM Plex Mono']);
     expect(seen.heavyDisplay).toEqual([]);
-    expect(seen.radii).toEqual(['button#quality-toggle.quality → 2px', 'div#reticle.reticle → 50%']);
+    expect(seen.radii).toEqual(['div#fps.fps → 2px', 'div#reticle.reticle → 50%']);
     expect(seen.shadows).toEqual([]);
   });
 });

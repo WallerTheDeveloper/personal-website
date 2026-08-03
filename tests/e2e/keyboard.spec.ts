@@ -36,7 +36,7 @@ test('the keyboard reaches the hub: DOM order, a visible ring, and the hover tre
   await expect(page.locator('#fallback')).toBeHidden();
 
   const stops: (string | null)[] = [];
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 5; i++) {
     await page.keyboard.press('Tab');
     stops.push(await focusedId(page));
   }
@@ -45,9 +45,9 @@ test('the keyboard reaches the hub: DOM order, a visible ring, and the hover tre
     'lbl-projects',
     'lbl-xr',
     'lbl-about',
-    // Then the two hub controls, in the order they are read out.
+    // Then the hub's one control. The fps chip used to be a sixth stop, back
+    // when it wore a <button> that did nothing on Enter — see TASKS.md Phase 0.
     'skip-scene',
-    'quality-toggle',
   ]);
 
   await page.locator('#lbl-backend').focus();

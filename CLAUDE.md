@@ -60,7 +60,7 @@ Verify after any layout change.
 
 - CSS custom properties for all tokens (see README “Design tokens”). No magic hexes in rules.
 - Per-destination accents come from `[data-panel="…"] { --accent: … }`, not duplicated rulesets.
-- Radii are 0 everywhere except the 2 px quality button and the circular reticle. **No shadows anywhere** — depth comes from the scene, gradients, and hairlines.
+- Radii are 0 everywhere except the 2 px fps chip and the circular reticle. **No shadows anywhere** — depth comes from the scene, gradients, and hairlines.
 - Type: Bodoni Moda (display, always weight 400), Archivo (body), IBM Plex Mono (chrome/meta/uppercase micro-labels). Google Fonts CDN is approved.
 - Define global `a` / `a:hover` (`#e9e7f2` / `#ffb877`).
 

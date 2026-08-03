@@ -47,7 +47,7 @@ test.describe('the OS cursor', () => {
 
     // Every one of these used to hand the system cursor back mid-sweep, which is
     // what made the pointer look like it was flickering in and out of existence.
-    for (const selector of ['#scene', '#labels a', '#skip-scene', '#quality-toggle', '#hub-head']) {
+    for (const selector of ['#scene', '#labels a', '#skip-scene', '#fps', '#hub-head']) {
       await expect(page.locator(selector).first(), selector).toHaveCSS('cursor', 'none');
     }
   });
@@ -119,9 +119,22 @@ test.describe('the reticle', () => {
     await page.mouse.move(x, y);
     await expect.poll(() => scaleOf(page)).toBeCloseTo(0.6, 1);
 
-    await page.locator('#quality-toggle').hover();
+    await page.locator('#skip-scene').hover();
     await expect.poll(() => scaleOf(page)).toBeCloseTo(1, 1);
     await expect.poll(() => opacityOf(page)).toBe('1');
+  });
+
+  test('does not grow over the fps chip, which is inert', async ({ page }) => {
+    await openHub(page);
+    const { x, y } = await emptySky(page);
+    await page.mouse.move(x, y);
+    await expect.poll(() => scaleOf(page)).toBeCloseTo(0.6, 1);
+
+    // `bindHoverAffordance()` selects `a, button` inside #stage, so a readout
+    // stays out of the set. An affordance on something that cannot be clicked
+    // is what the removed quality toggle was.
+    await page.locator('#fps').hover();
+    await expect.poll(() => scaleOf(page)).toBeCloseTo(0.6, 1);
   });
 
   test('goes down when a panel opens', async ({ page }) => {

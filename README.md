@@ -112,11 +112,15 @@ Mono 12px lines, `letter-spacing .09em`, uppercase, `line-height 1.6`, `max-widt
 the CV”* — IBM Plex Mono 11px, `letter-spacing .14em`, uppercase, `#83859c`,
 `border-bottom: 1px solid rgba(131,133,156,0.35)`, `padding-bottom: 2px`;
 hover `#ffb877` with border `rgba(255,184,119,0.6)`. Then
-`<button id="quality-toggle">` — transparent, `1px solid rgba(131,133,156,0.28)`,
-`radius 2px`, `padding 5px 9px`, mono 10px, `letter-spacing .14em`, uppercase,
-`#9294ab`; label `Quality: high · <span id="fps-readout">--</span> fps`; hover
-border `rgba(255,184,119,0.5)`, colour `#ffb877`. It both reports fps and toggles
-the quality tier.
+`<div id="fps" aria-hidden="true">` — transparent, `1px solid
+rgba(131,133,156,0.28)`, `radius 2px`, `padding 5px 9px`, mono 10px,
+`letter-spacing .14em`, uppercase, `#9294ab`; content `<span
+id="fps-readout">--</span> fps`. **A readout, not a control**: no hover state, no
+`cursor: pointer`, not in the tab order, and it does not grow the reticle. It
+was a `<button id="quality-toggle">` that also claimed to toggle the quality
+tier; nothing was ever wired to it, and a live toggle is impossible under the
+one-renderer-per-document rule — the tier is fixed at `initHub()`. See
+`TASKS.md` Phase 0.
 
 **HUD hint:** mono 10px, `letter-spacing .16em`, uppercase, `#8a8ca3`, text
 *“Drag / scroll to pan · Tab to cycle”*.
@@ -448,7 +452,7 @@ Spacing rhythm: section gap `clamp(40–48px, 7–8vh, 64–80px)`; entry paddin
 `max-width: 720px`; measure caps `60ch` / `62ch` / `46ch` / `34ch`; bullet gap
 9px; list gap 14px; link-row gap 22px.
 
-Radii: **0 everywhere** except the 2px quality button and the circular reticle.
+Radii: **0 everywhere** except the 2px fps chip and the circular reticle.
 No shadows anywhere — depth comes from the scene, gradients, and hairlines.
 
 ## Assets
@@ -533,7 +537,7 @@ Non-negotiable — the owner listed it as a must-preserve:
 - **≤ 25 draw calls** in the hub. Rim glow is a back-face fresnel shell and the halo is additive geometry; there is **no effect composer**. Keep it that way.
 - DPR clamped to **2** desktop / **1.5** mobile.
 - **Zero allocations in the render loop.**
-- `detectQuality()` drops texture resolution, star count and particle count on small or low-core devices; the hub's quality readout doubles as an fps meter.
+- `detectQuality()` drops texture resolution, star count and particle count on small or low-core devices. The tier is chosen once at `initHub()` and is not exposed in the chrome; the foot carries an fps readout only.
 - Renderer pauses on `visibilitychange`; keeps running while parked behind a panel, and under the warp cover. (This last clause read "pauses under the warp cover the moment nothing visible is behind it" until Phase 11. That pause was never built — the park solve eases over frames, and stopping the renderer under the cover would lift it onto a camera that had not moved.)
 
 ## Files in this bundle
