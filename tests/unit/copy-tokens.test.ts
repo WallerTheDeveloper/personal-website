@@ -6,11 +6,21 @@ import { fillTokens } from '../../build/copy-tokens';
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 
 describe('fillTokens', () => {
-  it('leaves the markup untouched while every value is its own literal token', () => {
+  it('touches the tokens and nothing else', () => {
     // The identity case is what keeps Phase 3's verified pixel parity honest:
-    // until the owner fills content.ts, the built HTML is byte-for-byte the
-    // authored HTML.
-    expect(fillTokens(html)).toBe(html);
+    // fill the real markup from a table whose every value is the token it
+    // replaces, and the output has to be the input, byte for byte — so any
+    // difference a build makes is copy, never markup.
+    //
+    // This used to run against `content.ts` itself, which held while every
+    // value there was still its own literal token. Real copy is landing panel
+    // by panel now, so the identity table is built from the markup instead;
+    // the property survives the owner filling the last token.
+    const identity = Object.fromEntries(
+      Array.from(html.matchAll(/\{\{([A-Z0-9_]+)\}\}/g), (match) => [match[1] as string, match[0]]),
+    );
+    expect(Object.keys(identity).length).toBeGreaterThan(0);
+    expect(fillTokens(html, identity)).toBe(html);
   });
 
   it('substitutes from the table', () => {

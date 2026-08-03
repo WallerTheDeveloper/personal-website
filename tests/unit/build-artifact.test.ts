@@ -24,8 +24,19 @@ import { gzipSync } from 'node:zlib';
 import { build } from 'vite';
 import { beforeAll, describe, expect, it } from 'vitest';
 
+import { fillTokens } from '../../build/copy-tokens';
+import { CONTENT } from '../../src/content';
+
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = join(tmpdir(), 'dg-build-artifact-test');
+
+/** Every `{{TOKEN}}` written in the authored markup, deduplicated. */
+const markupTokens = new Set(
+  Array.from(
+    readFileSync(join(ROOT, 'index.html'), 'utf8').matchAll(/\{\{([A-Z0-9_]+)\}\}/g),
+    (match) => match[1] as string,
+  ),
+);
 
 /** ACCEPTANCE D — production build, gzip, cold load. */
 const TRANSFER_BUDGET = 900 * 1024;
@@ -188,23 +199,54 @@ describe('ACCEPTANCE D — no post-processing in the bundle', () => {
 
 describe('copy', () => {
   it.skip('leaves no {{TOKEN}} unfilled — enable once the owner fills content.ts', () => {
-    // Skipped on purpose, and it is not a gap: every value in `content.ts` is
-    // still its own literal `{{TOKEN}}` string, so the built HTML carries 115 of
-    // them by design and this would fail for the wrong reason. The moment real
-    // copy lands, un-skip it — a `{{TYPPO}}` reaching production is exactly the
-    // failure this catches, and the build already refuses a token the table does
-    // not define (`tests/unit/copy-tokens.test.ts`).
+    // Still skipped, and still not a gap: the owner is filling `content.ts`
+    // panel by panel, so the built HTML carries the tokens they have not
+    // reached yet by design and this would fail for the wrong reason. The
+    // moment the last one lands, un-skip it — a `{{TYPPO}}` reaching production
+    // is exactly the failure this catches, and the build already refuses a
+    // token the table does not define (`tests/unit/copy-tokens.test.ts`).
+    // Until then the two assertions below cover the filled half exactly.
     const html = emitted.get('index.html')!.text!;
     expect(html).not.toMatch(/\{\{[A-Z0-9_]+\}\}/);
   });
 
-  it('carries the copy in the served HTML, not in a script', () => {
+  it('carries filled copy in the served HTML, not in a script', () => {
     // The text edition is the default state and has to be complete with JS
     // disabled, which is why substitution is a build step rather than a DOM
-    // walk. While the tokens are still literal, their presence in the document
-    // is what proves the copy is in the bytes a crawler reads.
+    // walk. Every value the owner has written must therefore be in the bytes a
+    // crawler reads — escaped exactly as `fillTokens` escapes it, which is why
+    // the escaping is borrowed from the shipped implementation rather than
+    // re-stated here.
     const html = emitted.get('index.html')!.text!;
-    expect(html).toMatch(/\{\{FULL_NAME\}\}/);
-    expect(html.match(/\{\{[A-Z0-9_]+\}\}/g)?.length ?? 0).toBeGreaterThan(100);
+    const escaped = (value: string): string => fillTokens('{{V}}', { V: value });
+
+    const filled = Object.entries(CONTENT).filter(([key, value]) => value !== `{{${key}}}`);
+    expect(filled.length, 'no copy is filled — content.ts is all placeholders').toBeGreaterThan(0);
+
+    for (const [key, value] of filled) {
+      expect(html, `${key} is filled but its token still ships`).not.toContain(`{{${key}}}`);
+      // `EDUCATION_NOTE` is deliberately empty; `toContain('')` says nothing,
+      // and the token assertion above is the one that matters for it.
+      if (value !== '' && markupTokens.has(key)) {
+        expect(html, `${key} is filled but its copy is not in the document`).toContain(
+          escaped(value),
+        );
+      }
+    }
+  });
+
+  it('still ships the tokens the owner has not filled', () => {
+    // The other half of the same contract, and the reason the skipped test
+    // above is not simply deleted: an unfilled token has to survive the build
+    // as visible `{{TOKEN}}` text. Anything else — a blank, a stale value, a
+    // silently dropped node — would hide unwritten copy instead of showing it.
+    const html = emitted.get('index.html')!.text!;
+    const unfilled = [...markupTokens].filter(
+      (token) => CONTENT[token as keyof typeof CONTENT] === `{{${token}}}`,
+    );
+    expect(unfilled.length, 'every token is filled — un-skip the test above').toBeGreaterThan(0);
+    for (const token of unfilled) {
+      expect(html, `{{${token}}} was dropped from the document`).toContain(`{{${token}}}`);
+    }
   });
 });

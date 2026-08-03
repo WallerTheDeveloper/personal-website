@@ -41,12 +41,28 @@ describe('content table', () => {
     expect(unused).toEqual([]);
   });
 
-  it('defaults every value to its own literal token', () => {
-    // The owner fills these in code. Until then the table must render exactly
-    // what the markup already shows, so an unfilled site reads identically
-    // whether or not this module has run.
-    const wrong = Object.entries(CONTENT).filter(([key, value]) => value !== `{{${key}}}`);
-    expect(wrong).toEqual([]);
+  it('leaves an unfilled value as its own literal token', () => {
+    // The owner fills these in code, panel by panel, so the table is part real
+    // copy and part placeholder for as long as that takes. A value still in
+    // placeholder form must be the exact `{{TOKEN}}` the markup shows, so the
+    // unfilled half of the site reads identically whether or not this module
+    // has run — and so a block copy-pasted from its neighbour that kept the
+    // neighbour's placeholder (`BACKEND_BLOCK_2_ORG: '{{BACKEND_BLOCK_1_ORG}}'`)
+    // fails here instead of rendering one entry twice.
+    const mismatched = Object.entries(CONTENT).filter(
+      ([key, value]) => /^\{\{[A-Z0-9_]+\}\}$/.test(value) && value !== `{{${key}}}`,
+    );
+    expect(mismatched).toEqual([]);
+  });
+
+  it('never half-fills a value', () => {
+    // `fillTokens` substitutes in one pass: a token left inside otherwise real
+    // copy ("Berlin, {{LOCATION}}") is not looked at again, so it reaches the
+    // served HTML as visible braces. Filled means filled.
+    const halfFilled = Object.entries(CONTENT).filter(
+      ([key, value]) => value !== `{{${key}}}` && /\{\{[A-Z0-9_]+\}\}/.test(value),
+    );
+    expect(halfFilled).toEqual([]);
   });
 });
 
