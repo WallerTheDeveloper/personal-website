@@ -1,12 +1,18 @@
 # Build the site and publish `dist/` to GitHub Pages.
 #
-# The custom domain lives in `public/CNAME`, which Vite copies to `dist/` — not
-# only in the repository's Pages settings. Keep it there: a deployment whose
-# artifact has no CNAME clears the custom domain, and the site answers on
-# github.io until someone notices.
+# This is a *project* site: `wallerthedeveloper.github.io/personal-website/`.
+# `base` in vite.config.ts is `/personal-website/` for the build accordingly —
+# with a root base every asset URL resolves to the host root and 404s, which
+# strands the live page on the text edition. `tests/unit/build-artifact.test.ts`
+# fails the build before that can ship again.
 #
-# `base` in vite.config.ts stays `/`. That is correct for an apex domain; a
-# project-path base would break every asset URL on golosov-danylo.com.
+# There is deliberately no `public/CNAME`. It used to carry `golosov-danylo.com`,
+# which has never resolved, so Pages fell back to the project URL while the build
+# was still configured for an apex domain — that combination is what broke the
+# site. If the apex domain is ever registered: restore `public/CNAME` (Vite copies
+# it to `dist/`, and an artifact without it clears the custom domain), set `base`
+# back to `/`, and update the origin in index.html, src/content.ts,
+# public/robots.txt, public/sitemap.xml and the two test files that pin it.
 
 name: Deploy to GitHub Pages
 

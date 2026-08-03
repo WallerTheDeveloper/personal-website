@@ -93,6 +93,33 @@ describe('the cold load', () => {
     ]);
   });
 
+  it('asks for its assets under the Pages project path', () => {
+    // The regression this exists for, and it was live: with no `base`, Vite
+    // emits `src="/assets/…"`. On `wallerthedeveloper.github.io/personal-website/`
+    // that resolves to the *host* root, 404s, and the module that boots the hub
+    // never arrives — so the page sits on `#fallback` and reads as plain static
+    // HTML. Nothing else in the suite notices, because Playwright drives the dev
+    // server, where `base` is '/' by design (vite.config.ts).
+    const html = emitted.get('index.html')!.text!;
+    const refs = Array.from(html.matchAll(/(?:src|href)="([^"]*assets\/[^"]*)"/g), (m) => m[1] as string);
+    // Guards the guard: a regex that stops matching would pass vacuously, and
+    // the cold load above already fixes the count at one stylesheet + one script.
+    expect(refs.length).toBeGreaterThanOrEqual(2);
+    for (const ref of refs) {
+      expect(ref, `${ref} does not carry the base`).toMatch(/^\/personal-website\/assets\//);
+    }
+  });
+
+  it('publishes absolute URLs that agree with that path', () => {
+    // The canonical, the OG image and `base` are one decision in three files.
+    // An origin updated without the base (or the reverse) points crawlers at a
+    // URL that does not serve this document.
+    const html = emitted.get('index.html')!.text!;
+    const canonical = /<link rel="canonical" href="([^"]+)"/.exec(html)?.[1];
+    expect(canonical).toBe('https://wallerthedeveloper.github.io/personal-website/');
+    expect(new URL(canonical!).pathname).toBe('/personal-website/');
+  });
+
   it('stays under the 900 KB transfer budget', () => {
     const total = coldLoad().reduce((sum, f) => sum + f.gzip, 0);
     expect(total, `${(total / 1024).toFixed(1)} kB gzip`).toBeLessThan(TRANSFER_BUDGET);

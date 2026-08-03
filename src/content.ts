@@ -42,8 +42,12 @@ export const TITLES: Readonly<Record<PanelId, string>> = {
   about: 'About & Contact',
 };
 
-/** Must stay in step with `<link rel="canonical">` in `index.html`. */
-export const SITE_URL = 'https://golosov-danylo.com/';
+/**
+ * Must stay in step with `<link rel="canonical">` in `index.html`, and with
+ * `base` in `vite.config.ts` — the path segment is the GitHub Pages project
+ * path, not decoration. `tests/unit/site-files.test.ts` pins all three together.
+ */
+export const SITE_URL = 'https://wallerthedeveloper.github.io/personal-website/';
 
 export const CONTENT = {
   // ---------------------------------------------------------- hub / global

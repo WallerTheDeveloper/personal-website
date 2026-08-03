@@ -35,16 +35,21 @@ test('serves the OG image as a real PNG', async ({ request }) => {
 });
 
 test('serves robots.txt and sitemap.xml on the real domain', async ({ request }) => {
+  // The published origin is the GitHub Pages project URL, path segment included.
+  // Served here from the dev server's root — `base` is build-only (vite.config.ts)
+  // — so these paths are the dev paths and the *contents* are the live claim.
+  const ORIGIN = 'https://wallerthedeveloper.github.io/personal-website';
+
   const robots = await request.get('/robots.txt');
   expect(robots.status()).toBe(200);
   const robotsText = await robots.text();
-  expect(robotsText).toContain('Sitemap: https://golosov-danylo.com/sitemap.xml');
+  expect(robotsText).toContain(`Sitemap: ${ORIGIN}/sitemap.xml`);
   expect(robotsText).not.toContain('example.com');
 
   const sitemap = await request.get('/sitemap.xml');
   expect(sitemap.status()).toBe(200);
   const sitemapText = await sitemap.text();
-  expect(sitemapText).toContain('<loc>https://golosov-danylo.com/</loc>');
+  expect(sitemapText).toContain(`<loc>${ORIGIN}/</loc>`);
   expect(sitemapText).not.toContain('example.com');
 });
 

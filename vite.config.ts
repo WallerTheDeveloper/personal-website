@@ -10,7 +10,25 @@ import { copyTokens } from './build/copy-tokens';
 // predates the single-document architecture and is obsolete — see PORT_PLAN.md
 // step 1. Destinations are overlay panels in one document; a document swap tore
 // down the WebGL context and rebuilt every baked planet texture on arrival.
-export default defineConfig({
+// GitHub Pages serves this repo as a *project* site, at
+// `wallerthedeveloper.github.io/personal-website/`. A root base emits
+// `<script src="/assets/…">`, which resolves to the host root, 404s, and leaves
+// the page on the text edition — the site looks like plain static HTML because
+// the module that boots the hub never arrives. That was the live state until
+// this line existed; `tests/unit/build-artifact.test.ts` now pins it.
+//
+// Build only, deliberately. `base` applies to the dev server too, and Playwright
+// drives `npm run dev` with `page.goto('/')` throughout — a global base moves
+// that server to `/personal-website/` and every spec 404s on the way in. Dev and
+// preview stay rooted; only the shipped artifact carries the path.
+//
+// Moving to an apex domain later means setting this back to '/' and restoring
+// `public/CNAME`, plus the origin in index.html, src/content.ts, public/robots.txt
+// and public/sitemap.xml.
+const BASE = '/personal-website/';
+
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? BASE : '/',
   // Fills the {{TOKEN}} placeholders from src/content.ts, so the owner fills
   // copy in one file and the served HTML carries it with JS disabled.
   plugins: [copyTokens()],
@@ -26,4 +44,4 @@ export default defineConfig({
     // files for suites that never ran.
     include: ['tests/unit/**/*.test.ts'],
   },
-});
+}));

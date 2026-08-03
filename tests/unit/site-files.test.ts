@@ -14,7 +14,10 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const ORIGIN = 'https://golosov-danylo.com';
+// Origin *and* project path. GitHub Pages serves this repo as a project site, so
+// every absolute URL the document publishes — canonical, OG image, sitemap — has
+// to carry `/personal-website`, and `base` in vite.config.ts has to agree.
+const ORIGIN = 'https://wallerthedeveloper.github.io/personal-website';
 
 const read = (path: string): string => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const readBytes = (path: string): Buffer => readFileSync(new URL(`../../${path}`, import.meta.url));
