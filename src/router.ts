@@ -40,6 +40,7 @@ import { trackView } from './analytics';
 import { applyTitle } from './head';
 import { JumpGuard } from './jump-guard';
 import { LabelLayer } from './labels';
+import { LoadingRing } from './loading-ring';
 import { ACCENTS, MIN_COVER, saveAzimuth, loadAzimuth, Warp } from './warp';
 import type { HubApi, Composition, LabelPlacement } from './hub';
 
@@ -173,6 +174,8 @@ export class Router {
   /** Loading-screen stall timer, and the once-only guard on its dismissal. */
   private loaderTimer = 0;
   private loaderDone = false;
+  /** The loading screen's progress dial, advanced from the three boot milestones. */
+  private ring: LoadingRing | null = null;
 
   /** Where the hub camera was left, so a panel visit does not lose it. */
   private hubAz = 0;
@@ -294,12 +297,27 @@ export class Router {
     // request itself never settling, so the clock has to start with it.
     this.loaderTimer = window.setTimeout(() => this.flatten(), LOADER_TIMEOUT_MS);
 
+    // Started beside the stall clock above, because the two watch the same
+    // thing: the dial's first phase *is* the import, so it has to begin before
+    // the request does. Reduced motion is asked of matchMedia rather than of the
+    // engine's `reducedMotion()` on purpose — `this.reduce` is not answered
+    // until the chunk that defines it has downloaded, which is the very thing
+    // being waited on here. Do not "tidy" this into the engine call.
+    const arc = document.querySelector<SVGCircleElement>('#loading-arc');
+    const pct = document.querySelector<HTMLElement>('#loading-pct');
+    if (arc !== null && pct !== null) {
+      this.ring = new LoadingRing(arc, pct, matchMedia('(prefers-reduced-motion: reduce)').matches);
+      this.ring.start();
+    }
+
     void this.load();
   }
 
   private async load(): Promise<void> {
     try {
       const engine = await import('./hub');
+      // Milestone 1: the chunk is down. Everything left is local work.
+      this.ring?.advance(1);
       this.boot(engine);
     } catch (err: unknown) {
       console.warn('[router] 3D unavailable, using the text edition', err);
@@ -362,6 +380,9 @@ export class Router {
     this.hub = hub;
     window.__dgHub = hub;
     window.__dg3dReady = true;
+    // Milestone 2: the ten planet textures are baked and the scene is built.
+    // What is left is the first frame, where the shaders compile.
+    this.ring?.advance(2);
 
     // Session-scoped, written by this router alone — the engine keeps no storage.
     const saved = loadAzimuth();
@@ -407,6 +428,10 @@ export class Router {
     if (this.loaderDone) return;
     this.loaderDone = true;
     clearTimeout(this.loaderTimer);
+    // The scene is genuinely behind the screen now, so this is the one moment
+    // the dial is entitled to read 100. The step up from ~90 happens inside the
+    // fade below, which starts on this same frame.
+    this.ring?.complete();
 
     const el = this.el?.loader;
     if (el == null) return;
@@ -447,6 +472,10 @@ export class Router {
     clearTimeout(this.watchdog);
     clearTimeout(this.loaderTimer);
     this.loaderDone = true;
+    // Stood down rather than completed: this path is a boot that did not happen,
+    // and a dial left running would keep a frame loop alive against a screen the
+    // flat rules have already hidden.
+    this.ring?.stop();
     this.warpFx?.dispose();
     this.warpFx = null;
     this.going = false;
@@ -495,6 +524,7 @@ export class Router {
     cancelAnimationFrame(this.drift);
     clearTimeout(this.watchdog);
     clearTimeout(this.loaderTimer);
+    this.ring?.stop();
     window.removeEventListener('popstate', this.onPop);
     window.removeEventListener('hashchange', this.onHash);
     window.removeEventListener('keydown', this.onKey);

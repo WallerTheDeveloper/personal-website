@@ -64,6 +64,31 @@ async function stallEngine(page: Page): Promise<() => void> {
   return () => release?.();
 }
 
+/**
+ * How much of the dial is drawn, 0…1, read off the arc's dash geometry rather
+ * than off the number beside it — the number is floored, so it agrees with a
+ * static ring for a whole percent at a time.
+ *
+ * `-1` if the router has not written the dash array yet, which is a state worth
+ * distinguishing from "0 % drawn": the stylesheet ships `stroke-dasharray: 0 999`
+ * so that a document whose script never runs shows an empty ring, and a test
+ * that read that as a value would pass against a dial nothing is driving.
+ */
+async function arcDrawn(page: Page): Promise<number> {
+  return page.locator('#loading-arc').evaluate((el) => {
+    const style = getComputedStyle(el);
+    const len = Number.parseFloat(style.strokeDasharray);
+    const offset = Number.parseFloat(style.strokeDashoffset);
+    if (!Number.isFinite(len) || !Number.isFinite(offset) || len <= 1) return -1;
+    return 1 - offset / len;
+  });
+}
+
+/** The integer in the middle of the dial. */
+async function dialPct(page: Page): Promise<number> {
+  return Number(await page.locator('#loading-pct').textContent());
+}
+
 test.describe('while the scene is loading', () => {
   test('the loading screen is the only thing on screen', async ({ page }) => {
     const release = await stallEngine(page);
@@ -98,6 +123,41 @@ test.describe('while the scene is loading', () => {
     await expect(page.locator('#loading')).toBeHidden();
   });
 
+  test('the dial climbs, and stops short of the milestone it has not reached', async ({ page }) => {
+    const release = await stallEngine(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#loading')).toBeVisible();
+
+    const first = await dialPct(page);
+    await page.waitForTimeout(900);
+    const second = await dialPct(page);
+
+    // Climbing at all: the phase-0 curve is the only thing that can move this,
+    // and the chunk it is waiting on is parked.
+    expect(second).toBeGreaterThan(first);
+    // …but never past phase 0's ceiling of 70, because the engine has not
+    // arrived. This is the whole claim the dial makes — that the number is the
+    // boot's real position and not an animation playing out on a timer.
+    await page.waitForTimeout(1_500);
+    expect(await dialPct(page)).toBeLessThan(70);
+
+    release();
+  });
+
+  test('the arc is drawn, not just the number counting', async ({ page }) => {
+    const release = await stallEngine(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(900);
+
+    // A dash array the router has replaced (so the ring is being driven), and an
+    // offset strictly inside it: some arc painted, and not the whole circle.
+    const drawn = await arcDrawn(page);
+    expect(drawn).toBeGreaterThan(0.05);
+    expect(drawn).toBeLessThan(0.7);
+
+    release();
+  });
+
   test('it carries no focusable element', async ({ page }) => {
     const release = await stallEngine(page);
     await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -122,6 +182,19 @@ test.describe('once the scene is up', () => {
     // in the document is what makes canvas input go dead — the router's own
     // `#fallback` teardown takes the same two steps for the same reason.
     await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: 5_000 });
+  });
+
+  test('the dial finished at 100', async ({ page }) => {
+    await openHub(page);
+    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: 5_000 });
+
+    // Read after the screen is down rather than raced for during the 400 ms
+    // fade: the text stays in the document either way, and `complete()` is the
+    // only thing that can have written it. A dial that eased to 99 and was
+    // dismissed mid-climb would fail here, which is the point — the last percent
+    // is supposed to cost a real first frame.
+    expect(await dialPct(page)).toBe(100);
+    expect(await arcDrawn(page)).toBeCloseTo(1, 5);
   });
 
   test('the canvas still routes underneath it', async ({ page }) => {
@@ -176,6 +249,42 @@ test.describe('when the scene never arrives', () => {
     await expect(page.locator('html')).toHaveAttribute('data-dg-flat', '1');
     await expect(page.locator('#fallback')).toBeVisible();
     expect(await page.evaluate(() => window.__dg3dReady === true)).toBe(false);
+  });
+});
+
+/**
+ * The dial under `prefers-reduced-motion`.
+ *
+ * It keeps reading, because it is a readout and not decoration — the same
+ * standing the `#fps` chip has, which is also `aria-hidden` and also keeps
+ * updating under reduce. What changes is the cadence: `LoadingRing` samples its
+ * curve on a 400 ms timer instead of per frame, so the arc steps between values
+ * with nothing tweening in between.
+ *
+ * The alternative considered was freezing it at the last milestone, which on a
+ * slow connection means an empty ring for the whole of the boot — motion the
+ * visitor did not ask for, traded for a screen that reads as broken.
+ */
+test.describe('the dial under reduced motion', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+  test('keeps reading, in steps rather than a glide', async ({ page }) => {
+    const release = await stallEngine(page);
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#loading')).toBeVisible();
+
+    const first = await dialPct(page);
+    // Three sampling intervals, so this cannot pass on a single lucky tick.
+    await page.waitForTimeout(1_400);
+    expect(await dialPct(page)).toBeGreaterThan(first);
+
+    // And nothing smooths the gaps between those ticks back into motion.
+    const duration = await page
+      .locator('#loading-arc')
+      .evaluate((el) => getComputedStyle(el).transitionDuration);
+    expect(duration).toBe('0s');
+
+    release();
   });
 });
 

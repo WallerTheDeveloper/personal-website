@@ -169,6 +169,39 @@ nothing happens and the text edition simply stays — the fallback is the defaul
 state, not an error branch. **Keep it that way.** Also engaged on
 `webglcontextlost`.
 
+### Loading screen (`#loading`, 3D path only)
+
+**Purpose:** the boot gap. The head probe fades `#fallback` out before first
+paint, and `.scene` does not come up until the engine chunk has downloaded and
+the planet textures have baked — without this, a WebGL visitor watches an empty
+`--void` in between. Display is gated on `data-dg-3d`, so with scripting off it
+never appears; it sits inside `#stage`, so the flat and print states already hide
+it. `aria-hidden`, no focusable node, and `z-index` above the panel shell so a
+deep link stays covered until there is something behind it.
+
+- `{{FULL_NAME}}` in the hub's display face, `{{LOADING_LABEL}}` beneath it in
+  mono, and below both a **progress dial**: a 2 px ring, track `--rule`, arc
+  `--hover`, starting at twelve o'clock, with the percentage in mono at its
+  centre. `72px × --type-scale` across.
+- The value is **determinate and real**. Three boot milestones set floors the
+  dial may not pass before they have happened, and it eases toward the next one
+  in between:
+
+  | Milestone | Floor |
+  | --- | --- |
+  | the engine chunk resolves | 70 |
+  | `initHub()` returns — textures baked, scene built | 90 |
+  | the first frame is composited | 99 |
+  | the screen is dismissed | 100 |
+
+  The curve approaches each floor without crossing it, and the readout is capped
+  at 99 while it runs, so **100 appears only once the scene is genuinely
+  behind the screen**. A dial that filled on a timer would be decoration
+  pretending to be data; this is why it is wired to `src/loading-ring.ts`
+  instead.
+- A boot that stalls past 12 s never reaches 100: the document flattens to the
+  text edition instead.
+
 ### 3–6 — Destination panels
 
 All four panels share one skeleton. Only the accent, the eyebrow text, and the
@@ -380,6 +413,12 @@ own `scrollTop`; that offset is the parallax, amount **0.10** by default.
 Under `prefers-reduced-motion: reduce`: no drift, no bob, no parallax, ambient
 rotation near zero, grain animation off, and clicking a planet does a **200 ms
 cross-fade** instead of the flight.
+
+The loading dial keeps reading, because it is a readout and not decoration — the
+standing the `#fps` chip has, which also updates under reduce. What changes is
+the cadence: it samples its curve every 400 ms instead of every frame, so the arc
+steps rather than glides, and nothing transitions between the steps. Freezing it
+instead would mean an empty ring for the whole of a slow boot.
 
 ### Print
 

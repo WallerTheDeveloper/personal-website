@@ -134,7 +134,17 @@
   <div id="loading" aria-hidden="true" class="loading">
     <p class="loading__name">{{FULL_NAME}}</p>
     <p class="loading__status">{{LOADING_LABEL}}</p>
-    <div class="loading__bar"><span class="loading__fill"></span></div>
+    <!-- A determinate dial, driven by `src/loading-ring.ts` from three real boot
+         milestones. `0` and `%` are literals for the same reason the #fps chip's
+         "fps" is: this is a readout, not copy, so neither takes a copy token.
+         No focusable node — the tab ring is exactly six stops. -->
+    <div class="loading__dial">
+      <svg class="loading__dial-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+        <circle class="loading__track" cx="60" cy="60" r="54"></circle>
+        <circle id="loading-arc" class="loading__arc" cx="60" cy="60" r="54"></circle>
+      </svg>
+      <p class="loading__pct"><span id="loading-pct">0</span><span class="loading__pct-unit">%</span></p>
+    </div>
   </div>
 
 </main>

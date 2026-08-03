@@ -494,30 +494,79 @@ a:hover { color: var(--hover); }
   color: var(--dim);
 }
 
-/* A hairline, not a bar with a fill percentage: there is nothing honest to
-   measure. `import()` reports no progress and the bakes are synchronous, so a
-   determinate readout would be a decoration pretending to be data. */
-.loading__bar {
+/* A determinate dial. What it reads is three real boot milestones — the engine
+   chunk resolving, the ten textures baking, the first frame compositing — eased
+   between and never past the next one; `src/loading-ring.ts` owns the curve and
+   is the only writer of 100. This block owns geometry and colour only: the arc
+   is drawn entirely through `stroke-dasharray` / `stroke-dashoffset`, which the
+   router writes inline.
+
+   Sized in the sheet's `calc(…px * var(--type-scale))` idiom, so the dial keeps
+   its proportion to the 32 px wordmark above it if the scale ever moves. */
+.loading__dial {
+  position: relative;
+  margin-top: 30px;
+  width: calc(72px * var(--type-scale));
+  height: calc(72px * var(--type-scale));
+}
+
+/* Rotated so the arc starts at twelve o'clock rather than three. */
+.loading__dial-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.loading__track {
+  fill: none;
+  stroke: var(--rule);
+  stroke-width: 2;
+}
+
+/* `0 999` is 0 %, and it is the state the document *ships* in: correct before
+   any script has run, and correct in every browser, which a `pathLength`-based
+   dash pattern would not be. The router replaces the dash array with one full
+   circumference on its first write.
+
+   `butt`, not `round`: a round cap paints a dot at zero length, which would put
+   a mark on an empty dial — and hairline geometry is the house style. */
+.loading__arc {
+  fill: none;
+  stroke: var(--hover);
+  stroke-width: 2;
+  stroke-linecap: butt;
+  stroke-dasharray: 0 999;
+}
+
+/* Centred as a text line rather than as flex or grid items, because the number
+   and its unit have to share a baseline and they only do that while they are
+   inline content on one line box. Both of the layout modes put the unit
+   somewhere else: flex with `align-items: baseline` pins the whole readout to
+   the ring's *first* baseline (the top), and grid makes each span its own item
+   and stacks them.
+
+   `tabular-nums` so the digits do not shuffle sideways as the value climbs. */
+.loading__pct {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 1px;
-  overflow: hidden;
-  background: var(--rule);
+  top: 50%;
+  transform: translateY(-50%);
+  margin: 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: calc(14px * var(--type-scale));
+  letter-spacing: 0.04em;
+  color: var(--ink-hub);
+  font-variant-numeric: tabular-nums;
 }
 
-.loading__fill {
-  display: block;
-  width: 34%;
-  height: 100%;
-  background: var(--hover);
-  animation: loadSweep 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-}
-
-@keyframes loadSweep {
-  from { transform: translateX(-100%); }
-  to   { transform: translateX(394%); }
+.loading__pct-unit {
+  margin-left: 2px;
+  font-size: calc(8px * var(--type-scale));
+  letter-spacing: 0.12em;
+  color: var(--dim);
 }
 
 /* ---------------------------------------------------------------------------
@@ -1225,10 +1274,12 @@ html[data-dg-flat] #fallback { position: static; opacity: 1; pointer-events: aut
 @media (prefers-reduced-motion: reduce) {
   [data-grain] { animation: none !important; }
 
-  /* The sweep is the one animation on the loading screen. Stopped, the hairline
-     still has to read as "something is happening", so the fill spans the bar
-     rather than sitting as a stalled third of it. */
-  .loading__fill { animation: none !important; width: 100%; opacity: 0.5; }
+  /* The loading dial is a readout, not decoration — the same standing the #fps
+     chip has, which also keeps updating under reduce. What changes is the
+     cadence: `LoadingRing` samples its curve on a 400 ms timer instead of per
+     frame, so the arc steps between values. This makes sure nothing tweens
+     between those steps and turns them back into a glide. */
+  .loading__arc { transition: none !important; }
 
   /* A jump is a 200 ms cross-fade instead of the ship flight and the warp
      (README "Reduced motion"). `commit()` writes the same inline

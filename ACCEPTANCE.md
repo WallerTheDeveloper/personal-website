@@ -136,8 +136,10 @@ tests/e2e/
   budget.spec.ts        transfer size, draw calls, idle heap flat
   a11y.spec.ts          axe over hub + 4 panels + text edition, WCAG 2.0/2.1
                         A and AA, nothing disabled
-  loading.spec.ts       loading screen up until the hub's second frame, and
-                        the stall watchdog that falls back to the text edition
+  loading.spec.ts       loading screen up until the hub's second frame, the
+                        dial that reaches 100 only once the scene is behind it,
+                        and the stall watchdog that falls back to the text
+                        edition
   cursor.spec.ts        the cursor stays visible; the reticle has one writer
   session.spec.ts       the hub camera angle survives a reload
   assets.spec.ts        public/ files reachable over HTTP at the paths the
