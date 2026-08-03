@@ -1,237 +1,191 @@
-# Port plan
+# Port record
 
-Build order for recreating the prototype as a real project. Each step is
-independently verifiable; do them in order — the router and the engine both
-depend on the DOM contract existing first.
+The port is finished. This was the build order that recreated the prototype as a
+real project; it is kept because ~20 comments in `src/`, `tests/`, `build/`,
+`index.html` and `vite.config.ts` cite it by step number. **The step numbers are
+stable anchors — don't renumber them.**
 
-Read `design/BUILD_NOTES.md` before step 6. It documents every bug the prototype
-hit and why each invariant exists.
+Each step below states what it settled, in the present tense. Where a step's
+original instruction has been superseded by later work, the current truth is what
+is written here. The narrative of how each one landed is in `TASKS.md`, the bugs
+behind the invariants are in `design/BUILD_NOTES.md`, and the measurements are in
+`design/DESIGN_SPEC.md`.
 
 ---
 
 ## 0 — Feel it first
 
-Serve the prototype and use it. It uses ES-module imports, so `file://` will not
-work — opened directly it silently falls back to the text edition and you will
-see no scene at all:
+The prototype (`design/index.dc.html`) is the visual specification of record. It
+uses ES-module imports, so it must be served over HTTP — `file://` silently drops
+to the text edition:
 
 ```
-cd design
-npx serve .          # or: python3 -m http.server 8000
+cd design && npx serve .      # or: python3 -m http.server 8000
 ```
 
-Open the printed URL (needs internet: `three` comes from unpkg, fonts from the
-Google Fonts CDN). Then click each planet. Hover them. Tab through. Press
-Escape. Resize. Then throttle to a slow CPU and do it again. You cannot match
-this from the README alone.
-
-If you genuinely cannot serve it, `../screenshots/` shows all six views — but
-they are framing references only, with none of the motion.
+`serve` strips `.html`, so the URL is `/index.dc`. Needs internet: `three` comes
+from unpkg, fonts from the Google Fonts CDN.
 
 ## 1 — Scaffold
 
-```
-npm create vite@latest . -- --template vanilla-ts
-npm i three
-npm i -D vitest @playwright/test @types/three
-```
+Vite + TypeScript `strict`, hand-written rather than scaffolded. `tsconfig.json`
+carries `strict`, `noUncheckedIndexedAccess`, `noFallthroughCasesInSwitch`,
+`exactOptionalPropertyTypes`, `target: ES2022`, `moduleResolution: bundler`.
 
-Target layout:
-
-```
-index.html
-public/
-  cv.pdf  og.png  robots.txt  sitemap.xml
-  models/            (empty for now — see step 10)
-src/
-  main.ts            entry: boot, wire everything
-  router.ts          route / go / jump / commit / finish / exit
-  hub.ts             ← space-engine.js, TS strict
-  warp.ts            ← warp.js, TS strict
-  content.ts         the {{TOKEN}} table (pending owner confirmation)
-  head.ts            title + meta + JSON-LD from content
-  styles.css
-tests/
-  unit/              vitest
-  e2e/               playwright
-vite.config.ts
-tsconfig.json        strict: true
-```
-
-`tsconfig.json`: `strict`, `noUncheckedIndexedAccess`,
-`noFallthroughCasesInSwitch`, `exactOptionalPropertyTypes`, `target: ES2022`,
-`moduleResolution: bundler`.
-
-`vite.config.ts`: default single-entry build. **Do not** copy the prototype's
-five-entry `rollupOptions.input` idea from `BUILD_NOTES.md` — that predates the
-single-document architecture and is obsolete.
+**Single HTML entry.** The five-entry `rollupOptions.input` in
+`design/BUILD_NOTES.md` predates the single-document architecture and is
+obsolete. `three` is pinned to `0.160.x` — later versions change lighting and
+colour-management defaults and would shift the look.
 
 ## 2 — `index.html`
 
-Take `design/index.dc.html` and unwrap the authoring layer:
+The authoring layer is unwrapped: no `<x-dc>`, no `support.js`, `<helmet>`
+hoisted into a real `<head>`, `{<!---->{TOKEN}}` written plainly as `{{TOKEN}}`,
+`style-hover` / `style-before` attributes rewritten as CSS (step 3).
 
-1. Drop `<x-dc>` / `</x-dc>` and the `<script src="./support.js">`.
-2. `<helmet>` contents become the real `<head>`. Keep, in order: charset,
-   viewport, the real `<title>`, description, OG/Twitter tags, canonical,
-   `preconnect` to `fonts.gstatic.com`, the Google Fonts `<link>`, then
-   `styles.css`, then the inline WebGL-probe script.
-3. `<link rel="canonical" href="https://golosov-danylo.com/">`; OG image
-   `https://golosov-danylo.com/og.png`.
-4. **Keep the inline WebGL probe in `<head>`, inline and blocking.** It must run
-   before first paint, or the text edition flashes on every load. It sets
-   `data-dg-3d` on `<html>` and injects the rule that fades `#fallback` out.
-5. Convert `{<!---->{TOKEN}}` → `{{TOKEN}}` (`s/\{<!---->\{/{{/g`).
-6. Rewrite `style-hover` / `style-before` attributes as real CSS (step 3).
-7. Everything else — the `<main id="stage">` block, `#fallback`, the four
-   `<section data-panel>`s, `<canvas id="smoke">` — carries over as-is,
-   in the same order, with the same ids and `data-` attributes.
+The inline WebGL probe stays **inline and blocking in `<head>`**. It must run
+before first paint or the text edition flashes on every load.
 
-**The DOM contract.** The engine and router select on these; keep every one:
+**The DOM contract.** The engine, the router and several tests select on these;
+every one must exist, and `#panel-{id}` in particular is not to be renamed:
+
 `#stage`, `#scene`, `#smoke`, `#labels`, `#reticle`, `#hub-head`, `#hub-foot`,
-`#hud-hint`, `#fps`, `#fps-readout`, `#skip-scene`, `#fallback`,
+`#hud-hint`, `#fps`, `#fps-readout`, `#skip-scene`, `#fallback`, `#loading`,
 `#panel-{backend,projects,xr,about}`, `[data-panel]`, `[data-panel-top]`,
 `[data-hero]`, `[data-exit]`, `[data-planet]`, `[data-leader]`, `[data-name]`,
-`[data-grain]`, `[data-elsewhere]`, `[data-repo="n"]`, `[data-demo="n"]`,
-`#lnk-email`, `#lnk-github`, `#lnk-linkedin`, and `html[data-dg-flat]` /
-`html[data-dg-3d]`.
+`[data-grain]`, `[data-elsewhere]`, `[data-esc]`, `[data-screen-label]`,
+`[data-repo="n"]`, `[data-demo="n"]`, `#lnk-email`, `#lnk-github`,
+`#lnk-linkedin`, plus `html[data-dg-flat]` / `html[data-dg-3d]`.
+
+Each panel also carries a zero-height `<span id="{id}" class="panel__anchor">` as
+its first child, so hash links resolve in the flat and no-JS editions without
+renaming the panel (step 8).
 
 ## 3 — `styles.css`
 
-Extract every inline style. Write the tokens from README “Design tokens” as
-custom properties on `:root`, then class-based rules. Suggested classes:
-`.panel`, `.panel__top`, `.panel__hero`, `.panel__body`, `.col`, `.entry`,
-`.card`, `.bullets`, `.stack`, `.section-title`, `.elsewhere`, `.meta`,
-`.eyebrow`, `.notice`, `.label` (+ `.label__leader`, `.label__name`).
+Every inline style extracted to classes; tokens as `:root` custom properties.
+Per-destination accents come from one rule set keyed on `[data-panel="…"]`,
+`[data-planet="…"]` **and** `a[href="#…"]` — the third selector tints the index
+numerals in the text edition and in each panel's "Elsewhere" list. Do not instead
+add `data-planet` to those links: the engine iterates `[data-planet]` and writes
+screen positions onto every match.
 
-Per-destination accents via a data attribute, not four copies of every rule:
+Carried over verbatim because they are behavioural, not decorative: the
+`grainShift` keyframes, the `html[data-dg-flat]` rules, the
+`prefers-reduced-motion` block, and the whole `@media print` block. The
+`!important` in the flat and print blocks is load-bearing — it overrides the
+inline `visibility`/`opacity` the router writes onto each panel.
 
-```css
-[data-panel="backend"]  { --accent: var(--backend);  --accent-hover: var(--backend-hover); }
-[data-panel="projects"] { --accent: var(--projects); --accent-hover: var(--projects-hover); }
-[data-panel="xr"]       { --accent: var(--xr);       --accent-hover: var(--xr-hover); }
-[data-panel="about"]    { --accent: var(--about);    --accent-hover: var(--about-hover); }
-```
-
-Then carry over verbatim, without re-deriving: the `grainShift` keyframes, the
-`html[data-dg-flat]` rules, the `prefers-reduced-motion` block, and the entire
-`@media print` block. Those four are behavioural, not decorative.
-
-Global `a` and `a:hover` colours must be defined (`#e9e7f2` / `#ffb877`).
+Global `a` / `a:hover` are defined (`#e9e7f2` / `#ffb877`).
 
 ## 4 — `content.ts` + `head.ts`
 
-One exported object holding every token from README “Copy tokens”, values being
-the literal `{{TOKEN}}` strings. `head.ts` applies:
+One typed table holds every token, each value defaulting to the literal
+`{{TOKEN}}` string it replaces. Body copy is substituted **at build time** by
+`build/copy-tokens.ts` (a `transformIndexHtml` plugin), so the served HTML
+carries the copy with JS disabled.
 
-- `document.title` = `${TITLES[current]} — ${FULL_NAME}` on a panel, else the base title.
-- `meta[name=description]`, `og:title`, `og:description`.
-- The `Person` JSON-LD (name, jobTitle from `ROLE_TAGLINE`, address from `LOCATION`, `sameAs` from GitHub/LinkedIn, `url`). **No seniority claim.**
-- Projects repo/demo `href`s onto `[data-repo="n"]` / `[data-demo="n"]`.
-- Contact `href`s onto `#lnk-email` (`mailto:`), `#lnk-github`, `#lnk-linkedin`.
+`head.ts` applies what markup cannot hold: the per-route title
+(`<Panel> — <name>`, reverting on the hub), `meta[name=description]`, `og:title`,
+`og:description`, the `Person` JSON-LD (`name`, `jobTitle` from `ROLE_TAGLINE`
+verbatim, `url`, `address`, `sameAs` — **no seniority claim**), the eight
+projects `[data-repo]` / `[data-demo]` hrefs, and the three contact hrefs.
 
-**Delete `assertTitle()` and the head `MutationObserver`.** They existed only
-because the authoring tool injected its own `<title>` at an unpredictable time.
-A real `<head>` needs neither.
-
-Confirm the `content.ts` approach with the owner before doing it (open question 3).
+`assertTitle()` and the head `MutationObserver` are deliberately absent — they
+existed only because the authoring tool injected its own `<title>`.
 
 ## 5 — `hub.ts` (from `space-engine.js`)
 
-Already a dependency-free ES module — mostly a typing exercise.
+Typed and split: `hub.ts` is the single public entry, re-exporting `src/engine/*`
+(`shaders`, `planets`, `capabilities`, `bake`, `planet-mesh`, `ship`, `sky`) so
+callers never reach past it.
 
-1. Change `import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js'` to `import * as THREE from 'three'`. Pin `three@0.160.x` in `package.json` — later versions change lighting/colour-management defaults and would shift the look.
-2. Keep the `export { THREE }` re-export only if `warp.ts` or `main.ts` needs it; otherwise drop it so tree-shaking works.
-3. Type the exports: `PLANETS`, `byId`, `detectQuality`, `reducedMotion`, `hasWebGL`, `createPlanet`, `createShip`, `initHub`, and the `initHub` return API (`park`, `unpark`, `returnShip`, `launch`, …). Write a `Planet` interface and a `HubApi` interface.
-4. **Delete `initPlanetBand`** — a leftover from the abandoned multi-page version. Nothing calls it.
-5. **Delete the `href` field on each `PLANETS` entry** (`'backend.dc.html'` etc.) — also multi-page leftovers. Routing uses `id`.
-6. Preserve exactly: `DAMP = 0.08`, `AZ_LIMIT = ±0.5`, hover scale `1.055`, 30 Hz raycast throttle, the 24 %-of-viewport-height park solve, the bake sizes (640²/384² albedo, 256²/160² bump), the DPR clamps, and the zero-allocation render loop.
-
-Verify after this step: the hub renders, planets orbit, hover works, drag pans.
-No routing yet.
+- **5.2** — `export { THREE }` is dropped; re-exporting would defeat tree-shaking, and `warp.ts` is a 2D canvas that needs none of it.
+- **5.5** — `PLANETS` entries carry **no `href`** field, and `initPlanetBand` is deleted. Both were multi-page leftovers; routing keys on `id`. Pinned by a unit test.
+- Preserved exactly: `DAMP 0.08`, `AZ_LIMIT ±0.5`, hover scale `1.055`, the 30 Hz raycast throttle, the 24 %-of-viewport park solve, bake sizes 640²/384² albedo and 256²/160² bump, the DPR clamps, and the zero-allocation render loop.
+- `createPlanet()` returns resolved handles (`PlanetView`) instead of a bare `Group`, so the loop does not re-find children by name four times per planet per frame.
 
 ## 6 — `router.ts`
 
-Port the logic class body from `index.dc.html`'s `<script data-dc-script>`.
-`componentDidMount` becomes `boot()` (called on `DOMContentLoaded`);
-`componentWillUnmount` becomes a `pagehide` handler; `this.props.x` becomes a
-module-level config object:
+`boot()` on `DOMContentLoaded`, teardown on `pagehide`, the prototype's four
+props as a module-level `config` (`composition`, `warpColor`, `parallax 0.10`,
+`showHud`). The engine is a **dynamic** import, so a device with no WebGL never
+downloads `three`.
 
-```ts
-export const config = {
-  composition: 'arc' as 'arc' | 'drift' | 'deep',
-  warpColor: 'planet' as 'planet' | 'ice' | 'amber' | 'white',
-  parallax: 0.10,
-  showHud: true,
-};
-```
-
-(These were the prototype's four tweakable props. Keep them as config — they are
-the knobs the owner used to tune the scene.)
-
-Then re-read README “Interactions & behaviour” and honour, without shortcuts:
-
-- One delegated `click` handler on `document` for **every** `href="#…"`.
-- `go(id)` pushes history **and** calls `jump()` directly.
-- `exit()` is `go(null)`. **Never `history.back()`.**
-- `finish()` idempotent, jump-token-carrying, reachable from the animation *and* from a watchdog at `COVER + CLEAR + 700`.
-- Input gated on `current` only, never on `_going`.
-- Both canvas nav paths (`pointerup` pair + plain `click`) into one deduped `nav()`.
-- One live `Warp` at a time; `dispose()` clears the canvas, hides it, resolves any pending `clear()`.
-- Deep link = panel open, camera parked, **no warp**.
+The invariants this step exists to protect are listed in `CLAUDE.md` and must be
+read before changing anything here: one delegated click handler for every
+`href="#…"`; `go(id)` pushes history **and** drives `jump()`; `exit()` is
+`go(null)`, never `history.back()`; `finish()` idempotent, token-carrying, and
+reachable from a watchdog; input gated on `current` only; both canvas nav paths
+into one deduplicated `nav()`; one live `Warp`; deep link = panel open, camera
+parked, no warp.
 
 ## 7 — `warp.ts` (from `warp.js`)
 
-Keep `MIN_COVER 900`, `MAX_COVER 2200`, `HOLD_CAP 3400`, the `ACCENTS` map, and
-the whole `Warp` class including `dispose()`.
+`MIN_COVER 900`, `MAX_COVER 2200`, `HOLD_CAP 3400`, the `ACCENTS` map, the whole
+`Warp` class including `dispose()`, and `saveAzimuth` / `loadAzimuth`.
 
-**Delete the dead multi-page handoff helpers:** `writeLaunch`, `readLaunch`,
-`whenLoaded`, `bindDepartures`. They exist for a document-swap architecture that
-no longer exists. Keep `saveAzimuth` / `loadAzimuth`.
+The dead multi-page handoff helpers — `writeLaunch`, `readLaunch`, `whenLoaded`,
+`bindDepartures` — are deleted, along with the `dg-launch` storage key. A test
+asserts none of the four names is exported.
 
-The streak field stays texture-free — no image data, no canvas generation,
-nothing built at click time.
+The streak field is texture-free: no image data, no canvas generation, nothing
+built at click time.
 
 ## 8 — Reduced motion, fallback, print
 
-- `prefers-reduced-motion`: no drift/bob/parallax, ambient rotation ~0, grain animation off, planet click = 200 ms cross-fade instead of the flight.
-- `webglcontextlost` → restore the text edition (`flatten()` + remove `data-dg-3d`).
-- `flatten()`: set `data-dg-flat` on `<html>`, hide `#stage`, unpin the panels into one continuous document, remove the transparent heroes. Same markup, no duplication.
-- Print: verify the whole CV prints as one continuous document (see step 3).
+**The flat text edition is a state the document ships in**, not one the router
+assembles: `index.html` carries `data-dg-flat="1"` and the head probe removes it
+only on confirmed WebGL. With JS off, no WebGL, an unreachable engine chunk, or a
+lost context, the page is laid out correctly by CSS alone.
+
+`flatten()` clears what the 3D path wrote and stands routing down; it is
+idempotent, because context loss can fire twice. The renderer is **not** disposed
+on context loss — one renderer per document, disposed only on `pagehide`.
 
 ## 9 — Assets and site files
 
-- `public/cv.pdf`, `public/og.png` from `assets/` (both placeholders).
-- `public/robots.txt`, `public/sitemap.xml` — replace `https://example.com` with `https://golosov-danylo.com`. With hash routing the sitemap has exactly one URL; only add per-destination URLs if open question 1 is answered "real URLs".
-- `public/models/` — copy `assets/models-README.md` as its README for the future glTF.
+`public/` holds `cv.pdf`, `og.png`, `robots.txt`, `sitemap.xml` and
+`models/README.md` (the glTF contract, publicly reachable at `/models/README.md`
+by design). The sitemap carries **exactly one** URL — destinations are fragments,
+not separate URLs — and its `<loc>` is byte-identical to the canonical `<link>`,
+trailing slash included.
+
+The favicon is an inline SVG data URI: no file, no request, cannot 404.
 
 ## 10 — Ship model
 
-**Out of scope.** `createShip()` builds a placeholder from primitives and that is
-what ships. Leave the function boundary clean so the body can be swapped for a
-glTF load later, and leave `assets/models-README.md` in place as the contract.
+`createShip()` builds a placeholder from primitives, and that is what ships. The
+function boundary stays clean for a glTF swap later; `public/models/README.md` is
+the contract, including the fact that `hub.ts` parents the exhaust trail to the
+ship group, so a swap has to re-parent it.
 
 ## 11 — Tests
 
-See `ACCEPTANCE.md` for the full list. Minimum:
+Vitest covers the pure seams — `parseHash()`, `byId()`, `detectQuality()` tiers,
+`jump-guard`'s two rules, the content table against the markup, and a
+build-artifact test that **builds the site itself** into a temp directory and
+measures the cold load. Playwright covers the router invariants and the
+accessibility path, which is where the prototype's real bugs lived.
 
-- **Vitest** — `hashId()` parsing, `byId()`, `detectQuality()` tiers, the `finish()` token/idempotency logic (pure, extract it if needed), and a build-artifact test asserting no `{{` survives in `dist/` once real copy is in.
-- **Playwright** — the router invariants and the accessibility path. These are the tests that matter; the prototype's real bugs were all router state, and every one of them is reproducible in a browser.
+The `{{`-in-`dist/` assertion is deliberately skipped while every token still
+defaults to its own literal string; its complement runs instead, proving the copy
+is in the served bytes rather than applied by a script.
 
 ## 12 — Budget check
 
-`npx vite build` then measure. **Under 900 KB transfer.** `three` is the whole
-budget — confirm it is minified and tree-shaken (the prototype's CDN build is
-neither). Confirm ≤ 25 draw calls in the hub via
-`renderer.info.render.calls`. Confirm DPR clamps on a real phone.
+Under 900 KB transfer, `three` minified and tree-shaken; ≤ 25 draw calls in the
+hub via `renderer.info.render.calls`; DPR clamps confirmed. All three are now
+CI-enforced assertions rather than manual checks — see `TASKS.md` Phase 11.
 
 ---
 
 ## Do not do
 
-- Do not introduce a framework, a router library, or a state library.
-- Do not add an effect composer, bloom pass, or post-processing. The glow is additive geometry, on purpose, for the draw-call budget.
-- Do not move to a real multi-page site (a document swap tore down the WebGL context and rebuilt every baked texture on arrival — that was the original lag, and it is why this is one document).
+- No framework, no router library, no state library.
+- No effect composer, bloom pass, or post-processing. The glow is additive geometry, on purpose, for the draw-call budget.
+- No multi-page site. A document swap tore down the WebGL context and rebuilt every baked texture on arrival — that was the original lag, and it is why this is one document.
 - Do not unmount or re-init the renderer for any reason other than `pagehide`.
-- Do not restyle the Backend blocks as employment, add a "currently learning" skills group, remove the Projects notice, or add a seniority claim. See README “Content rules”.
-- Do not spend time self-hosting fonts. The owner approved the Google Fonts CDN.
+- Do not restyle the Backend blocks as employment, add a "currently learning" skills group, remove the Projects notice, or add a seniority claim.
+- Do not self-host the fonts. The Google Fonts CDN is approved.
 - Do not port `support.js`.

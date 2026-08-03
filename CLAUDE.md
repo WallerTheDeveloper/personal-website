@@ -80,7 +80,7 @@ sit in attributes or structured data are applied on mount from the content table
 
 ## Working style
 
-- Ask the owner rather than assume. Open decisions are listed at the end of `README.md`; do not resolve them unilaterally.
-- Small, verifiable commits following `PORT_PLAN.md` step order.
+- Ask the owner rather than assume. Outstanding work and the owner's pre-launch list are at the top of `TASKS.md`; do not resolve them unilaterally.
+- Small, verifiable commits.
 - Before any router or engine change, re-read the relevant invariant above and add a Playwright test that would have caught the regression.
-- `design/` in the handoff bundle is the reference prototype. When in doubt about a visual, measure it there rather than guessing.
+- `design/` holds the reference prototype. When in doubt about a visual, measure it there rather than guessing — `design/DESIGN_SPEC.md` records what was measured.
