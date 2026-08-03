@@ -5,8 +5,61 @@ Anything marked **ASK** must go back to the owner before you implement it.
 
 ## Phase 0 — Orientation
 
-- [ ] Serve the prototype (`cd design && npx serve .`) and exercise every interaction (click, hover, Tab/Enter, Escape, Back, drag, scroll, resize, throttled CPU). `file://` does **not** work — see `design/HOW_TO_RUN.md`.
-      *Served at `http://localhost:4321/index.dc.html`; interactive pass still outstanding — driving a real browser was unavailable, so motion will be measured via Playwright against the prototype before Phase 3 sign-off.*
+- [x] Serve the prototype (`cd design && npx serve .`) and exercise every interaction (click, hover, Tab/Enter, Escape, Back, drag, scroll, resize, throttled CPU). `file://` does **not** work — see `design/HOW_TO_RUN.md`.
+      *Done, against the served prototype at `http://localhost:4321/index.dc`
+      (`serve` strips `.html`, so the URL in the old note 404s). Driven with a
+      throwaway Playwright harness on the same SwiftShader Chromium the suite
+      uses — the route this note always anticipated. Every claim below is a
+      measurement off the running prototype, not a reading of its source.*
+
+      **Baselines — the port matches all of them.** 29 draw calls, 11 textures,
+      24 geometries at 1440. `devicePixelRatio` 3 → renderer **2** desktop and
+      **1.5** at 390×844, where the tier is `low`, FOV 62 and the scene is 26
+      calls. Tab order is the four labels in DOM order then `#skip-scene` and
+      `#quality-toggle`. Drag and wheel both pan; arrow-key hammering approaches
+      the ±0.5 clamp asymptotically (0.489 / −0.4748) rather than snapping to it.
+      Hover eases a planet up from 1.0 toward 1.055 and unwinds on exit. Escape
+      lands on the **hub** both from a direct visit and after a cross-link, Back
+      from an open panel also lands on the hub, and two clicks 150 ms apart end
+      with exactly **one** panel visible. At 6× CPU throttling the hub boots in
+      4.0 s and a click still routes cleanly with nothing left mid-transition.
+
+      **Three measurements that settle open questions.**
+
+      1. **The transition is 520 / 1700, not README's 380 / 1150.** Instrumented
+         live: `hub.launch('xr', 1700)` fires 25 ms after the click and `#smoke`
+         is shown at 557 ms — a ~532 ms head start. Phase 7 read those numbers
+         out of the prototype's source and flagged them for the owner; they are
+         now confirmed running. README and ACCEPTANCE are the documents that are
+         wrong, and 1150 is the **dock** duration they conflated.
+      2. **There is no scroll parallax, and this is now measured rather than
+         inferred.** With a panel open, camera position is a function of *time*,
+         not `scrollTop`: the control drift over ~90 frames with no scrolling at
+         all (Δx −0.123) is **larger** than the change across a full top→bottom
+         scroll (Δx −0.0723), and returning `scrollTop` to 0 does not return the
+         camera — it keeps easing one way (x 3.331 → 3.208 → 3.136 → 3.043 →
+         3.009). What is left is the park solve converging. The source agrees:
+         the listener's whole body is `this.scrollK = 0`, under a stale
+         `// panel scroll drives the parallax` comment, and `startDrift()` says
+         "no drift, no scroll parallax". **Note `design/HOW_TO_RUN.md` line 39
+         makes the parallax claim too** — so it is README, HOW_TO_RUN *and* one
+         prototype comment against the code and the running page. Still the
+         owner's ASK (see Phase 7); this only removes the doubt about what the
+         prototype does.
+      3. **The quality button is inert in the prototype.** Clicking
+         `#quality-toggle` left `quality: high`, the pixel ratio unchanged and
+         `localStorage` untouched; only the fps figure in its own label moved
+         (16 → 15 fps), which is the live counter. Exactly what the port does.
+         Still the owner's ASK.
+
+      **Two things the port changed on purpose, both confirmed correct.** Under
+      `prefers-reduced-motion` the prototype's jump is a bare commit — panel
+      visible **68 ms** after the click, `#smoke` never shown, no flight and no
+      fade — so the port's 200 ms cross-fade is genuinely the spec beating the
+      prototype (Phase 8), not drift. And printing from an open panel, the
+      prototype leaves `#stage` and `#labels` at `block/visible`: the fixed hub
+      layer really does stamp itself over page one of the CV. Phase 8's addition
+      of `#stage` to the print block is a fix for a live defect, not tidying.
 - [x] Read `design/BUILD_NOTES.md` end to end.
       *Two statements there are superseded and must not be followed: self-hosting the fonts (README approves the Google Fonts CDN) and the five-entry Rollup config (PORT_PLAN step 1 mandates a single entry).*
 - [x] **ASK** — real URLs (`/xr`) or hash routes (`/#xr`)? → **hash routes**. Sitemap keeps one URL.
@@ -676,7 +729,7 @@ because it gzips at a different level. Either number has the same headroom;
 
 ## Phase 11 — Budget & ship
 
-- [ ] `vite build`; total transfer < 900 KB. `three` minified and tree-shaken.
+- [x] `vite build`; total transfer < 900 KB. `three` minified and tree-shaken.
       *Re-measured with the router landed: HTML 21.60 kB + CSS 15.82 kB + entry
       20.90 kB + hub chunk 506.23 kB = **564.55 kB raw**, 146.67 kB gzip. The
       hub is a separate chunk because the router imports it dynamically, so a
@@ -690,6 +743,12 @@ because it gzips at a different level. Either number has the same headroom;
       `tests/unit/build-artifact.test.ts` builds and measures on every `npm test`,
       including the one that fails if `dist/`'s weight on disk is ever mistaken
       for the budget.*
+      *Ticked on the final Phase 11 build: HTML 24.79 + CSS 19.44 + entry 23.21 +
+      hub chunk 509.98 = **577.42 kB raw / 149.91 kB gzip** at Vite's level, and
+      **144.4 kB** at the artifact test's. The growth over Phase 10's 567.66 kB is
+      the loading screen, the always-visible cursor and the 150 % type. Roughly
+      **6× headroom** against the 900 KB budget, and it is CI-enforced on every
+      push — the checkbox was the last thing outstanding, not the work.*
 - [x] `renderer.info.render.calls` ≤ 25 in the hub. **ASK answered — bring it to
       25.** It was **29**, and 29 in the prototype too, so this budget had never
       been met. Three transparent double-sided materials (XR's two rings, the
