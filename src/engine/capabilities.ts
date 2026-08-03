@@ -3,7 +3,7 @@
  * changes how much work the renderer does starts here.
  *
  * Kept apart from the scene so the tiers stay unit-testable without a WebGL
- * context (PORT_PLAN step 10 asks for exactly that).
+ * context (PORT_PLAN step 11 asks for exactly that).
  */
 
 export type Quality = 'low' | 'high';
