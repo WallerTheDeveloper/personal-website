@@ -201,9 +201,20 @@
 
     <section aria-label="Work">
       <article class="entry">
-        <p class="entry__org">{{BACKEND_BLOCK_1_ORG}}</p>
+        <h2 class="entry__title">{{BACKEND_BLOCK_2_TITLE}}</h2>
+        <p class="meta">{{BACKEND_BLOCK_2_DATES}}</p>
+        <p class="summary">{{BACKEND_BLOCK_2_SUMMARY}}</p>
+        <ul class="bullets">
+          <li>{{BACKEND_BLOCK_2_POINT_1}}</li>
+          <li>{{BACKEND_BLOCK_2_POINT_2}}</li>
+          <li>{{BACKEND_BLOCK_2_POINT_3}}</li>
+        </ul>
+        <p class="stack">Stack — {{BACKEND_BLOCK_2_STACK}}</p>
+      </article>
+      
+      <article class="entry">
         <h2 class="entry__title">{{BACKEND_BLOCK_1_TITLE}}</h2>
-        <p class="meta">{{BACKEND_BLOCK_1_DATES}} · {{BACKEND_BLOCK_1_LOCATION}}</p>
+        <p class="meta">{{BACKEND_BLOCK_1_DATES}}</p>
         <p class="summary">{{BACKEND_BLOCK_1_SUMMARY}}</p>
         <ul class="bullets">
           <li>{{BACKEND_BLOCK_1_POINT_1}}</li>
@@ -213,44 +224,6 @@
         <p class="stack">Stack — {{BACKEND_BLOCK_1_STACK}}</p>
       </article>
 
-      <article class="entry">
-        <p class="entry__org">{{BACKEND_BLOCK_2_ORG}}</p>
-        <h2 class="entry__title">{{BACKEND_BLOCK_2_TITLE}}</h2>
-        <p class="meta">{{BACKEND_BLOCK_2_DATES}} · {{BACKEND_BLOCK_2_LOCATION}}</p>
-        <p class="summary">{{BACKEND_BLOCK_2_SUMMARY}}</p>
-        <ul class="bullets">
-          <li>{{BACKEND_BLOCK_2_POINT_1}}</li>
-          <li>{{BACKEND_BLOCK_2_POINT_2}}</li>
-          <li>{{BACKEND_BLOCK_2_POINT_3}}</li>
-        </ul>
-        <p class="stack">Stack — {{BACKEND_BLOCK_2_STACK}}</p>
-      </article>
-
-      <article class="entry">
-        <p class="entry__org">{{BACKEND_BLOCK_3_ORG}}</p>
-        <h2 class="entry__title">{{BACKEND_BLOCK_3_TITLE}}</h2>
-        <p class="meta">{{BACKEND_BLOCK_3_DATES}} · {{BACKEND_BLOCK_3_LOCATION}}</p>
-        <p class="summary">{{BACKEND_BLOCK_3_SUMMARY}}</p>
-        <ul class="bullets">
-          <li>{{BACKEND_BLOCK_3_POINT_1}}</li>
-          <li>{{BACKEND_BLOCK_3_POINT_2}}</li>
-          <li>{{BACKEND_BLOCK_3_POINT_3}}</li>
-        </ul>
-        <p class="stack">Stack — {{BACKEND_BLOCK_3_STACK}}</p>
-      </article>
-
-      <article class="entry">
-        <p class="entry__org">{{BACKEND_BLOCK_4_ORG}}</p>
-        <h2 class="entry__title">{{BACKEND_BLOCK_4_TITLE}}</h2>
-        <p class="meta">{{BACKEND_BLOCK_4_DATES}} · {{BACKEND_BLOCK_4_LOCATION}}</p>
-        <p class="summary">{{BACKEND_BLOCK_4_SUMMARY}}</p>
-        <ul class="bullets">
-          <li>{{BACKEND_BLOCK_4_POINT_1}}</li>
-          <li>{{BACKEND_BLOCK_4_POINT_2}}</li>
-          <li>{{BACKEND_BLOCK_4_POINT_3}}</li>
-        </ul>
-        <p class="stack">Stack — {{BACKEND_BLOCK_4_STACK}}</p>
-      </article>
     </section>
       <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
         <p class="elsewhere__title">Elsewhere in the system</p>
@@ -411,7 +384,7 @@
 
     <section aria-labelledby="xr-personal-heading" class="section section--lg">
       <h2 id="xr-personal-heading" class="section-title section-title--tight">XR work — personal projects</h2>
-      <p class="note">Personal work, not employment.</p>
+      <p class="note"></p>
 
       <div class="cards">
         <article class="card">
@@ -421,19 +394,6 @@
           <p class="stack">Stack — {{XR_PROJECT_1_STACK}}</p>
         </article>
 
-        <article class="card">
-          <h3 class="card__title">{{XR_PROJECT_2_TITLE}}</h3>
-          <p class="meta">Freelance · {{XR_PROJECT_2_DATES}}</p>
-          <p class="summary">{{XR_PROJECT_2_SUMMARY}}</p>
-          <p class="stack">Stack — {{XR_PROJECT_2_STACK}}</p>
-        </article>
-
-        <article class="card">
-          <h3 class="card__title">{{XR_PROJECT_3_TITLE}}</h3>
-          <p class="meta">Freelance · {{XR_PROJECT_3_DATES}}</p>
-          <p class="summary">{{XR_PROJECT_3_SUMMARY}}</p>
-          <p class="stack">Stack — {{XR_PROJECT_3_STACK}}</p>
-        </article>
       </div>
     </section>
       <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
@@ -507,11 +467,7 @@
         <h3 class="skills__group-title skills__group-title--production">Used in production</h3>
         <p class="skills__list">{{SKILLS_PRODUCTION}}</p>
       </div>
-
-      <div class="skills__group">
-        <h3 class="skills__group-title skills__group-title--personal">Used in personal projects</h3>
-        <p class="skills__list">{{SKILLS_PERSONAL_PROJECTS}}</p>
-      </div>
+      
     </section>
       <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
         <p class="elsewhere__title">Elsewhere in the system</p>
