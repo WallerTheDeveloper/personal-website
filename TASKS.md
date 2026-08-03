@@ -14,7 +14,17 @@ Build order and the DOM contract are in `PORT_PLAN.md`. Invariants are in
 
 - [ ] **DPR clamps verified on a real phone.** Correct in Chromium at
       `deviceScaleFactor: 3` — 2 desktop, 1.5 at 390×844, pinned in
-      `budget.spec.ts`. A real handset is still the check that counts.
+      `budget.spec.ts`. A real handset is still the check that counts, and Phase
+      13 widened what it should cover: scrolling a panel from its hero, tapping a
+      planet, dragging to pan, and rotating to landscape.
+- [ ] **ASK — the planet arc is wider than a phone screen.** At 375px the
+      outermost labels sit off both edges at rest. Phase 13 made every
+      destination *reachable* (the swing limit widens to 0.9 rad on a narrow
+      viewport, and `mobile.spec.ts` sweeps the range to prove all four come
+      fully into frame), but fitting all four at rest needs the camera pulled
+      back or the arc narrowed on small viewports — a change to the hub's
+      composition and to the parked-planet solve tuned against it. **Owner's
+      call**; not taken unilaterally.
 
 ### Owner's pre-launch list (not the developer's)
 
@@ -296,6 +306,21 @@ the default the baseline itself fails several tests for harness reasons.
 - **The ship no longer drops out of frame after a round trip.** Reported as "the camera feels further away on the way back". It was not the camera — that returns exactly. The ship is a child of the camera, so no camera change can move it; what moved was its own seat, written as a literal in three places that disagreed (`resize()` used 5.2 while `returnShip()` and the dock's last control point used 3.4). Since `shipBaseY` is solved against the half-height *at 5.2*, re-seating at 3.4 put the ship 97 % of the way down the viewport, and it stayed there all session because only `y` is rewritten per frame, never `z`. Now one `SHIP_REST_DIST` with `SHIP_FRAME_FRACTION` beside it; the same commit fixes `resize()` solving `halfH` from `camera.fov` rather than `S.baseFov`. `exit.spec.ts` "the ship comes back to the seat it booted in" is the guard, verified failing before the fix. *Three related findings deliberately left alone: the park solve is not re-derived on resize; `sway`/`bob` are never gated on park, so the parked view holds still only to ±0.7°; and an orphaned dock leaves ~0.0007° of `fovBoost`, under the render loop's 0.01° deadband.*
 - **Serve the site from the GitHub Pages project path.** `public/CNAME` carried `golosov-danylo.com`, which has never resolved, so Pages fell back to the project URL while the build was still configured for an apex domain — every asset URL resolved to the host root, 404'd, and stranded the live page on the text edition. `base` is now `/personal-website/` for builds only; dev and preview stay rooted, because Playwright drives `npm run dev` with `page.goto('/')`. `tests/unit/build-artifact.test.ts` pins it.
 - **The loading screen reads the real boot.** A determinate dial (`src/loading-ring.ts`) with floors at three boot milestones, capped at 99 while it runs, so 100 appears only once the scene is genuinely behind the screen. A boot that stalls past 12 s flattens to the text edition instead. See `design/DESIGN_SPEC.md` for the milestone table.
+
+## Phase 13 — Mobile, and a dial that moves like one
+
+Owner-reported: the site was unusable on a phone, and the dial "gets to 5 % and
+then suddenly 100 %". Both confirmed. The dial was to stay **data-driven** — the
+fix was more real signals, not a smoother guess.
+
+- **The dial reads bytes.** `import()` reports nothing on the way, so `warmEngineChunk()` (`src/boot-progress.ts`) streams the chunk first for a byte count and the import resolves out of the cache entry it fills. The built site is *one* ~510 KB chunk, so this covers the whole of the slow part. Measurable or nothing: no `content-length`, a non-`ok` response or no `ReadableStream` and it returns without reading the body, rather than downloading half a megabyte twice. The URL is only knowable at build time — `build/engine-chunk.ts` writes it into the head as a meta tag, and a build that cannot find the chunk degrades to the old drift instead of breaking.
+- **`initHub()` is asynchronous, and only for this.** It yields a paint between planet bakes, so the four are visible as four. Built synchronously the main thread could not draw *any* of them until the last was done — reporting them would have shown nothing. Costs about four frames. It also makes a new state reachable: the document can flatten mid-build, so `boot()` re-checks and disposes what it was handed. That is an abandoned boot, not a second renderer.
+- **The arc eases toward the floor and is rate-limited.** `report()` is what happened; the arc only approaches it, so the number on screen is never ahead of the boot. The rate ceiling is the part that was not obvious: the easing is a function of elapsed time, and parsing 510 KB of engine holds the thread long enough that the next frame's `dt` let an unlimited curve cover the whole remaining gap in one repaint. That was half the reported jump. `loading.spec.ts` records the dial through a `MutationObserver` — not a sampling loop, which cannot tell a glide from a teleport — and asserts the series against the ceiling.
+- **The finished dial holds 1.5 s before fading.** Measured from the arc *landing* on 100. The last step used to be written on the same frame the fade started, so a completed dial was never actually seen — the other half of it.
+- **The phone breakpoint is mostly one rule.** `--type-scale` 1.5 → 1.18 at ≤ 640px. Type only, so the parked-planet solve is untouched. Beyond it: labels drop their sub-line, contact rows stack, the sticky bar wraps, the hero's floor becomes `min(220px, 38dvh)`, and viewport-height layout moves to `dvh` — which agrees with `canvas.clientHeight`, the thing `PARK_HEIGHT_FRACTION` actually solves against.
+- **Two silent clips, both grid blowouts.** `.te__grid`'s `minmax(calc(240px * 1.5), …)` is a 360px floor that `auto-fit` will not drop below, so it ran 360px wide inside a 328px column and `overflow-x: hidden` took the edge off all four nav cards. `.cards` had the same shape by default — an implicit `1fr` floors at `min-content`, so one unbreakable word widened the track past the column. **Neither was visible to `visual.spec.ts`, which measures the column around the grid**, and both were already broken at the 390px it did test. `mobile.spec.ts` asserts relationships instead — nothing wider than its parent, nothing outside the viewport, no two labels overlapping — which is why it caught them.
+- **Touch.** `touch-action: none` on `#scene` so a drag pans instead of the browser deciding halfway that it was a scroll; `.panel__hero` becomes `pointer-events: auto` on coarse pointers, or a swipe on the top 44 % of an open panel fell through to a canvas under orders not to scroll. `DRAG_SLOP_PX` is 6 for a mouse and 12 for a finger — both nav paths bail above it, so a tap that travelled 8–12px silently did nothing.
+- **DPR is re-clamped on resize**, guarded on a real change, and `resize()` is throttled to one call per frame. The clamp is decided on the shorter viewport edge, so it is a live verdict; the quality tier stays a boot-time one because its textures are already baked.
 
 ---
 

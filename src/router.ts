@@ -37,10 +37,11 @@
 
 import { isPanelId, PANEL_IDS, type PanelId } from './content';
 import { trackView } from './analytics';
+import { engineChunkUrl, warmEngineChunk } from './boot-progress';
 import { applyTitle } from './head';
 import { JumpGuard } from './jump-guard';
 import { LabelLayer } from './labels';
-import { LoadingRing } from './loading-ring';
+import { LoadingRing, RING_STAGES } from './loading-ring';
 import { ACCENTS, MIN_COVER, saveAzimuth, loadAzimuth, Warp } from './warp';
 import type { HubApi, Composition, LabelPlacement } from './hub';
 
@@ -100,6 +101,29 @@ const FALLBACK_FADE_MS = 400;
 /** Fade-out of the loading screen once the first frame has painted, ms. */
 const LOADER_FADE_MS = 400;
 /**
+ * How long the completed dial is held, fully opaque, before the fade starts.
+ *
+ * Measured from the moment the arc *lands* on 100, not from the moment it is
+ * told to — `complete()` resolves on arrival for exactly this reason, or the
+ * ramp would eat the hold and the dial would read 100 for a few frames of an
+ * already-fading screen. Which is the bug this whole path exists to fix.
+ */
+const LOADER_HOLD_MS = 1500;
+/**
+ * Backstop on the ramp: headroom for it, plus slack.
+ *
+ * `holdThenFade()` is idempotent and reachable from the ramp *and* from here,
+ * the same shape as `finish()` and its watchdog. It matters more than that one
+ * does: a stranded loading screen is fully opaque and would cover the entire
+ * site, so "the ring resolved" can never be the only way the fade starts.
+ *
+ * Deliberately *not* including `LOADER_HOLD_MS` — `holdThenFade()` applies the
+ * hold itself, so counting it here would hold twice on the backstop path. The
+ * ramp is ~0.75 s from 90 and under 1 s from anywhere the arc can realistically
+ * be when the first frame lands.
+ */
+const LOADER_SETTLE_MS = 1200 + 300;
+/**
  * How long the loading screen may hold the viewport before the document gives
  * up and flattens.
  *
@@ -113,8 +137,15 @@ const LOADER_TIMEOUT_MS = 12_000;
 
 /* ------------------------------------------------------------------ input */
 
-/** Pointer travel, CSS px, above which a press is a drag and not a click. */
-const DRAG_SLOP_PX = 6;
+/**
+ * Pointer travel, CSS px, above which a press is a drag and not a click.
+ *
+ * Two numbers, because a finger is not a mouse. A deliberate tap routinely
+ * travels 8–12 px before it lifts, and *both* nav paths bail above this — so the
+ * mouse-tuned 6 meant tapping a planet on a phone failed about as often as it
+ * worked, silently, with no feedback that anything had been aimed at.
+ */
+const DRAG_SLOP_PX = { fine: 6, coarse: 12 } as const;
 /** Two nav paths reach the same click; the later one inside this window loses. */
 const NAV_DEDUPE_MS = 350;
 const WHEEL_TO_RADIANS = 0.0011;
@@ -174,7 +205,10 @@ export class Router {
   /** Loading-screen stall timer, and the once-only guard on its dismissal. */
   private loaderTimer = 0;
   private loaderDone = false;
-  /** The loading screen's progress dial, advanced from the three boot milestones. */
+  /** Backstop on the hold at 100, and the once-only guard on the fade itself. */
+  private loaderSettle = 0;
+  private loaderFading = false;
+  /** The loading screen's progress dial, fed from what the boot actually finishes. */
   private ring: LoadingRing | null = null;
 
   /** Where the hub camera was left, so a panel visit does not lose it. */
@@ -188,6 +222,10 @@ export class Router {
   private moved = 0;
   private navAt = 0;
   private coarse = false;
+  /** Set from `coarse` when the pointer is bound, so the two cannot disagree. */
+  private dragSlop: number = DRAG_SLOP_PX.fine;
+  /** In-flight resize frame, so a burst of events costs one `resize()`. */
+  private resizeRaf = 0;
   /** The hub chrome carrying the reticle's link affordance, kept for teardown. */
   private hoverEls: readonly Element[] = [];
 
@@ -230,7 +268,17 @@ export class Router {
     // be killed. This is the reliable moment to bank the camera angle.
     if (document.hidden) saveAzimuth(this.currentHubAzimuth());
   };
-  private readonly onResize = (): void => this.hub?.resize();
+  private readonly onResize = (): void => {
+    // Throttled to one `resize()` per frame. iOS fires this continuously while
+    // the address bar collapses, and each call reallocates the drawing buffer —
+    // on a phone, mid-scroll, which is the worst moment to be doing it. Nothing
+    // is lost: a frame is the finest the result can be seen at anyway.
+    if (this.resizeRaf !== 0) return;
+    this.resizeRaf = requestAnimationFrame(() => {
+      this.resizeRaf = 0;
+      this.hub?.resize();
+    });
+  };
 
   /* ------------------------------------------------------------ lifecycle */
 
@@ -298,7 +346,7 @@ export class Router {
     this.loaderTimer = window.setTimeout(() => this.flatten(), LOADER_TIMEOUT_MS);
 
     // Started beside the stall clock above, because the two watch the same
-    // thing: the dial's first phase *is* the import, so it has to begin before
+    // thing: the dial's first span *is* the download, so it has to begin before
     // the request does. Reduced motion is asked of matchMedia rather than of the
     // engine's `reducedMotion()` on purpose — `this.reduce` is not answered
     // until the chunk that defines it has downloaded, which is the very thing
@@ -308,6 +356,10 @@ export class Router {
     if (arc !== null && pct !== null) {
       this.ring = new LoadingRing(arc, pct, matchMedia('(prefers-reduced-motion: reduce)').matches);
       this.ring.start();
+      // Armed until the first byte lands. A server that sends no `content-length`
+      // never produces one, and this is what keeps that visitor watching a dial
+      // that approaches 70 rather than one frozen at zero.
+      this.ring.idle(RING_STAGES.download.ceil, RING_STAGES.download.tau);
     }
 
     void this.load();
@@ -315,17 +367,27 @@ export class Router {
 
   private async load(): Promise<void> {
     try {
+      // Stream the chunk first, purely to count its bytes — the `import()` below
+      // then resolves out of the cache entry this just filled. Never fatal: it
+      // resolves `false` on anything it cannot measure, and the dial falls back
+      // to the idle drift armed in `mount()`.
+      const url = engineChunkUrl();
+      if (url !== null) {
+        await warmEngineChunk(url, (fraction) => {
+          this.ring?.report(fraction * RING_STAGES.download.ceil);
+        });
+      }
       const engine = await import('./hub');
-      // Milestone 1: the chunk is down. Everything left is local work.
-      this.ring?.advance(1);
-      this.boot(engine);
+      // The chunk is down. Everything left is local work.
+      this.ring?.report(RING_STAGES.download.ceil);
+      await this.boot(engine);
     } catch (err: unknown) {
       console.warn('[router] 3D unavailable, using the text edition', err);
       this.flatten();
     }
   }
 
-  private boot(engine: Engine): void {
+  private async boot(engine: Engine): Promise<void> {
     // The import has already resolved by the time this runs, and the stall
     // watchdog may have flattened the document while it was in flight. Booting
     // a scene into a flattened document would re-hide #fallback behind a canvas
@@ -355,8 +417,15 @@ export class Router {
     }
     this.el.canvas.style.opacity = '1';
 
-    const hub = engine.initHub(this.el.canvas, {
+    const hub = await engine.initHub(this.el.canvas, {
       composition: config.composition,
+      // Four planets, each reported as its textures land. `initHub()` yields a
+      // paint between them, which is the only reason these are visible at all —
+      // a synchronous build would apply all four and repaint once, at the end.
+      onProgress: (done: number, total: number): void => {
+        const span = RING_STAGES.build.ceil - RING_STAGES.download.ceil;
+        this.ring?.report(RING_STAGES.download.ceil + (span * done) / total);
+      },
       onLabels: (out: readonly LabelPlacement[]) => this.labels?.place(out, this.hovered),
       // The single place `hovered` is written. Everything that wants to change
       // it goes through `hub.setHovered()` and arrives back here, so the DOM
@@ -377,12 +446,28 @@ export class Router {
       // is the same document, flowed.
       onContextLost: (): void => this.flatten(),
     });
+    // `initHub()` now yields between planets, so the document can be handed to
+    // the text edition *while the scene is being built* — by the stall watchdog,
+    // or by a context lost mid-bake. Neither could happen when it was one
+    // synchronous call. Booting on over a flattened document would re-hide
+    // #fallback behind a canvas the visitor has already been told is not coming.
+    //
+    // Disposing here is not a second renderer lifecycle: nothing re-creates one,
+    // and this is an abandoned boot being torn down rather than the live hub
+    // being re-initialised (CLAUDE.md "one WebGLRenderer per document").
+    if (this.flat) {
+      hub.dispose();
+      return;
+    }
+
     this.hub = hub;
     window.__dgHub = hub;
     window.__dg3dReady = true;
-    // Milestone 2: the ten planet textures are baked and the scene is built.
-    // What is left is the first frame, where the shaders compile.
-    this.ring?.advance(2);
+    // The scene is built. What is left is the first frame, where the shaders
+    // compile — one event, with nothing inside it to sample, so the dial drifts
+    // across it rather than pretending to measure it.
+    this.ring?.report(RING_STAGES.build.ceil);
+    this.ring?.idle(RING_STAGES.frame.ceil, RING_STAGES.frame.tau);
 
     // Session-scoped, written by this router alone — the engine keeps no storage.
     const saved = loadAzimuth();
@@ -416,32 +501,64 @@ export class Router {
   }
 
   /**
-   * Take the loading screen down.
+   * The scene is genuinely behind the screen: finish the dial, then take the
+   * screen down.
    *
-   * Mirrors the `#fallback` fade above deliberately: opacity and pointer-events
-   * first, `display: none` only after the transition, and the timer re-checks
-   * the flat flag because a context lost inside the fade window has already
-   * handed the document over. Idempotent — reachable from the first painted
-   * frame, from `flatten()`, and from `destroy()`.
+   * This is the one moment the dial is entitled to read 100. It *ramps* there
+   * rather than snapping — the arc eases toward every floor it is given, and 100
+   * is just the last one — and the hold below is measured from the ramp landing,
+   * not from this call. Snapping to 100 on the same frame the fade started was
+   * the visible half of the "5 % then suddenly 100 %" this path was rebuilt to
+   * fix; holding a completed dial for a beat is the other half.
+   *
+   * Idempotent, and reachable from the first painted frame, from `flatten()` and
+   * from `destroy()`.
    */
   private dismissLoader(): void {
     if (this.loaderDone) return;
     this.loaderDone = true;
     clearTimeout(this.loaderTimer);
-    // The scene is genuinely behind the screen now, so this is the one moment
-    // the dial is entitled to read 100. The step up from ~90 happens inside the
-    // fade below, which starts on this same frame.
-    this.ring?.complete();
+
+    const ramp = this.ring?.complete();
+    if (ramp === undefined) {
+      // No dial to finish — nothing to hold for either.
+      this.holdThenFade();
+      return;
+    }
+    // Two ways in, exactly as `finish()` has two ways in, and for a stronger
+    // reason: a loading screen stranded at `opacity: 1` covers the whole site,
+    // so the ring resolving can never be the only path to the fade.
+    void ramp.then(() => this.holdThenFade());
+    this.loaderSettle = window.setTimeout(() => this.holdThenFade(), LOADER_SETTLE_MS);
+  }
+
+  /**
+   * Hold the completed dial, then fade.
+   *
+   * Mirrors the `#fallback` fade deliberately: opacity and pointer-events first,
+   * `display: none` only after the transition, and both timers re-check the flat
+   * flag because a context lost inside the window has already handed the
+   * document over. Idempotent.
+   */
+  private holdThenFade(): void {
+    if (this.loaderFading) return;
+    this.loaderFading = true;
+    clearTimeout(this.loaderSettle);
 
     const el = this.el?.loader;
     if (el == null) return;
-    el.style.transition = `opacity ${LOADER_FADE_MS}ms ease`;
-    el.style.opacity = '0';
-    el.style.pointerEvents = 'none';
     window.setTimeout(() => {
+      // `flatten()` hands the screen back to the stylesheet; writing a fade over
+      // it here would pin inline values on top of the flat rules.
       if (this.flat) return;
-      el.style.display = 'none';
-    }, LOADER_FADE_MS + 20);
+      el.style.transition = `opacity ${LOADER_FADE_MS}ms ease`;
+      el.style.opacity = '0';
+      el.style.pointerEvents = 'none';
+      window.setTimeout(() => {
+        if (this.flat) return;
+        el.style.display = 'none';
+      }, LOADER_FADE_MS + 20);
+    }, LOADER_HOLD_MS);
   }
 
   /**
@@ -471,10 +588,16 @@ export class Router {
     cancelAnimationFrame(this.drift);
     clearTimeout(this.watchdog);
     clearTimeout(this.loaderTimer);
+    clearTimeout(this.loaderSettle);
     this.loaderDone = true;
+    // Both guards, because the hold and the fade are separately reachable: the
+    // flat rules hide the screen outright, so neither has anything left to do.
+    this.loaderFading = true;
     // Stood down rather than completed: this path is a boot that did not happen,
     // and a dial left running would keep a frame loop alive against a screen the
-    // flat rules have already hidden.
+    // flat rules have already hidden. `stop()` also resolves a pending
+    // `complete()`, so a `dismissLoader()` racing this one is not left awaiting
+    // a ramp that will never run.
     this.ring?.stop();
     this.warpFx?.dispose();
     this.warpFx = null;
@@ -522,8 +645,10 @@ export class Router {
   destroy(): void {
     saveAzimuth(this.currentHubAzimuth());
     cancelAnimationFrame(this.drift);
+    cancelAnimationFrame(this.resizeRaf);
     clearTimeout(this.watchdog);
     clearTimeout(this.loaderTimer);
+    clearTimeout(this.loaderSettle);
     this.ring?.stop();
     window.removeEventListener('popstate', this.onPop);
     window.removeEventListener('hashchange', this.onHash);
@@ -795,6 +920,7 @@ export class Router {
   private bindPointer(): void {
     const c = this.el.canvas;
     this.coarse = window.matchMedia('(pointer: coarse)').matches;
+    this.dragSlop = this.coarse ? DRAG_SLOP_PX.coarse : DRAG_SLOP_PX.fine;
     // `cursor: none` is the stylesheet's now, on the whole stage rather than the
     // canvas, so that the labels and the chrome do not hand the OS cursor back
     // mid-sweep. It is gated on the same `(pointer: coarse)` this line reads.
@@ -881,14 +1007,14 @@ export class Router {
   }
 
   private handleUp(e: PointerEvent): void {
-    if (this.current === null && this.dragging && this.moved < DRAG_SLOP_PX) {
+    if (this.current === null && this.dragging && this.moved < this.dragSlop) {
       this.nav(e.clientX, e.clientY);
     }
     this.dragging = false;
   }
 
   private handleCanvasClick(e: MouseEvent): void {
-    if (this.current !== null || this.moved > DRAG_SLOP_PX) return;
+    if (this.current !== null || this.moved > this.dragSlop) return;
     this.nav(e.clientX, e.clientY);
   }
 

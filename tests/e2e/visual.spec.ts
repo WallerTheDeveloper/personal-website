@@ -34,8 +34,14 @@ import { expect, test, type Page } from '@playwright/test';
 import { WIDTHS } from '../../playwright.config';
 import { blockWebGL, PANELS, type Panel } from './helpers';
 
-/** Portrait for the phone width, landscape for the rest. */
-const HEIGHTS: Readonly<Record<number, number>> = { 1440: 900, 1024: 768, 768: 900, 390: 844 };
+/** Portrait for the phone widths, landscape for the rest. */
+const HEIGHTS: Readonly<Record<number, number>> = {
+  1440: 900,
+  1024: 768,
+  768: 900,
+  390: 844,
+  375: 667,
+};
 
 /**
  * `--type-scale` in `styles.css`.
@@ -52,6 +58,25 @@ const HEIGHTS: Readonly<Record<number, number>> = { 1440: 900, 1024: 768, 768: 9
  * scope held.
  */
 const TYPE_SCALE = 1.5;
+
+/**
+ * …and what it becomes on a phone.
+ *
+ * The desktop 1.5 is what turns several layouts from tight into broken at 375px
+ * — a 138px label column against 183px of room, four ~280px planet labels on a
+ * 375px canvas. Since the token multiplies type and *only* type, dropping it is
+ * one rule that fixes all of them at once, and the unscaled assertions below
+ * (the 44vh hero, the column measures, the padding clamps) are what prove the
+ * scope of that rule held: the parked-planet solve in `hub.ts` is tuned against
+ * those, and none of them may move.
+ *
+ * 640px, matching the width at which the hub foot already wraps to two rows.
+ */
+const PHONE_TYPE_SCALE = 1.18;
+const PHONE_MAX_WIDTH = 640;
+
+const scaleAt = (width: number): number =>
+  width <= PHONE_MAX_WIDTH ? PHONE_TYPE_SCALE : TYPE_SCALE;
 
 /** A prototype font-size, as the browser reports it once scaled. */
 const size = (base: number): string => `${base * TYPE_SCALE}px`;
@@ -332,9 +357,10 @@ test.describe('the text edition', () => {
       // clamp(20px, 6vw, 96px) of page padding either side of a 1080px column.
       const pad = Math.min(96, Math.max(20, width * 0.06));
       expect(te.colWidth).toBeCloseTo(Math.min(1080, width - pad * 2), 0);
-      // clamp(38px, 7vw, 84px), every leg through --type-scale.
+      // clamp(38px, 7vw, 84px), every leg through --type-scale — which is the
+      // phone value below 640px, and is the only thing that changes there.
       expect(parseFloat(te.heading)).toBeCloseTo(
-        Math.min(84, Math.max(38, width * 0.07)) * TYPE_SCALE,
+        Math.min(84, Math.max(38, width * 0.07)) * scaleAt(width),
         1,
       );
       // The hairlines *are* the 1px gap: the grid's background shows through

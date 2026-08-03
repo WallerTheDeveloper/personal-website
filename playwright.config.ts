@@ -5,7 +5,13 @@ import { join } from 'node:path';
 import { defineConfig } from '@playwright/test';
 
 // Widths that ACCEPTANCE.md group A pins the visual comparison to.
-export const WIDTHS = [1440, 1024, 768, 390] as const;
+//
+// 375 is the narrowest the site supports — iPhone SE and 13 mini, and most small
+// Androids. It was added after two layouts were found clipping there *and* at
+// 390: the text-edition grid and the About panel's contact rows. Both were
+// invisible to this sweep because it measured the column rather than the grid,
+// which `mobile.spec.ts` now covers directly.
+export const WIDTHS = [1440, 1024, 768, 390, 375] as const;
 
 /**
  * Where Playwright keeps the browsers it downloads.

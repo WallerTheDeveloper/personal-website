@@ -201,6 +201,13 @@ a:hover { color: var(--hover); }
   display: block;
   opacity: 0;
   transition: opacity 900ms ease;
+  /* Every touch on the hub is the router's: a horizontal drag pans the scene,
+     and the browser's own gestures — scroll, and pull-to-refresh above all —
+     have nothing to act on here and would only steal the drag halfway through.
+     The router's `touchmove` guard says the same thing in JS; the two agreeing
+     is the point, because `preventDefault` can arrive after the browser has
+     already committed to a scroll, and this cannot. */
+  touch-action: none;
 }
 
 .vignette {
@@ -398,25 +405,16 @@ a:hover { color: var(--hover); }
    visitor gets that the scene can be dragged, and phone widths — where dragging
    *is* the interaction — are the worst place to drop it.
 
-   The one width breakpoint in this file. Everything else is fluid by clamp(),
-   and this stays a breakpoint because the thing being avoided is a collision
-   between two independently-sized boxes, which no single clamp can express.
-   `3em` is of the hint's own font-size, so the clearance tracks the scale; the
-   left edge lets a long hint wrap upward instead of running off the viewport. */
+   A breakpoint rather than a clamp because the thing being avoided is a
+   collision between two independently-sized boxes, which no single clamp can
+   express. `3em` is of the hint's own font-size, so the clearance tracks the
+   scale; the left edge lets a long hint wrap upward instead of running off the
+   viewport. */
 @media (max-width: 1200px) {
   .hud-hint {
     left: clamp(20px, 4vw, 56px);
     bottom: calc(clamp(18px, 3vh, 34px) + 3em);
     text-align: right;
-  }
-}
-
-/* Narrower still, the foot runs out of room for the skip link and the fps chip
-   side by side and wraps to two rows of its own, so the hint has two to clear
-   rather than one. Same rule, one row further up. */
-@media (max-width: 640px) {
-  .hud-hint {
-    bottom: calc(clamp(18px, 3vh, 34px) + 6em);
   }
 }
 
@@ -622,8 +620,15 @@ a:hover { color: var(--hover); }
 .te__grid {
   display: grid;
   /* The track floor scales with the card title, or a 39px display heading wraps
-     mid-word before auto-fit ever decides to drop a column. */
-  grid-template-columns: repeat(auto-fit, minmax(calc(240px * var(--type-scale)), 1fr));
+     mid-word before auto-fit ever decides to drop a column.
+
+     `min(100%, …)` is what keeps that floor from becoming a *hard* minimum:
+     auto-fit will not drop below one track, so a 360px floor inside a 328px
+     column produced a grid wider than its own container, silently clipped by
+     `.te { overflow-x: hidden }` — the right-hand edge of all four nav cards,
+     gone, on every phone. The `min()` lets the single remaining track collapse
+     to the container instead. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(240px * var(--type-scale))), 1fr));
   gap: 1px;
   margin-top: clamp(36px, 7vh, 72px);
   background: var(--rule);
@@ -702,7 +707,11 @@ a:hover { color: var(--hover); }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  /* Wraps because the three items are mono, tracked and uppercase, and want
+     about 520px between them — against 339px on a phone, where without this the
+     flex line shrank each of them past its content and the bar overflowed. */
+  flex-wrap: wrap;
+  gap: 8px 16px;
   padding: 14px clamp(18px, 4vw, 44px);
   background: var(--bar);
   backdrop-filter: blur(10px);
@@ -746,11 +755,33 @@ a:hover { color: var(--hover); }
 
 .panel__where { color: var(--accent); }
 
+/* The transparent slab the parked planet is framed in. `PARK_HEIGHT_FRACTION`
+   in hub.ts solves against `canvas.clientHeight` — the *visible* viewport — so
+   `dvh` is the unit that agrees with it. Under `vh`, iOS measures against the
+   large viewport, making this hero taller than 44 % of what the camera solved
+   for and dropping the planet lower in the frame than it was ever aimed.
+
+   `vh` first as the fallback for browsers without `dvh`: same value they
+   computed before, so nothing regresses where the unit is unsupported.
+
+   The floor is `min()` rather than a flat 220px because a landscape phone is
+   375px tall, where a fixed 220 spent 59 % of the screen on a transparent slab
+   before a word of the panel appeared. */
 .panel__hero {
   position: relative;
   height: 44vh;
-  min-height: 220px;
+  height: 44dvh;
+  min-height: min(220px, 38dvh);
   pointer-events: none;
+}
+
+/* On a touch device the hero has to be draggable, or the panel cannot be
+   scrolled from its top 44 % — the pass-through exists so a mouse can still
+   hover the live planet behind it, and a finger has no hover to preserve. It
+   pairs with `touch-action: none` on #scene: without this, a swipe that started
+   on the hero reached the canvas, which is under orders not to scroll. */
+@media (pointer: coarse) {
+  .panel__hero { pointer-events: auto; }
 }
 
 .panel__hero-veil {
@@ -774,6 +805,7 @@ a:hover { color: var(--hover); }
   position: relative;
   background: var(--void);
   min-height: 56vh;
+  min-height: 56dvh;
 }
 
 .col {
@@ -911,12 +943,27 @@ a:hover { color: var(--hover); }
   padding: clamp(24px, 3.4vw, 32px);
   background: var(--void-2);
   border: 1px solid var(--rule-card);
+  /* The other half of the blowout above: letting the track shrink only helps if
+     the text inside it can wrap. Titles and package names are the strings with
+     no spaces in them, and `.panel` clips rather than scrolls. */
+  overflow-wrap: anywhere;
 }
 
 .card--project { padding: clamp(24px, 3.4vw, 34px); }
 
 .cards {
   display: grid;
+  /* `minmax(0, 1fr)` rather than the implicit `1fr`, which is `minmax(auto,
+     1fr)` — and `auto` as a grid item's floor means *min-content*. One long
+     unbreakable word inside a card therefore widened the track past the column
+     that contains it, and `.panel { overflow-x: hidden }` clipped the result.
+     At 375px a card ran 362px wide inside 335px of column.
+
+     It reads as a token-placeholder problem right now, because `{{TOKENS}}` have
+     no spaces to wrap on. It is not: a project title or a package name with no
+     space in it does exactly the same thing once the copy is real, and on a
+     phone there is no slack to absorb it. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
 
@@ -1270,6 +1317,70 @@ html[data-dg-flat] #fallback { position: static; opacity: 1; pointer-events: aut
 /* The in-page scroll target at the top of each panel. Zero-height and empty, so
    it generates no line box and cannot shift the sticky panel bar below it. */
 .panel__anchor { display: block; height: 0; }
+
+/* ---------------------------------------------------------------------------
+   Small viewports
+
+   Everything above is fluid by clamp() and stays that way. What clamp cannot
+   express is the one number sitting *outside* it: `--type-scale`, which
+   multiplies every font-size in this file and shipped at a flat 1.5 for a
+   1440px desktop. On a 375px phone that scale is the difference between a
+   layout that is tight and one that overflows — a 138px label column against
+   183px of room, four ~280px planet labels on a 375px canvas.
+
+   So the phone rule is mostly *one* rule. The handful beneath it are the places
+   where a smaller type size alone still leaves two boxes fighting.
+
+   640px, matching the width at which the hub foot already wraps to two rows.
+   --------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  :root {
+    /* Deliberately still >1: the display face is the site's voice and 1.0 reads
+       as a browser default. Type only, exactly as the token's own note at the
+       top of this file requires — the 44dvh hero, the column max-widths and
+       every padding clamp are untouched, so the parked-planet solve in hub.ts
+       (PARK_HEIGHT_FRACTION) is unaffected by this block. */
+    --type-scale: 1.18;
+  }
+
+  /* The foot has wrapped to two rows, so the drag hint has two to clear rather
+     than one. Same rule as the 1200px block, one row further up. */
+  .hud-hint {
+    bottom: calc(clamp(18px, 3vh, 34px) + 6em);
+  }
+
+  /* Four labels, projected onto a 375px-wide canvas by the engine, cannot each
+     be 280px across. The name is the destination; the mono sub-line is a gloss
+     on it, and it is the gloss that makes them collide. Dropping it is what
+     keeps all four visible and separately tappable — the alternative was
+     showing one at a time, which hides three destinations behind a pan. */
+  .label { max-width: 42vw; }
+  .label__sub { display: none; }
+  .label__name { font-size: calc(15px * var(--type-scale)); }
+
+  /* The label column is sized to the longest mono label, which is the right
+     shape only while there is room beside it for a value. There is not: the
+     values here are an email address and two full URLs, none of which contain a
+     space to wrap on. Stacked, each gets the full column. */
+  .contact__row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .contact__label { min-width: 0; }
+}
+
+/* An unbreakable string overflows whatever box it is in, and `.panel` clips
+   rather than scrolls. This belongs to the value, not to a width — a long URL
+   is no more breakable on a desktop, it simply had room. */
+.contact__row { overflow-wrap: anywhere; }
+
+/* Landscape phone: wide enough to escape the block above, short enough that
+   vertical space is the scarce one. Only the hero needs to know. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .panel__hero { min-height: 0; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   [data-grain] { animation: none !important; }

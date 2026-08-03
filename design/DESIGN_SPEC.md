@@ -58,6 +58,38 @@ h2 · `clamp(23px,2.8vw,28px)` project h2 · `clamp(22px,2.6vw,27px)` card h3 ·
 name · 18px links · 17px body · 16px bullets · 12px mono meta · 11px mono chrome
 · 10px mono eyebrows.
 
+## Small viewports
+
+Layout is fluid by `clamp()` and stays that way; the one number outside it is
+`--type-scale`, which multiplies every font-size in the stylesheet. It is
+**1.5 on desktop and 1.18 at ≤ 640px**, matching the width at which the hub foot
+already wraps to two rows. Type only, in both cases: the `44dvh` hero, the column
+measures and every padding clamp are unscaled, because `PARK_HEIGHT_FRACTION` in
+`hub.ts` is hand-tuned against them.
+
+Narrowest supported width is **375px** (iPhone SE / 13 mini). What the phone
+breakpoint changes beyond the scale:
+
+- **Planet labels** drop their mono sub-line and shrink. Four labels at the
+  desktop scale are ~280px each on a 375px canvas, and they collided.
+- **Contact rows** stack: the mono label column is 138px scaled, against 183px of
+  room, beside an email address and two URLs with no space to wrap on.
+- **The hero's floor** is `min(220px, 38dvh)`, and nothing at all below 500px of
+  height. A flat 220px was 59 % of a landscape phone before a word of the panel.
+
+`dvh` rather than `vh` for the hero and panel body: `PARK_HEIGHT_FRACTION` solves
+against `canvas.clientHeight` — the *visible* viewport — so `dvh` is the unit
+that agrees with it. Under `vh`, iOS measures against the large viewport and
+drops the parked planet lower in the frame than the solve aimed for.
+
+Two things are deliberately **not** done here, and both need the hub's
+composition rather than a breakpoint. The planets sit on an arc in world space
+wider than a phone's horizontal field, so at rest the outermost labels are off
+both edges — reachable by dragging (the swing limit is widened to 0.9 rad on a
+narrow viewport so that every one of them can be brought fully into frame), but
+not visible at rest. Fitting all four at rest means pulling the camera back or
+narrowing the arc, and re-tuning the parked-planet solve against it.
+
 ## Spacing, radii, depth
 
 Section gap `clamp(40–48px, 7–8vh, 64–80px)`; entry padding
@@ -170,22 +202,61 @@ mono, and below both a **progress dial**: a 2 px ring, track `--rule`, arc
 `--hover`, starting at twelve o'clock, percentage in mono at its centre,
 `72px × --type-scale` across.
 
-The value is **determinate and real** (`src/loading-ring.ts`). Three boot
-milestones set floors the dial may not pass before they have happened; it eases
-toward the next one in between:
+The value is **determinate and real** (`src/loading-ring.ts`). Each span reports
+a floor the dial may not pass before that work has actually happened:
 
-| Milestone | Floor |
-| --- | --- |
-| the engine chunk resolves | 70 |
-| `initHub()` returns — textures baked, scene built | 90 |
-| the first frame is composited | 99 |
-| the screen is dismissed | 100 |
+| Span | Read from | Ends at |
+| --- | --- | --- |
+| the engine chunk downloads | **its bytes**, streamed (`src/boot-progress.ts`) | 70 |
+| the scene is built | **each planet baked**, four ticks | 90 |
+| the first frame is composited | the frame itself — one event | 99 |
+| the screen is dismissed | — | 100 |
 
-The curve approaches each floor without crossing it and the readout is capped at
-99 while it runs, so **100 appears only once the scene is genuinely behind the
-screen**. A dial that filled on a timer would be decoration pretending to be
-data. A boot that stalls past 12 s never reaches 100 — the document flattens to
-the text edition instead.
+The download is the largest span because it is the one that scales with the
+visitor's connection: the built site is a single ~510 KB chunk carrying three.js
+and the whole engine, against a 24 KB entry, so on any connection slow enough to
+notice it *is* the wait. `warmEngineChunk()` streams it for a byte count and the
+`import()` that follows resolves out of the cache entry that fills. Where the
+bytes cannot be measured — no `content-length` — the dial falls back to drifting
+toward 70, and the download is left to `import()` rather than paid for twice.
+
+`initHub()` is **asynchronous for this reason and no other**: it yields a paint
+between planets. Built synchronously, all four bakes complete before the browser
+can draw any of them, so reporting them would show nothing. It costs about four
+frames.
+
+Two rules keep the motion honest:
+
+- **`report()` is a floor; the arc only ever eases *toward* it.** What is on
+  screen is therefore always ≤ what has happened. Motion is animated, progress is
+  not invented — the standing the `#fps` chip has. The arc is rate-limited as
+  well as eased, because the boot has moments that hold the main thread for
+  hundreds of milliseconds (parsing the chunk, mostly) and the first frame after
+  one arrives with a `dt` large enough for an unlimited curve to cover the whole
+  remaining gap in a single repaint. That is a jump, and it was half the reason
+  the old dial read "5 %, then 100 %". The ceiling puts a floor of ~0.9 s under a
+  full sweep however fast the boot was.
+- **`idle()` is the explicit admission that there is nothing finer to read.** It
+  is armed for exactly two spans — an unmeasurable download, and the single frame
+  where the shaders compile — and the next `report()` retires it, because a real
+  datum supersedes a guess.
+
+The readout is capped at 99 while the loop runs, so **100 appears only once the
+scene is genuinely behind the screen**. A dial that filled on a timer would be
+decoration pretending to be data.
+
+**The finished dial is then held for 1.5 s, fully opaque, before the 400 ms
+fade.** Measured from the arc *landing* on 100, not from being told to go there,
+or the ramp would eat the hold. Without it the last step was written on the same
+frame the fade began and a completed dial was never actually seen — the other
+half of the reported bug. `holdThenFade()` is idempotent and reachable from the
+ramp and from a backstop timer, the same shape as `finish()` and its watchdog,
+and for a stronger reason: a stranded loading screen is opaque and would cover
+the whole site.
+
+A boot that stalls past 12 s never reaches 100 — the document flattens to the
+text edition instead. Because the scene is now built across frames, that can
+happen *during* the build; the caller re-checks and disposes what it was handed.
 
 ## Destination panels
 
@@ -463,7 +534,15 @@ in the hero windows, not the body column.
 
 - **Transfer < 900 KB** total; `three` is essentially the whole budget.
 - **≤ 25 draw calls** in the hub. Rim glow is a back-face fresnel shell and the halo is additive geometry; there is **no effect composer**.
-- DPR clamped to **2** desktop / **1.5** mobile.
+- DPR clamped to **2** desktop / **1.5** mobile, re-evaluated on every `resize()`
+  and re-applied only when it actually changes — the clamp is decided on the
+  shorter viewport edge, so a foldable, a tablet entering split view or a desktop
+  window dragged narrow all cross the threshold mid-session. The quality *tier*
+  deliberately does not follow: its textures are already baked, and re-baking
+  them would be exactly the per-frame procedural work the engine avoids.
+- `resize()` itself is throttled to one call per frame. iOS fires the event
+  continuously while the address bar collapses, and each call reallocates the
+  drawing buffer.
 - **Zero allocations in the render loop.**
 - `detectQuality()` drops texture resolution, star count and particle count on small or low-core devices. The tier is chosen once at `initHub()` and is not exposed in the chrome.
 

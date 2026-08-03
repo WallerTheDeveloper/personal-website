@@ -20,7 +20,7 @@ hand-written CSS with custom properties · Vitest + Playwright · static `dist/`
 **Architecture**
 
 - One document. Panels are overlays, never separate pages. A document swap tore down the WebGL context and rebuilt every baked planet texture on arrival — that was the lag this design exists to avoid.
-- One `WebGLRenderer` per document, held on `window.__dgHub`, created once, never re-initialised, disposed only on `pagehide`. A canvas can only ever hold one context; re-initialising destroys it permanently and leaves a black hub.
+- One `WebGLRenderer` per document, held on `window.__dgHub`, created once, never re-initialised, disposed on `pagehide` — and on an abandoned boot. `initHub()` is `async` (it yields a paint between planet bakes so the loading dial can read them), so the document can flatten *while the scene is being built*; the caller re-checks `flat` after the await and disposes what it was handed. That is a boot being torn down, not a renderer being re-made. A canvas can only ever hold one context; re-initialising destroys it permanently and leaves a black hub.
 - The renderer keeps rendering while a panel is open — the panel's top 44 vh is transparent and shows the live parked planet.
 - No framework, no router library, no state library, no post-processing/effect composer.
 
@@ -42,6 +42,8 @@ hand-written CSS with custom properties · Vitest + Playwright · static `dist/`
 - **Zero allocations in the render loop.**
 - DPR clamped to 2 desktop / 1.5 mobile. Renderer pauses on `visibilitychange` — and **only** on `visibilitychange`. It keeps rendering under an opaque warp cover: the park solve eases over frames, so a renderer stopped under the cover lifts it onto a camera that has not moved. Pausing there would mean making the solve instant, which is the motion the cover exists to hide. An earlier draft of this file asked for that pause; it was never implemented, in this port or the prototype.
 - Nothing expensive in a click handler. An earlier warp baked sixteen 160² textures synchronously on click and the click felt like it hung; the current streak field is texture-free by design.
+- The loading dial reads real work only: streamed bytes for the chunk, one tick per baked planet, the first composited frame. `report()` is a floor and the arc only eases *toward* it, so what is on screen is never ahead of what has happened. Never pad it on a timer, and never let `idle()` run through a span that has real data — it is armed for the two spans that genuinely cannot be subdivided and retired by the next `report()`.
+- The completed dial holds 1.5 s before the fade, measured from the arc landing on 100. `holdThenFade()` is idempotent and reachable from the ramp *and* a backstop timer: a stranded loading screen is opaque and covers the whole site.
 
 **Accessibility** — treat as functional requirements, not polish.
 
@@ -63,6 +65,8 @@ Verify after any layout change.
 - Radii are 0 everywhere except the 2 px fps chip and the circular reticle. The loading dial is round too, but as SVG geometry rather than a radius — it is not a third exception to reach for. **No shadows anywhere** — depth comes from the scene, gradients, and hairlines.
 - Type: Bodoni Moda (display, always weight 400), Archivo (body), IBM Plex Mono (chrome/meta/uppercase micro-labels). Google Fonts CDN is approved.
 - Define global `a` / `a:hover` (`#e9e7f2` / `#ffb877`).
+- Layout stays fluid by `clamp()`. The one width breakpoint that carries layout is the phone one at **≤ 640px**, and it works mainly by dropping `--type-scale` from 1.5 to 1.18 — type only, both times: the `44dvh` hero, the column measures and the padding clamps stay unscaled because `PARK_HEIGHT_FRACTION` is tuned against them. **375px** is the narrowest supported width. Use `dvh` for viewport-height layout, with a `vh` line before it as the fallback.
+- Grid tracks that hold copy take `minmax(0, …)` and their contents `overflow-wrap: anywhere`. An implicit `1fr` floors at `min-content`, so one unbreakable word widens the track past its container and `overflow-x: hidden` clips it — silently, since the viewport never overflows.
 
 ## Content rules (editorial — do not "tidy")
 

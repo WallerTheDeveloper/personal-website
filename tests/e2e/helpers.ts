@@ -45,7 +45,22 @@ export async function blockWebGL(page: Page): Promise<void> {
   });
 }
 
-/** Load a URL and wait for the WebGL hub to be up. */
+/**
+ * How long the loading screen owns the viewport after `__dg3dReady`.
+ *
+ * The real budget is about 2.9 s: the dial ramps to 100 (~0.9 s), holds there
+ * fully opaque (1.5 s, `LOADER_HOLD_MS` in `router.ts`), then fades (0.4 s).
+ *
+ * The ceiling is far above it on purpose. Every one of those numbers is
+ * wall-clock, and this is waited on by *every* `openHub()` in the suite — so a
+ * tight bound turns a starved worker into a failure in whichever spec happened
+ * to be running. At 10 s it did exactly that once in a full parallel run. It
+ * costs nothing when the machine is healthy: the wait ends when the screen goes,
+ * not when the timer does.
+ */
+export const LOADER_EXIT_MS = 25_000;
+
+/** Load a URL and wait for the WebGL hub to be up, and the loader to be gone. */
 export async function openHub(page: Page, path = '/'): Promise<void> {
   await page.goto(path);
   await page.waitForFunction(() => window.__dg3dReady === true, undefined, { timeout: 30_000 });
@@ -54,6 +69,15 @@ export async function openHub(page: Page, path = '/'): Promise<void> {
     () => (window.__dgHub?.planets.length ?? 0) > 0 && (window.__dgHub?.planets[0]?.label.pr ?? 0) > 0,
     undefined,
     { timeout: 30_000 },
+  );
+  // `__dg3dReady` is set before the dial finishes, and the completed dial is now
+  // held for a beat before it fades. It is `pointer-events: none` throughout, so
+  // it never blocked input — but a spec that measured or screenshotted the hub
+  // while an opaque sheet was still over it would be reading the sheet.
+  await page.waitForFunction(
+    () => getComputedStyle(document.querySelector('#loading') as Element).display === 'none',
+    undefined,
+    { timeout: LOADER_EXIT_MS },
   );
 }
 

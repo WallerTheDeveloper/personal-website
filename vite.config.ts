@@ -3,6 +3,7 @@
 import { defineConfig } from 'vitest/config';
 
 import { copyTokens } from './build/copy-tokens';
+import { engineChunk } from './build/engine-chunk';
 
 // Single HTML entry, on purpose.
 //
@@ -29,9 +30,12 @@ const BASE = '/personal-website/';
 
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? BASE : '/',
-  // Fills the {{TOKEN}} placeholders from src/content.ts, so the owner fills
-  // copy in one file and the served HTML carries it with JS disabled.
-  plugins: [copyTokens()],
+  // copyTokens fills the {{TOKEN}} placeholders from src/content.ts, so the
+  // owner fills copy in one file and the served HTML carries it with JS
+  // disabled. engineChunk writes the hashed engine URL into the head, which is
+  // the only place that URL is knowable — the loading dial streams it for a byte
+  // count before importing it.
+  plugins: [copyTokens(), engineChunk()],
   build: {
     target: 'es2022',
     // The budget is < 900 KB transfer and `three` is essentially all of it,

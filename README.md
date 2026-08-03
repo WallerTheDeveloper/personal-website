@@ -79,6 +79,7 @@ src/
   engine/             planet meshes, texture baking, shaders, sky, ship, capability tiers
   warp.ts             the hyperspace cover
   loading-ring.ts     determinate boot dial
+  boot-progress.ts    streams the engine chunk for a real byte count
   labels.ts           projected planet labels
   head.ts             title and meta tokens
   jump-guard.ts       jump serialisation
@@ -86,6 +87,7 @@ src/
   content.ts          every visible string
   styles.css
 build/copy-tokens.ts  Vite plugin: substitutes content.ts into the HTML at build time
+build/engine-chunk.ts Vite plugin: writes the hashed engine chunk URL into the head
 tests/unit  tests/e2e
 public/               cv.pdf, og.png, robots.txt, sitemap.xml, models/
 design/               the reference prototype and its notes

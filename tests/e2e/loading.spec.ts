@@ -24,10 +24,101 @@
 
 import { expect, test, type Page } from '@playwright/test';
 
-import { blockWebGL, openHub, waitForPanel } from './helpers';
+import { blockWebGL, LOADER_EXIT_MS, openHub, waitForPanel } from './helpers';
 
 /** `LOADER_TIMEOUT_MS` in `src/router.ts`. */
 const LOADER_TIMEOUT_MS = 12_000;
+/** `LOADER_HOLD_MS` in `src/router.ts`. */
+const LOADER_HOLD_MS = 1500;
+
+/**
+ * `MAX_RATE_PCT_PER_MS` in `src/loading-ring.ts`. The arc's speed ceiling, and
+ * the property the smoothness tests below actually assert.
+ */
+const MAX_RATE_PCT_PER_MS = 0.11;
+
+/** One sampled frame of the dial. */
+interface DialSample {
+  /** Fraction of the ring painted, or -1 before the router writes the dash. */
+  readonly drawn: number;
+  readonly pct: number;
+  /** Whether the scene had finished building when this frame was sampled. */
+  readonly ready: boolean;
+  /** The loading screen's own opacity, so the hold can be measured in-page. */
+  readonly opacity: number;
+  readonly t: number;
+}
+
+declare global {
+  interface Window {
+    __dialTrace?: DialSample[];
+  }
+}
+
+/**
+ * Record the dial every time it is actually written to.
+ *
+ * The complaint this all comes from — "it gets to 5 % and then suddenly 100 %" —
+ * is a claim about the *series* of values, not about any one of them. A test
+ * that polls from the outside cannot see it: two `dialPct()` calls a second
+ * apart look identical whether the dial glided between them or teleported.
+ *
+ * A `MutationObserver` rather than a sampling loop, and the distinction matters
+ * for the rate assertion below. A second `requestAnimationFrame` is not in step
+ * with the ring's: when a long task blocks the thread — parsing half a megabyte
+ * of engine, mostly — the ring's catch-up lands in one paint and a sampler
+ * observes it a frame *later*, timestamping a large move against a short
+ * interval it did not happen in. The observer is delivered at the end of the
+ * same task as the write, so each entry carries the time of the write itself.
+ */
+async function traceDial(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const trace: DialSample[] = [];
+    window.__dialTrace = trace;
+
+    const start = (): void => {
+      const arc = document.querySelector('#loading-arc');
+      const pct = document.querySelector('#loading-pct');
+      const screen = document.querySelector('#loading');
+      if (arc === null || pct === null || screen === null) return;
+
+      const record = (): void => {
+        // Capped: a stalled boot sits here for twelve seconds, and an unbounded
+        // array would be the harness distorting what it is measuring.
+        if (trace.length >= 4_000) return;
+        const style = getComputedStyle(arc);
+        const len = Number.parseFloat(style.strokeDasharray);
+        const off = Number.parseFloat(style.strokeDashoffset);
+        const shell = getComputedStyle(screen);
+        trace.push({
+          drawn: Number.isFinite(len) && Number.isFinite(off) && len > 1 ? 1 - off / len : -1,
+          pct: Number(pct.textContent),
+          ready: window.__dg3dReady === true,
+          opacity: shell.display === 'none' ? 0 : Number(shell.opacity),
+          t: performance.now(),
+        });
+      };
+
+      // The arc carries the climb; the screen carries the hold and the fade.
+      const observer = new MutationObserver(record);
+      observer.observe(arc, { attributes: true, attributeFilter: ['style'] });
+      observer.observe(screen, { attributes: true, attributeFilter: ['style'] });
+      record();
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', start);
+    } else {
+      start();
+    }
+  });
+}
+
+/** The recorded frames in which the dial was actually being driven. */
+async function dialTrace(page: Page): Promise<DialSample[]> {
+  const trace = await page.evaluate(() => window.__dialTrace ?? []);
+  return trace.filter((s) => s.drawn >= 0);
+}
 
 /**
  * The engine chunk, matched in both shapes it can have: `vite dev` (which is
@@ -120,7 +211,7 @@ test.describe('while the scene is loading', () => {
 
     release();
     await waitForPanel(page, 'xr');
-    await expect(page.locator('#loading')).toBeHidden();
+    await expect(page.locator('#loading')).toBeHidden({ timeout: LOADER_EXIT_MS });
   });
 
   test('the dial climbs, and stops short of the milestone it has not reached', async ({ page }) => {
@@ -174,6 +265,131 @@ test.describe('while the scene is loading', () => {
   });
 });
 
+/**
+ * The dial reads the boot, and *moves* like it.
+ *
+ * These are the regression tests for the reported behaviour: a dial that sat
+ * near zero and then arrived at 100 with nothing in between. Two separate causes,
+ * both asserted here — the value had only three sources to read (so there was
+ * genuinely nothing between them), and the last step to 100 was written on the
+ * same frame the screen started fading (so it was never seen at all).
+ */
+test.describe('how the dial moves', () => {
+  test('it climbs no faster than the arc is allowed to move', async ({ page }) => {
+    await traceDial(page);
+    await openHub(page);
+
+    // Collapsed to the frames where the geometry actually changed, and measured
+    // between those. Sampling every frame would misattribute a move: this
+    // recorder and the ring are two `requestAnimationFrame` callbacks, so when a
+    // long task blocks the thread the ring's catch-up lands in one paint and is
+    // *observed* a frame later — against a 9 ms interval that did not contain it.
+    // Change-to-change spans the real elapsed time.
+    const trace = await dialTrace(page);
+    const moves = trace.filter((s, i) => i === 0 || s.drawn !== trace[i - 1]!.drawn);
+    expect(moves.length).toBeGreaterThan(5);
+
+    // Asserted against the rate ceiling rather than a flat number of points: the
+    // easing is a function of elapsed time, so a 200 ms frame is *entitled* to
+    // cover more ground than a 16 ms one. What it may never do is teleport, and
+    // that is what the ceiling forbids. Doubled plus a constant for the one
+    // frame of observation lag that remains.
+    for (let i = 1; i < moves.length; i += 1) {
+      const from = moves[i - 1]!;
+      const to = moves[i]!;
+      const allowed = (2 * MAX_RATE_PCT_PER_MS * (to.t - from.t)) / 100 + 0.03;
+      expect(to.drawn - from.drawn).toBeLessThanOrEqual(allowed);
+    }
+  });
+
+  test('the climb takes as long as a climb, even on an instant boot', async ({ page }) => {
+    await traceDial(page);
+    await openHub(page);
+
+    // The regression test for the reported bug, stated as a duration.
+    //
+    // Against a dev server the whole boot is a few hundred milliseconds, and the
+    // dial used to finish in about that — 5 %, then 100 %, with the intervening
+    // numbers never painted. The rate ceiling puts a floor under the sweep of
+    // 100 / 0.11 ≈ 909 ms regardless of how fast the boot was, and *that* is
+    // what makes the dial legible rather than the number of frames the machine
+    // running this happened to find time for.
+    const trace = await dialTrace(page);
+    const started = trace[0]!;
+    const landed = trace.find((s) => s.drawn >= 1);
+    expect(landed, 'the dial should reach a full ring').toBeDefined();
+    expect(landed!.t - started.t).toBeGreaterThan(700);
+  });
+
+  test('it only ever moves forward', async ({ page }) => {
+    await traceDial(page);
+    await openHub(page);
+
+    const trace = await dialTrace(page);
+    for (let i = 1; i < trace.length; i += 1) {
+      expect(trace[i]!.drawn).toBeGreaterThanOrEqual(trace[i - 1]!.drawn - 1e-9);
+    }
+  });
+
+  test('the scene is built across frames, so the bakes are visible', async ({ page }) => {
+    await traceDial(page);
+    await openHub(page);
+
+    // The precise claim for `initHub()` being asynchronous. While it was one
+    // blocking call, the main thread could not paint *at all* between the chunk
+    // landing and the scene being built — so no frame could exist that was past
+    // the download's 70 and not yet `__dg3dReady`. Every one of these frames is
+    // a paint that a synchronous build made impossible.
+    const trace = await dialTrace(page);
+    const midBuild = trace.filter((s) => !s.ready && s.pct > 70 && s.pct < 90);
+    expect(midBuild.length).toBeGreaterThan(0);
+  });
+
+  test('the completed dial is held, fully opaque, before the screen fades', async ({ page }) => {
+    await traceDial(page);
+    await openHub(page);
+
+    // Measured from the in-page trace rather than by polling from outside: the
+    // whole window is under two seconds, and a round trip per assertion cannot
+    // resolve it. This is also why `openHub()` is safe to await first — the
+    // frames have already been recorded by the time it returns.
+    const trace = await dialTrace(page);
+    const landed = trace.find((s) => s.pct === 100);
+    expect(landed, 'the dial should reach 100').toBeDefined();
+
+    // Reaching 100 used to *be* the dismissal: the step up was written on the
+    // same frame the fade started, so a finished dial was never actually seen.
+    const fadeStart = trace.find((s) => s.t > landed!.t && s.opacity < 1);
+    expect(fadeStart, 'the screen should eventually fade').toBeDefined();
+    expect(fadeStart!.t - landed!.t).toBeGreaterThan(LOADER_HOLD_MS * 0.8);
+
+    // Every frame in between is a frame of finished dial on an opaque screen.
+    const held = trace.filter((s) => s.t >= landed!.t && s.t < fadeStart!.t);
+    expect(held.every((s) => s.opacity === 1 && s.pct === 100)).toBe(true);
+
+    // And it does come down — a hold that never ended would be an opaque sheet
+    // over the entire site.
+    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: LOADER_EXIT_MS });
+  });
+});
+
+test.describe('the engine chunk is streamed for its byte count', () => {
+  test('the build writes a resolvable chunk URL into the head', async ({ page }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    // The dial's largest span reads this file's bytes. If the tag is missing or
+    // wrong the dial silently falls back to drifting and nothing goes red — so
+    // the tag existing, and pointing at something real, is asserted here.
+    const url = await page
+      .locator('meta[name="dg-engine-chunk"]')
+      .getAttribute('content');
+    expect(url).toBeTruthy();
+
+    const response = await page.request.get(new URL(url!, page.url()).toString());
+    expect(response.status()).toBe(200);
+  });
+});
+
 test.describe('once the scene is up', () => {
   test('the loading screen is gone, not merely transparent', async ({ page }) => {
     await openHub(page);
@@ -181,12 +397,12 @@ test.describe('once the scene is up', () => {
     // `display: none`, not `opacity: 0`. A transparent full-bleed overlay left
     // in the document is what makes canvas input go dead — the router's own
     // `#fallback` teardown takes the same two steps for the same reason.
-    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: 5_000 });
+    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: LOADER_EXIT_MS });
   });
 
   test('the dial finished at 100', async ({ page }) => {
     await openHub(page);
-    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: 5_000 });
+    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: LOADER_EXIT_MS });
 
     // Read after the screen is down rather than raced for during the 400 ms
     // fade: the text stays in the document either way, and `complete()` is the
@@ -199,7 +415,7 @@ test.describe('once the scene is up', () => {
 
   test('the canvas still routes underneath it', async ({ page }) => {
     await openHub(page);
-    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: 5_000 });
+    await expect(page.locator('#loading')).toHaveCSS('display', 'none', { timeout: LOADER_EXIT_MS });
 
     // The direct proof of the point above: a click at dead centre reaches the
     // canvas rather than a leftover sheet.

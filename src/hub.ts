@@ -26,6 +26,7 @@ import * as THREE from 'three';
 import type { PanelId } from './content';
 import {
   detectQuality,
+  isSmallViewport,
   maxPixelRatio,
   reducedMotion,
   type Quality,
@@ -51,6 +52,29 @@ const DAMP = 0.08;
 /** How far the hub view may swing either way, radians. Widened while parked. */
 const AZ_LIMIT = 0.5;
 const PARK_AZ_LIMIT = 0.95;
+/**
+ * …and widened again on a narrow viewport.
+ *
+ * The four planets sit on an arc in world space that is wider than a phone's
+ * horizontal field — no font-size changes that, because it is where the engine
+ * *projects* them. At 375px the outermost label starts entirely off the left
+ * edge, and 0.5 rad of swing was not enough to bring it back: the visitor could
+ * pan toward a destination and still never see all of it.
+ *
+ * This is the cheap half of the fix and it makes every destination reachable.
+ * The other half — fitting all four at rest — means pulling the camera back or
+ * narrowing the arc on small viewports, which changes the composition and the
+ * parked-planet solve tuned against it. Deliberately not done here.
+ *
+ * Must stay below `PARK_AZ_LIMIT`: `resize()` tells "parked" from "not" by
+ * comparing against it.
+ */
+const NARROW_AZ_LIMIT = 0.9;
+
+/** The hub's swing limit for the viewport in front of us. */
+function hubAzLimit(): number {
+  return isSmallViewport() ? NARROW_AZ_LIMIT : AZ_LIMIT;
+}
 /** Hover/focus swell on a planet group. */
 const HOVER_SCALE = 1.055;
 /** ~30 Hz. Raycasting on every `pointermove` is the one input-side cost worth capping. */
@@ -96,6 +120,14 @@ export interface HubOptions {
   /** Defaults to `detectQuality()`. */
   quality?: Quality;
   composition?: Composition;
+  /**
+   * Called as each planet finishes baking, with how many are done out of how
+   * many there are. This is the only progress the boot can genuinely report
+   * between the chunk arriving and the first frame — and the reason `initHub()`
+   * yields a paint between planets, since a synchronous build would raise all
+   * four counts and repaint once, at the end, showing nothing.
+   */
+  onProgress?: (done: number, total: number) => void;
   /**
    * Called once per frame with the reused placement array — never copy it, and
    * never hold an element past the callback.
@@ -217,7 +249,45 @@ interface HubState {
 
 /* -------------------------------------------------------------------- hub */
 
-export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubApi {
+/** How long a yield waits for a paint that may never come. */
+const YIELD_FALLBACK_MS = 250;
+
+/**
+ * The next paint, or a timeout — whichever lands first.
+ *
+ * `requestAnimationFrame` alone would be correct and is what actually runs: it
+ * hands the loading dial a frame to draw itself in between two planet bakes. But
+ * a hidden tab never paints and never fires one, and a build parked mid-scene
+ * until the visitor came back would be flattened by the 12 s loader watchdog —
+ * a document that was fine, handed to the text edition for being in a background
+ * tab. The timeout is what makes the yield safe rather than merely nice.
+ */
+function nextPaint(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let settled = false;
+    const finish = (): void => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    requestAnimationFrame(finish);
+    setTimeout(finish, YIELD_FALLBACK_MS);
+  });
+}
+
+/**
+ * Build the hub.
+ *
+ * Asynchronous for one reason: the four planet bakes are reported to the loading
+ * dial as they land, and a paint has to be allowed between them or the reports
+ * are invisible — the main thread is blocked, so the browser cannot draw any of
+ * them until the last one is done. It costs about four frames.
+ *
+ * That makes a *new* state reachable: the document can flatten while the scene is
+ * still being built. The caller must re-check and `dispose()` what it gets —
+ * `router.boot()` does, and `loading.spec.ts` pins it.
+ */
+export async function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): Promise<HubApi> {
   const quality = opts.quality ?? detectQuality();
   const reduce = reducedMotion();
   const composition: Composition = opts.composition ?? 'arc';
@@ -257,7 +327,11 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
   const planetGroup = new THREE.Group();
   scene.add(planetGroup);
 
-  const views: readonly HubPlanet[] = PLANETS.map((planet) => {
+  // A loop rather than `PLANETS.map`, because each pass yields. The bakes render
+  // into render targets and never touch the default framebuffer, so the canvas
+  // stays black throughout and the opaque loading screen covers the staging.
+  const built: HubPlanet[] = [];
+  for (const planet of PLANETS) {
     const view = createPlanet(renderer, planet, quality);
     if (composition === 'deep') {
       view.group.position.z *= 0.86;
@@ -268,8 +342,13 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     }
     planetGroup.add(view.group);
     // `id` never changes, so it is written here rather than every frame.
-    return { ...view, label: { x: 0, y: 0, visible: true, pr: 0, id: planet.id } };
-  });
+    built.push({ ...view, label: { x: 0, y: 0, visible: true, pr: 0, id: planet.id } });
+    opts.onProgress?.(built.length, PLANETS.length);
+    // Between planets, never after the last one: what follows the final bake is
+    // the caller's own first frame, and a yield here would only postpone it.
+    if (built.length < PLANETS.length) await nextPaint();
+  }
+  const views: readonly HubPlanet[] = built;
 
   // Built once: the raycast target list, the hit→id lookup, and the array
   // handed to `onLabels`. All three are stable for the life of the hub.
@@ -303,7 +382,7 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
   ship.add(trail);
 
   const S: HubState = {
-    az: 0, azTarget: 0, azLimit: AZ_LIMIT,
+    az: 0, azTarget: 0, azLimit: hubAzLimit(),
     hovered: null, focused: null,
     launching: false, docking: false, paused: false,
     t0: performance.now(), fps: 0,
@@ -343,6 +422,25 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     S.baseFov = w / h < 0.85 ? 62 : 50;
     camera.fov = S.baseFov + S.fovBoost;
     camera.updateProjectionMatrix();
+
+    // The clamp is 2 desktop / 1.5 phone, decided on the shorter viewport edge —
+    // so it is a *live* verdict, not a boot-time one. A tablet turned into
+    // split view, a foldable, or a desktop window dragged narrow all cross the
+    // threshold mid-session and used to keep whichever ratio the boot happened
+    // to see. Guarded on a real change because `setPixelRatio` reallocates the
+    // drawing buffer, and this runs on every resize event.
+    //
+    // The quality *tier* deliberately does not follow: the textures are already
+    // baked at their tier's resolution and re-baking them here would be the
+    // per-frame procedural work the whole engine is built to avoid.
+    const dpr = maxPixelRatio();
+    if (dpr !== renderer.getPixelRatio()) renderer.setPixelRatio(dpr);
+
+    // The swing limit is a viewport verdict too — a phone turned from landscape
+    // to portrait needs the wider one to reach the ends of the arc. Left alone
+    // while parked, which owns the limit for as long as a panel is open.
+    if (S.azLimit !== PARK_AZ_LIMIT) S.azLimit = hubAzLimit();
+
     renderer.setSize(w, h, false);
 
     // Re-seat the ship so it keeps the same share of the frame at any aspect.
@@ -600,7 +698,7 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     S.aimT = 0;
     S.camYT = 0;
     S.parkDollyT = 0;
-    S.azLimit = AZ_LIMIT;
+    S.azLimit = hubAzLimit();
     api.setAzimuth(S.azTarget);
   }
 
