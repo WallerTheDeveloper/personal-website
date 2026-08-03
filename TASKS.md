@@ -825,6 +825,37 @@ because it gzips at a different level. Either number has the same headroom;
 - [x] **Drop the quality toggle, keep the fps readout.** Resolves the Phase 7
       ASK; the full answer is recorded there. `#quality-toggle` → `#fps`, same
       chip, no control. Tab order six stops → five.
+- [x] **The ship no longer drops out of frame after a round trip.** Reported as
+      "the camera feels further away on the way back". It was not the camera —
+      that returns exactly (`CAM_R` is a `const`; `returnShip()` zeroes
+      `camDolly`/`camRoll`/`fovBoost`; `unpark()` drives `aimT`/`camYT`/
+      `parkDollyT` to literal `0`). The ship is a child of the camera, so no
+      camera change can move it; what moved was its own seat, written as a
+      literal in three places that disagreed — `resize()` used 5.2 while
+      `returnShip()` and the dock's last control point used 3.4. Since
+      `shipBaseY` is solved against the half-height *at 5.2*, re-seating at 3.4
+      put the ship 97 % of the way down the viewport, bottom clipped and half
+      again as large, and it stayed there all session because only `y` is
+      rewritten per frame, never `z`.
+
+      Now one `SHIP_REST_DIST` constant with `SHIP_FRAME_FRACTION` beside it.
+      Same commit fixes `resize()` solving `halfH` from `camera.fov` rather than
+      `S.baseFov` — a resize fired mid-launch (boost up to +9°) baked a
+      `shipBaseY` a fifth too low and kept it.
+
+      **Fourth deliberate deviation from the prototype**, which carries the same
+      mismatch verbatim (`design/space-engine.js:543-547, 848, 893`).
+      `exit.spec.ts` "the ship comes back to the seat it booted in" is the guard:
+      with the old seat restored it reads 871.6 on a 900 px viewport against a
+      729 boot pose — verified failing before the fix, per CLAUDE.md's rule for
+      engine changes.
+
+      *Three related findings from the same trace, deliberately left alone: the
+      park solve is not re-derived on resize (stale framing if the aspect crosses
+      0.85 with a panel open); `sway`/`bob` are never gated on park, so
+      `router.ts`'s "the parked view holds absolutely still" is off by ±0.7°; and
+      an orphaned dock skips `returnShip()`, leaving ~0.0007° of `fovBoost`,
+      which is under the render loop's 0.01° deadband.*
 
 ## Owner's pre-launch list (not the developer's)
 

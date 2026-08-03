@@ -57,6 +57,21 @@ const HOVER_SCALE = 1.055;
 const RAY_INTERVAL_MS = 33;
 /** A parked planet reads as this fraction of viewport height, panel below it. */
 const PARK_HEIGHT_FRACTION = 0.24;
+/**
+ * Cockpit-rig standoff in camera space, and how far down the frame the ship
+ * sits as a fraction of the half-height at that depth.
+ *
+ * The one place the rest pose is written. It used to live as a literal in three
+ * places that disagreed — `resize()` seated the ship at 5.2 while `returnShip()`
+ * and the dock's final control point both used 3.4. Since the `y` is solved
+ * against the half-height *at 5.2*, re-seating at 3.4 put the ship at 94.8 % of
+ * the way to the bottom edge (the ratio is fov-independent, so portrait did not
+ * help) and it stayed there for the rest of the session — only `y` is rewritten
+ * per frame, never `z`. That was the ship dropping out of frame after the first
+ * round trip to a panel.
+ */
+const SHIP_REST_DIST = 5.2;
+const SHIP_FRAME_FRACTION = 0.62;
 /** Star counts per tier. */
 const STAR_COUNT = { high: 3200, low: 1800 } as const;
 
@@ -264,7 +279,8 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
 
   const shipView = createShip();
   const ship = shipView.group;
-  ship.position.set(0, -1.05, -3.4);
+  // Seed only: `resize()` runs before the first frame and solves both axes.
+  ship.position.set(0, -1.05, -SHIP_REST_DIST);
   // The ship rides the camera rig, so it holds station as the hub pans.
   camera.add(ship);
   scene.add(camera);
@@ -330,11 +346,14 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     renderer.setSize(w, h, false);
 
     // Re-seat the ship so it keeps the same share of the frame at any aspect.
-    const d = 5.2;
-    const halfH = Math.tan(((camera.fov * Math.PI) / 180) / 2) * d;
-    S.shipBaseY = -halfH * 0.62;
+    //
+    // `S.baseFov`, not `camera.fov`: the line above folds `S.fovBoost` into the
+    // camera, and a resize fired mid-launch (boost up to +9°) would otherwise
+    // bake a `shipBaseY` a fifth too low and keep it until the next resize.
+    const halfH = Math.tan(((S.baseFov * Math.PI) / 180) / 2) * SHIP_REST_DIST;
+    S.shipBaseY = -halfH * SHIP_FRAME_FRACTION;
     ship.position.y = S.shipBaseY;
-    ship.position.z = -d;
+    ship.position.z = -SHIP_REST_DIST;
   }
 
   function projectTo(obj: THREE.Object3D, out: ScreenPoint): void {
@@ -483,7 +502,7 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
     const flyK0 = S.flyK;
     const L0 = new THREE.Vector3(sign * 4.6, S.shipBaseY - 1.4, 3.2); // behind the viewer
     const L1 = new THREE.Vector3(sign * 2.2, S.shipBaseY - 0.6, -1.2);
-    const L2 = new THREE.Vector3(0, S.shipBaseY, -3.4); // the rig
+    const L2 = new THREE.Vector3(0, S.shipBaseY, -SHIP_REST_DIST); // the rig
     const lp = new THREE.Vector3();
     const lt = new THREE.Vector3();
     const fwd = new THREE.Vector3(0, 0, -1);
@@ -545,7 +564,7 @@ export function initHub(canvas: HTMLCanvasElement, opts: HubOptions = {}): HubAp
    */
   function returnShip(): void {
     camera.add(ship);
-    ship.position.set(0, S.shipBaseY, -3.4);
+    ship.position.set(0, S.shipBaseY, -SHIP_REST_DIST);
     ship.rotation.set(0, Math.PI, 0);
     ship.scale.set(1, 1, 1);
     trailMaterial.opacity = 0;
