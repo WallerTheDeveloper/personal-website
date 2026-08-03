@@ -14,3 +14,5 @@ playwright/.cache/
 .idea/
 .DS_Store
 Thumbs.db
+# msys/cygwin crash artifacts — dropped in the cwd by the Bash tool on Windows
+*.stackdump
