@@ -33,6 +33,20 @@ hand-written CSS with custom properties · Vitest + Playwright · static `dist/`
 - Exactly one live `Warp` owns `#smoke`; `jump()` disposes the previous instance first, and `dispose()` clears the canvas, hides it, and resolves any pending `clear()`.
 - Both canvas nav paths (the `pointerdown`/`pointerup` pair and a plain `click`) feed one deduplicated `nav()`. Keep both — `pointerdown` gets swallowed by pointer capture and by label hit-boxes.
 - Overlapping jumps queue in `_pending`. They never interleave.
+- The Freelance panel has one sub-route, `#projects/pN`. It is a **second axis beside `current`, not a fifth destination**: it never starts a jump, so `jump()`, `JumpGuard`, `_pending` and `_going` are not involved in changing it. `openDetail()`/`closeDetail()` push and then drive the view directly, exactly as `go()` does — they exist *because* `go()` early-returns on `id === current` and a detail always opens over a panel that is already current. Never route one through `go()`.
+- `closeDetail()` pushes `#projects`; **never `history.back()`** — `exit()`'s reasons, plus a deep-linked visitor has no `#projects` entry behind them at all. Back after closing therefore re-opens the detail; that is the accepted trade and a test pins it.
+- `commit()` tells the detail layer explicitly. `pushState` fires no `hashchange` and `go()` does not wait on one, so anything listening to the URL alone misses every router-driven navigation.
+- The detail's id carries a slash (`id="projects/p1"`) so it matches the sub-route exactly and the no-JS link resolves. Reach it with `getElementById`; `#projects\/p1` would need `CSS.escape`.
+
+**Project detail dialog**
+
+- The detail markup is inline, in flow, immediately after its own card. That placement is what gives the text edition and the printed CV the whole project for free. Every rule that lifts it into a dialog is gated on `html[data-dg-3d]`, which is why the flat block needs no line for it — but `@media print` does, because printing from the routed edition still carries that attribute.
+- It is `position: fixed` against the **viewport**, which holds only while nothing on `.panel`, `.panel__body` or `.col` carries a `transform`, `filter`, `perspective`, `will-change` or `contain`. Adding one silently drops the dialog into the scrolling column. `project-detail.spec.ts` has the test that catches it.
+- **No `inert`.** Every element that could host it is an ancestor of the dialog, so setting it would make the dialog inert too. `aria-modal` plus the hand-rolled Tab trap does that work. Do not "fix" this with native `<dialog>`/`showModal()`: the top layer puts it above `#smoke`, where the warp cover can no longer hide it.
+- The modal ARIA is added on open and removed on close, never written in the markup — the flat document must not claim to hold a modal it cannot dismiss.
+- Play focuses the **dialog**, not the iframe: focus inside a cross-origin frame keeps its key events, and Escape closing is a functional requirement.
+- Closing removes the iframe node. Nothing else stops the audio — `pause()` needs the player API and a `display: none` iframe keeps playing.
+- The video is a facade. The markup carries only a plain YouTube link, and no third-party host appears in the served HTML. Do not put the thumbnail in the markup.
 
 **Performance**
 

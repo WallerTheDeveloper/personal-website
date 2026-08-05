@@ -75,6 +75,7 @@ index.html            the one document: head probe, hub chrome, four panels, tex
 src/
   main.ts             entry — boots the router
   router.ts           hash routing, the jump, panel lifecycle
+  project-detail.ts   the #projects/pN dialog: focus trap, tech tags, video facade
   hub.ts              scene setup, camera, input, hover, park/unpark
   engine/             planet meshes, texture baking, shaders, sky, ship, capability tiers
   warp.ts             the hyperspace cover
@@ -92,6 +93,23 @@ tests/unit  tests/e2e
 public/               cv.pdf, og.png, robots.txt, sitemap.xml, models/
 design/               the reference prototype and its notes
 ```
+
+## Routes
+
+`#backend`, `#projects`, `#xr`, `#about` — and no hash for the hub. The Freelance
+panel adds one sub-route, `#projects/pN`, which opens that project's detail as a
+centred dialog over the card grid. It is deep-linkable: Back closes the dialog
+and returns to `#projects`, Escape closes the dialog and a second Escape exits to
+the hub.
+
+Everything that turns a detail into a dialog is gated on `html[data-dg-3d]`, so
+the text edition and the printed CV render all four details inline, under their
+own cards, with no JavaScript.
+
+The detail's video is a facade: the markup carries only a plain link to YouTube,
+the thumbnail is fetched when a detail opens, and the `youtube-nocookie` player
+is mounted only after a click on play. The site makes no third-party request
+until then.
 
 ## Content
 

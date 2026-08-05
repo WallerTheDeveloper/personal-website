@@ -337,6 +337,55 @@ row; summary; 2 bullets; stack line; then a `flex; gap: 22px` link row with
 `padding-bottom 3px`, hover `#ffb877`. Their `href`s are `#` in markup and
 assigned at runtime from the content table (`data-repo="n"` / `data-demo="n"`).
 
+#### Project detail dialog — **port addition, not in the prototype**
+
+Everything above measures `design/index.dc.html`. This subsection does not: the
+prototype has no project detail, and the port adds one at the sub-route
+`#projects/pN`. Recorded here so the two live together; the reason it exists is
+in `TASKS.md` under “Deliberate deviations from the prototype”.
+
+Each project is an `<article class="project">` holding a card and, immediately
+below it in the flow, its detail. **The detail is normal flow content** — that
+is what the text edition and the printed CV render. Only
+`html[data-dg-3d] .project__detail.is-open` lifts it out.
+
+The **card** is now one `<a href="#projects/pN">`: title `<h2>`, status, summary,
+stack line, then `View details →` (mono `11px`, `letter-spacing .16em`,
+uppercase, `#9dffd6`). Hover and focus take `background: #0c1020`,
+`border-color: rgba(56,255,176,0.45)`, title `#84ffcb`, and `outline-offset: 4px`.
+
+The **scrim** is `position: fixed; inset: 0; z-index: 50` — above `.panel__top`
+(3), below `#smoke` (60), so the warp cover still covers it —
+`background: rgba(5,6,13,0.86)`, `padding: clamp(16px,4vw,48px)`,
+`display: grid; place-items: center`, `overscroll-behavior: contain`. Clicking it
+dismisses.
+
+The **dialog** is `width: min(720px, 100%)`, `max-height: 100%`, `overflow-y:
+auto`, `padding: clamp(22px,3.4vw,34px)`, `background: #080a13`,
+`border: 1px solid rgba(255,255,255,0.08)`. **Radius 0 and no shadow** — depth is
+the hairline and the scrim. Closed, `border-top: 0` so it shares its card's edge.
+
+Contents in order: status eyebrow (the card's `.project__status` treatment as a
+block), `<h3>` Bodoni Moda `clamp(23px,2.8vw,28px)` `#eeecf6`, the video, the
+description, 2 bullets, the tag row, the *Repository ↗* / *Live demo ↗* row, and
+`← Back to projects` (mono 11px, `#9294ab`, hover `#ffb877`).
+
+**Video** — the markup ships only `<a class="project__video-cover">` to
+`youtube.com/watch?v=…`, styled exactly like the project links. When a detail
+opens, JS upgrades it to a `16/9` still (`i.ytimg.com/vi/…/hqdefault.jpg`,
+`object-fit: cover` to crop the 4:3 letterbox) under a
+`rgba(5,6,13,0.86)`-at-`0.55` scrim carrying the label, easing to `0.3` on hover.
+A click replaces it with a `youtube-nocookie` iframe.
+
+**Tech tags** — `<ul class="project__tech">`, ships empty and is filled from
+`PROJECT_DETAILS` on open; `:empty` hides it, so the flat and print editions show
+the card's `Stack — …` line instead. Each tag: `inline-flex`, `gap 7px`,
+`padding: 5px 10px`, `border: 1px solid rgba(56,255,176,0.28)`,
+`background: rgba(255,255,255,0.05)`, mono `10px`, `letter-spacing .1em`,
+`color: #38ffb0`, with a 14px inline `<svg>` filled `currentColor`. The glyphs are
+geometric category marks, **not brand logos** — see the “no icon set” rule below,
+which they are a deliberate, minimal reading of.
+
 ### XR / AR (`#xr`, accent `#b26bff`)
 
 `h1` *XR / AR*, intro `{{XR_INTRO}}`, then two sections.
