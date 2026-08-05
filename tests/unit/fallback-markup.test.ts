@@ -12,20 +12,34 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
+import { fillBodies } from '../../build/copy-tokens';
 import { fillTags } from '../../build/project-tags';
 import { PANEL_IDS, PROJECT_DETAILS, PROJECT_DETAIL_IDS } from '../../src/content';
 
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../../src/styles.css', import.meta.url), 'utf8');
 
+const bodyOf = (id: string): string | null => {
+  try {
+    return readFileSync(
+      fileURLToPath(new URL(`../../content/projects/${id}.html`, import.meta.url)),
+      'utf8',
+    ).trim();
+  } catch {
+    return null;
+  }
+};
+
 /**
  * What a no-JS visitor is actually sent. The authored markup ships the tag rows
- * empty and the build fills them, so anything asserting the text edition is
- * *complete* has to look at the transformed HTML, not at the file.
+ * and the project bodies empty and the build fills both, so anything asserting
+ * the text edition is *complete* has to look at the transformed HTML rather than
+ * at the file.
  */
-const served = fillTags(html);
+const served = fillBodies(fillTags(html), bodyOf);
 
 describe('the document ships flat', () => {
   it('carries data-dg-flat on <html>', () => {
@@ -131,6 +145,22 @@ describe('in-page anchors', () => {
     // the build — nothing may reference it as a subresource.
     expect(served).toContain('<path fill="currentColor" d="M');
     expect(served).not.toMatch(/(?:src|href)="[^"]*simple-icons/);
+  });
+
+  it('carries every authored project body in the served bytes', () => {
+    // Same reason as the tag rows: inlined at build time, so the text edition
+    // and the printed CV carry the whole project with no JS at all.
+    for (const project of PROJECT_DETAIL_IDS) {
+      const authored = bodyOf(project);
+      expect(authored, `content/projects/${project}.html is missing`).not.toBeNull();
+      const slot = new RegExp(`<div class="project__body" data-body="${project}">(.*?)</div>`, 's');
+      // Only up to the first `</div>`, which is enough: an empty slot matches
+      // the empty string, and a filled one cannot.
+      expect(slot.exec(served)?.[1] ?? '', `${project}'s body was not inlined`).not.toBe('');
+    }
+    // Raw, not escaped — the point of these files is that they are markup.
+    expect(served).toContain('<h4>');
+    expect(served).not.toContain('&lt;h4&gt;');
   });
 
   it('names no third-party host in the served markup', () => {

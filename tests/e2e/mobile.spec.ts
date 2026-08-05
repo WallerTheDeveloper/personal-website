@@ -151,6 +151,23 @@ test.describe('the panels on a phone', () => {
     expect(dialog).not.toBeNull();
     expect(dialog!.x).toBeGreaterThanOrEqual(-SLOP_PX);
     expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(PORTRAIT.width + SLOP_PX);
+
+    // The authored body is the one part of the dialog written outside this repo's
+    // own conventions — plain HTML, by hand — so it is the part most likely to
+    // put something unbreakable in a 375px column. Nothing inside it may be
+    // wider than the dialog that holds it.
+    const body = page.locator('[id="projects/p1"] .project__body');
+    await expect(body).toBeVisible();
+    const wide = await body.locator('*').evaluateAll((els, slop) =>
+      els
+        .filter((el) => {
+          const parent = el.parentElement;
+          return parent !== null && el.getBoundingClientRect().width > parent.clientWidth + slop;
+        })
+        .map((el) => el.tagName.toLowerCase()),
+      SLOP_PX,
+    );
+    expect(wide, 'the authored body overflows its dialog').toEqual([]);
   });
 
   test('a card player fits the card at 375px', async ({ page }) => {

@@ -90,6 +90,24 @@ async function expectPrintsAsOneDocument(page: Page): Promise<void> {
           `project detail ${i + 1} runs past its panel`,
         ).toBeLessThanOrEqual(box!.y + box!.height + 1);
       }
+
+      // And the authored bodies are on the page, inside it. They are the bulk
+      // of what a project says now, so a CV that printed the detail but not the
+      // body would be a CV with four empty projects in it.
+      const bodies = page.locator('.project__body');
+      await expect(bodies).toHaveCount(4);
+      for (let i = 0; i < 4; i++) {
+        const inner = await bodies.nth(i).boundingBox();
+        expect(inner, `project body ${i + 1} has no box`).not.toBeNull();
+        expect(inner!.height, `project body ${i + 1} is empty`).toBeGreaterThan(0);
+        expect(inner!.y, `project body ${i + 1} starts above its panel`).toBeGreaterThanOrEqual(
+          box!.y - 1,
+        );
+        expect(
+          inner!.y + inner!.height,
+          `project body ${i + 1} runs past its panel`,
+        ).toBeLessThanOrEqual(box!.y + box!.height + 1);
+      }
     }
   }
 

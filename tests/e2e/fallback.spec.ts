@@ -74,6 +74,17 @@ async function expectFlatDocument(page: Page): Promise<void> {
     await expect(rows.nth(i).locator('li').first()).toBeVisible();
   }
   await expect(page.locator('.project__tag svg').first()).toBeVisible();
+
+  // And the authored bodies, for the same reason: `content/projects/pN.html` is
+  // inlined at build time, so the whole project is in this document rather than
+  // behind a dialog it has no way to open.
+  const authored = page.locator('.project__body');
+  await expect(authored).toHaveCount(4);
+  for (let i = 0; i < 4; i += 1) {
+    await expect(authored.nth(i)).toBeVisible();
+    // Rendered as markup, not printed as escaped text.
+    await expect(authored.nth(i).locator('h4').first()).toBeVisible();
+  }
 }
 
 /** Follow a text-edition card and prove the browser actually went there. */

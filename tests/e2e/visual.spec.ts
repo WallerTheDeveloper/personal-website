@@ -410,10 +410,18 @@ test.describe('house rules, over the whole document', () => {
     await openStill(page, 1440);
     for (const id of PANELS) await reveal(page, id);
     // A project detail is `display: none` until it opens, and the sweep skips
-    // exactly those — so without this the dialog would be the one part of the
+    // exactly those — so without this the dialogs would be the one part of the
     // site the house rules never reach. Set directly rather than routed: this
     // test is about what the stylesheet draws, not about how it got there.
-    await page.evaluate(() => document.querySelector('[id="projects/p1"]')?.classList.add('is-open'));
+    //
+    // All four, not just p1. Each one now holds a body the owner authored as
+    // plain HTML (`content/projects/pN.html`), so each is a different document
+    // and only the one that is open is swept. `authored-html.test.ts` rejects
+    // the three properties in the source; this is what catches a rule in
+    // `styles.css` that draws them anyway.
+    await page.evaluate(() => {
+      for (const el of document.querySelectorAll('.project__detail')) el.classList.add('is-open');
+    });
     const seen = await sweep(page);
 
     expect(seen.families).toEqual(['Archivo', 'Bodoni Moda', 'IBM Plex Mono']);

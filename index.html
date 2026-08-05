@@ -328,6 +328,15 @@
               <li>{{PROJECT_1_POINT_1}}</li>
               <li>{{PROJECT_1_POINT_2}}</li>
             </ul>
+            <!-- The owner's own HTML, from `content/projects/p1.html`, inlined
+                 raw at build time by `build/copy-tokens.ts`. A `data-` slot
+                 rather than a copy token: the token sweep in
+                 `tests/unit/content.test.ts` runs both ways, and a body token
+                 would be pulled into coverage assertions it does not belong in.
+                 A missing file leaves this empty, which is the clean unfilled
+                 state. `tests/unit/authored-html.test.ts` is what keeps an
+                 authored body inside the house rules. -->
+            <div class="project__body" data-body="p1"></div>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="1" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="1" class="project__link">Live demo ↗</a>
@@ -375,6 +384,7 @@
               <li>{{PROJECT_2_POINT_1}}</li>
               <li>{{PROJECT_2_POINT_2}}</li>
             </ul>
+            <div class="project__body" data-body="p2"></div>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="2" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="2" class="project__link">Live demo ↗</a>
@@ -418,6 +428,7 @@
               <li>{{PROJECT_3_POINT_1}}</li>
               <li>{{PROJECT_3_POINT_2}}</li>
             </ul>
+            <div class="project__body" data-body="p3"></div>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="3" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="3" class="project__link">Live demo ↗</a>
@@ -461,6 +472,7 @@
               <li>{{PROJECT_4_POINT_1}}</li>
               <li>{{PROJECT_4_POINT_2}}</li>
             </ul>
+            <div class="project__body" data-body="p4"></div>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="4" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="4" class="project__link">Live demo ↗</a>
