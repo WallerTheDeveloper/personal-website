@@ -176,6 +176,27 @@ test.describe('closing a project detail', () => {
     expect(await openedDetail(page)).toBeNull();
   });
 
+  test('a click on the scrim dismisses', async ({ page }) => {
+    // Expected of a modal, and it is also what stops the panel's own chrome
+    // reading as broken: the sticky bar shows through the scrim and stays
+    // legible, so "← Back to system" looks clickable while the scrim is
+    // swallowing the click. Now that click does something.
+    await openHub(page, '/#projects/p1');
+    await waitForPanel(page, 'projects');
+
+    await page.locator(detail('p1')).click({ position: { x: 20, y: 20 } });
+    expect(await openedDetail(page)).toBeNull();
+    expect(await hash(page)).toBe('projects');
+    expect(await openPanel(page)).toBe('projects');
+  });
+
+  test('a click inside the dialog does not dismiss', async ({ page }) => {
+    await openHub(page, '/#projects/p1');
+    await waitForPanel(page, 'projects');
+    await page.locator(`${detail('p1')} .project__detail-title`).click();
+    expect(await openedDetail(page)).toBe('p1');
+  });
+
   test('the scrim takes the clicks the card grid would have got', async ({ page }) => {
     // The other half of "modal": `aria-modal` tells a screen reader to ignore
     // the rest of the document, and this is what makes that true for a pointer.
@@ -307,6 +328,70 @@ test.describe('the video facade', () => {
     await expect(cover).not.toHaveClass(/is-facade/);
     await expect(page.locator(`${detail('p1')} .project__video-thumb`)).toHaveCount(0);
     await expect(cover).toBeVisible();
+  });
+});
+
+test.describe('the tech tags', () => {
+  test('are filled from the content table when the detail opens', async ({ page }) => {
+    await openHub(page, '/#projects');
+    await waitForPanel(page, 'projects');
+
+    // Empty in the markup, so the `:empty` rule keeps it out of the flat
+    // document and the printed CV entirely.
+    const list = page.locator(`${detail('p1')} .project__tech`);
+    await expect(list.locator('li')).toHaveCount(0);
+
+    await page.locator('a[href="#projects/p1"]').click();
+    const tags = list.locator('li');
+    await expect(tags).toHaveCount(6);
+    await expect(tags.first()).toHaveText('Python');
+    // One glyph per tag, hidden from assistive tech — the label already says it.
+    await expect(list.locator('svg')).toHaveCount(6);
+    await expect(list.locator('svg').first()).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('draw a real glyph, tinted with the panel accent', async ({ page }) => {
+    await openHub(page, '/#projects/p1');
+    await waitForPanel(page, 'projects');
+
+    const tag = page.locator(`${detail('p1')} .project__tag`).first();
+    // `currentColor` on the path, `--accent` on the chip: the glyph takes the
+    // destination's colour without naming it.
+    await expect(tag).toHaveCSS('color', 'rgb(56, 255, 176)');
+    await expect(tag.locator('path')).toHaveAttribute('fill', 'currentColor');
+
+    // And it is actually on screen with area, rather than an empty <svg> — a
+    // malformed `d` renders as nothing at all and would pass every check above.
+    const box = await tag.locator('svg').boundingBox();
+    expect(box?.width).toBeGreaterThan(8);
+    expect(box?.height).toBeGreaterThan(8);
+    const painted = await tag.locator('path').evaluate((el) => {
+      const r = (el as SVGGeometryElement).getBBox();
+      return { w: r.width, h: r.height };
+    });
+    expect(painted.w).toBeGreaterThan(4);
+    expect(painted.h).toBeGreaterThan(4);
+  });
+
+  test('every glyph in the table draws something', async ({ page }) => {
+    // One malformed path would render as an empty box, and only on the one
+    // project that uses it. This walks all four details so the whole set is
+    // covered by a single pass.
+    await openHub(page, '/#projects');
+    await waitForPanel(page, 'projects');
+    for (const project of ['p1', 'p2', 'p3', 'p4']) {
+      await page.locator(`a[href="#projects/${project}"]`).click();
+      const empty = await page.locator(`${detail(project)} .project__tag path`).evaluateAll((els) =>
+        els
+          .map((el, i) => {
+            const r = (el as SVGGeometryElement).getBBox();
+            return r.width < 4 || r.height < 4 ? i : -1;
+          })
+          .filter((i) => i >= 0),
+      );
+      expect(empty, `${project} has glyphs that draw nothing`).toEqual([]);
+      await page.keyboard.press('Escape');
+    }
   });
 });
 

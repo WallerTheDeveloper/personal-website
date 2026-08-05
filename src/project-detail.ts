@@ -24,7 +24,41 @@
  * that ordering lives in the router's one `keydown`, next to the panel half.
  */
 
-import { type ProjectDetailId } from './content';
+import { ICONS, PROJECT_DETAILS, type ProjectDetailId, type Tech } from './content';
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * One tech tag: a glyph in `currentColor`, then the label as a text node.
+ *
+ * Built element by element rather than assigned as `innerHTML`. The path data is
+ * ours, but it is still *content* from `content.ts`, and the rule that nothing
+ * in that table is ever parsed as markup is worth more than the four lines this
+ * saves. `aria-hidden` because the label beside it already says the same thing.
+ */
+export function tagFor({ icon, label }: Tech): HTMLLIElement {
+  const li = document.createElement('li');
+  li.className = 'project__tag';
+
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '14');
+  svg.setAttribute('height', '14');
+  svg.setAttribute('aria-hidden', 'true');
+  // Keeps it out of the tab ring in engines that make SVG focusable by default.
+  svg.setAttribute('focusable', 'false');
+
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', ICONS[icon]);
+  path.setAttribute('fill', 'currentColor');
+  // The marks with a second subpath — the orbit, the nut, the polygon — are
+  // outlines, and read as solid blobs without this.
+  path.setAttribute('fill-rule', 'evenodd');
+
+  svg.appendChild(path);
+  li.append(svg, document.createTextNode(label));
+  return li;
+}
 
 /* ----------------------------------------------------------------- video */
 
@@ -91,6 +125,12 @@ function focusable(el: HTMLElement): boolean {
 
 export class ProjectDetailLayer {
   private readonly details: ReadonlyMap<ProjectDetailId, HTMLElement>;
+  /**
+   * Asks the router to close. The layer owns the view and never the URL, so a
+   * dismissal has to go back through `closeDetail()` — closing here directly
+   * would leave the address bar claiming a detail that is no longer on screen.
+   */
+  private readonly dismiss: () => void;
 
   /** The open detail's `.project__dialog`, and the null that means "closed". */
   private dialog: HTMLElement | null = null;
@@ -98,9 +138,11 @@ export class ProjectDetailLayer {
 
   private readonly onKey = (e: KeyboardEvent): void => this.trapTab(e);
   private readonly onFocusIn = (e: FocusEvent): void => this.pullFocusBack(e);
+  private readonly onScrim = (e: MouseEvent): void => this.dismissFromScrim(e);
 
-  constructor(details: ReadonlyMap<ProjectDetailId, HTMLElement>) {
+  constructor(details: ReadonlyMap<ProjectDetailId, HTMLElement>, dismiss: () => void) {
     this.details = details;
+    this.dismiss = dismiss;
   }
 
   show(project: ProjectDetailId): void {
@@ -124,6 +166,7 @@ export class ProjectDetailLayer {
 
     this.dialog = dialog;
     this.opened = project;
+    this.buildTags(project, dialog);
     this.buildFacade(dialog);
 
     // On the element itself, not on a focusable child: a screen reader should
@@ -133,6 +176,7 @@ export class ProjectDetailLayer {
     dialog.scrollTop = 0;
     document.addEventListener('keydown', this.onKey);
     document.addEventListener('focusin', this.onFocusIn);
+    detail.addEventListener('click', this.onScrim);
   }
 
   hide(): void {
@@ -145,6 +189,7 @@ export class ProjectDetailLayer {
     // it straight back in.
     document.removeEventListener('keydown', this.onKey);
     document.removeEventListener('focusin', this.onFocusIn);
+    this.details.get(project)?.removeEventListener('click', this.onScrim);
     this.dialog = null;
     this.opened = null;
 
@@ -165,6 +210,27 @@ export class ProjectDetailLayer {
 
   destroy(): void {
     this.hide();
+  }
+
+  /**
+   * Fill the tag row from the content table, once.
+   *
+   * The markup ships the `<ul>` empty on purpose: four projects of inline SVG
+   * would be served HTML that a no-JS visitor pays for and cannot use, and the
+   * card's `Stack — …` line above is already the text edition of exactly this
+   * list. `.project__tech:empty` is what makes the empty element cost nothing
+   * in the flat document and in the printed CV.
+   */
+  private buildTags(project: ProjectDetailId, dialog: HTMLElement): void {
+    const list = dialog.querySelector<HTMLElement>('.project__tech');
+    if (list === null || list.childElementCount > 0) return;
+    const row = PROJECT_DETAILS.find((entry) => entry.id === project);
+    if (row === undefined) return;
+    // One insertion, so an empty list never renders a frame mid-fill and trips
+    // the `:empty` rule on and off again.
+    const frag = document.createDocumentFragment();
+    for (const tech of row.tech) frag.appendChild(tagFor(tech));
+    list.appendChild(frag);
   }
 
   /* --------------------------------------------------------------- video */
@@ -300,6 +366,22 @@ export class ProjectDetailLayer {
       e.preventDefault();
       first.focus();
     }
+  }
+
+  /**
+   * A click on the scrim closes, the way a modal is expected to.
+   *
+   * It is also what keeps the panel's own chrome from reading as broken: the
+   * sticky bar shows through the scrim and stays perfectly legible, so
+   * "← Back to system" looks clickable while the scrim is swallowing the click.
+   * Dismissing here means that click does something, and the second one reaches
+   * the bar.
+   */
+  private dismissFromScrim(e: MouseEvent): void {
+    // Only the scrim itself. Anything inside the dialog bubbles up to here too,
+    // and a click on the description must not close what it is describing.
+    if (e.target !== e.currentTarget) return;
+    this.dismiss();
   }
 
   /**

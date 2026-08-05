@@ -389,7 +389,7 @@ export class Router {
       if (detail !== null) details.set(id, detail);
     }
     this.details = details;
-    this.detailLayer = new ProjectDetailLayer(details);
+    this.detailLayer = new ProjectDetailLayer(details, () => this.closeDetail());
 
     this.labels = new LabelLayer(labels, this.el.reticle);
     if (!config.showHud && this.el.fpsBox !== null) this.el.fpsBox.style.display = 'none';

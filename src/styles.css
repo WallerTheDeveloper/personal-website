@@ -74,6 +74,7 @@
   --rule-cv-te:  rgba(169, 170, 189, 0.4);   /* CV underline, text edition */
   --bar:         rgba(5, 6, 13, 0.72);       /* sticky bar, blur(10px) */
   --scrim:       rgba(5, 6, 13, 0.86);       /* project detail dim, one stop past --bar */
+  --tag:         rgba(255, 255, 255, 0.05);  /* tech tag chip fill */
 
   /* Type */
   --display: 'Bodoni Moda', Georgia, serif;
@@ -1234,6 +1235,26 @@ a:hover { color: var(--hover); }
    else: the text edition, the printed CV, and a load where the module failed.
    An empty list must not leave a gap where a row would have been. */
 .project__tech:empty { display: none; }
+
+.project__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px;
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  background: var(--tag);
+  font-family: var(--mono);
+  font-size: calc(10px * var(--type-scale));
+  letter-spacing: 0.1em;
+  /* The glyph inside is filled with `currentColor`, so it takes the panel's
+     accent from this one declaration rather than carrying a colour of its own. */
+  color: var(--accent);
+}
+
+/* The row wraps, and a glyph must never be the thing that shrinks. No transform
+   here on purpose: this subtree sits inside a `position: fixed` dialog, and
+   transforms near it are the one thing that would break its containing block. */
+.project__tag svg { flex: none; }
 
 .project__detail-close {
   display: inline-block;

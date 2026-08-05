@@ -1,7 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { CONTENT, PANEL_IDS, PROJECT_LINKS, TITLES, isPanelId, type TokenName } from '../../src/content';
+import {
+  CONTENT,
+  ICONS,
+  PANEL_IDS,
+  PROJECT_DETAILS,
+  PROJECT_DETAIL_IDS,
+  PROJECT_LINKS,
+  TITLES,
+  isPanelId,
+  type TokenName,
+} from '../../src/content';
 import { BASE_TITLE, titleFor } from '../../src/head';
 
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
@@ -76,6 +86,44 @@ describe('project links', () => {
     const numbers = PROJECT_LINKS.map((project) => project.n);
     expect(slots('repo')).toEqual(numbers);
     expect(slots('demo')).toEqual(numbers);
+  });
+});
+
+describe('project details', () => {
+  it('has one entry per detail id, in DOM order, with tags on each', () => {
+    expect(PROJECT_DETAILS.map((d) => d.id)).toEqual([...PROJECT_DETAIL_IDS]);
+    expect(PROJECT_DETAILS.map((d) => d.n)).toEqual(PROJECT_LINKS.map((p) => p.n));
+    for (const entry of PROJECT_DETAILS) {
+      expect(entry.tech.length, `${entry.id} has no tags`).toBeGreaterThan(0);
+    }
+  });
+
+  it('resolves every tag icon, and ships no glyph nothing uses', () => {
+    const used = new Set(PROJECT_DETAILS.flatMap((d) => d.tech.map((t) => t.icon)));
+    const known = new Set(Object.keys(ICONS));
+    // Unresolvable slugs are already a compile error; this is the runtime half,
+    // and the reverse direction is what keeps dead path data out of the bundle —
+    // every byte of it is served to every visitor.
+    expect([...used].filter((slug) => !known.has(slug)).sort()).toEqual([]);
+    expect([...known].filter((slug) => !used.has(slug as never)).sort()).toEqual([]);
+  });
+
+  it('holds path data, never markup', () => {
+    // `tagFor()` writes these straight into a `d` attribute. They are ours, but
+    // the rule that nothing in the content table is ever parsed as markup is
+    // what makes that safe to keep doing.
+    for (const [slug, d] of Object.entries(ICONS)) {
+      expect(d, slug).toMatch(/^[Mm][\d\s.,\-A-Za-z]+$/);
+      expect(d, slug).not.toContain('<');
+    }
+  });
+
+  it('names a technology on every tag', () => {
+    for (const entry of PROJECT_DETAILS) {
+      for (const tech of entry.tech) {
+        expect(tech.label.trim(), `${entry.id}`).not.toBe('');
+      }
+    }
   });
 });
 
