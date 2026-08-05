@@ -273,15 +273,16 @@
            `tests/unit/fallback-markup.test.ts` requires every in-page link to
            resolve to an id that exists. Reach it with getElementById —
            `#projects\/p1` would need CSS.escape. -->
-      <div class="project">
-        <article class="card card--project">
+      <article class="project">
+        <a class="card card--project" href="#projects/p1">
           <div class="project__head">
             <h2 class="project__title">{{PROJECT_1_TITLE}}</h2>
             <span class="project__status">{{PROJECT_1_STATUS}}</span>
           </div>
           <p class="summary">{{PROJECT_1_SUMMARY}}</p>
           <p class="stack">Stack — {{PROJECT_1_STACK}}</p>
-        </article>
+          <span class="project__more">View details →</span>
+        </a>
 
         <div id="projects/p1" class="project__detail" data-detail="p1">
           <div class="project__dialog">
@@ -302,19 +303,25 @@
               <a href="#" target="_blank" rel="noopener" data-repo="1" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="1" class="project__link">Live demo ↗</a>
             </div>
+            <!-- A real link to the panel anchor, so it still goes somewhere with
+                 no JS. Routed, `data-detail-close` is what makes it mean close:
+                 plain `#projects` would hit the `id === current` early return in
+                 go() and leave the dialog up. -->
+            <a href="#projects" data-detail-close="" class="project__detail-close">← Back to projects</a>
           </div>
         </div>
-      </div>
+      </article>
 
-      <div class="project">
-        <article class="card card--project">
+      <article class="project">
+        <a class="card card--project" href="#projects/p2">
           <div class="project__head">
             <h2 class="project__title">{{PROJECT_2_TITLE}}</h2>
             <span class="project__status">{{PROJECT_2_STATUS}}</span>
           </div>
           <p class="summary">{{PROJECT_2_SUMMARY}}</p>
           <p class="stack">Stack — {{PROJECT_2_STACK}}</p>
-        </article>
+          <span class="project__more">View details →</span>
+        </a>
 
         <div id="projects/p2" class="project__detail" data-detail="p2">
           <div class="project__dialog">
@@ -330,19 +337,21 @@
               <a href="#" target="_blank" rel="noopener" data-repo="2" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="2" class="project__link">Live demo ↗</a>
             </div>
+            <a href="#projects" data-detail-close="" class="project__detail-close">← Back to projects</a>
           </div>
         </div>
-      </div>
+      </article>
 
-      <div class="project">
-        <article class="card card--project">
+      <article class="project">
+        <a class="card card--project" href="#projects/p3">
           <div class="project__head">
             <h2 class="project__title">{{PROJECT_3_TITLE}}</h2>
             <span class="project__status">{{PROJECT_3_STATUS}}</span>
           </div>
           <p class="summary">{{PROJECT_3_SUMMARY}}</p>
           <p class="stack">Stack — {{PROJECT_3_STACK}}</p>
-        </article>
+          <span class="project__more">View details →</span>
+        </a>
 
         <div id="projects/p3" class="project__detail" data-detail="p3">
           <div class="project__dialog">
@@ -358,19 +367,21 @@
               <a href="#" target="_blank" rel="noopener" data-repo="3" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="3" class="project__link">Live demo ↗</a>
             </div>
+            <a href="#projects" data-detail-close="" class="project__detail-close">← Back to projects</a>
           </div>
         </div>
-      </div>
+      </article>
 
-      <div class="project">
-        <article class="card card--project">
+      <article class="project">
+        <a class="card card--project" href="#projects/p4">
           <div class="project__head">
             <h2 class="project__title">{{PROJECT_4_TITLE}}</h2>
             <span class="project__status">{{PROJECT_4_STATUS}}</span>
           </div>
           <p class="summary">{{PROJECT_4_SUMMARY}}</p>
           <p class="stack">Stack — {{PROJECT_4_STACK}}</p>
-        </article>
+          <span class="project__more">View details →</span>
+        </a>
 
         <div id="projects/p4" class="project__detail" data-detail="p4">
           <div class="project__dialog">
@@ -386,9 +397,10 @@
               <a href="#" target="_blank" rel="noopener" data-repo="4" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="4" class="project__link">Live demo ↗</a>
             </div>
+            <a href="#projects" data-detail-close="" class="project__detail-close">← Back to projects</a>
           </div>
         </div>
-      </div>
+      </article>
     </section>
       <nav aria-label="Other destinations" data-elsewhere="" class="elsewhere">
         <p class="elsewhere__title">Elsewhere in the system</p>

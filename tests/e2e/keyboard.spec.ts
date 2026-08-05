@@ -105,3 +105,26 @@ test('Enter on a focused label launches that destination, and Escape brings the 
   await waitForPanel(page, null);
   expect(await openPanel(page)).toBeNull();
 });
+
+test('a project card is reachable by keyboard, and Enter opens its detail', async ({ page }) => {
+  // The card is one anchor now, so it is a single tab stop that Enter follows
+  // like any link — no key handler of its own. The hub ring above is unaffected:
+  // these live inside a panel that is `visibility: hidden` from the hub.
+  await openHub(page, '/#projects');
+  await waitForPanel(page, 'projects');
+
+  const card = page.locator('a[href="#projects/p1"]');
+  await card.focus();
+  await expect(card).toBeFocused();
+  await page.keyboard.press('Enter');
+
+  await expect(page.locator('[id="projects/p1"]')).toHaveClass(/is-open/);
+  expect(await page.evaluate(() => window.location.hash)).toBe('#projects/p1');
+
+  // And focus followed the content, rather than being left on a card now behind
+  // a scrim. `project-detail.spec.ts` covers the trap itself.
+  const landed = await page.evaluate(
+    () => document.activeElement?.className ?? '',
+  );
+  expect(landed).toContain('project__dialog');
+});

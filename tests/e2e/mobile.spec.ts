@@ -131,6 +131,22 @@ test.describe('the panels on a phone', () => {
     });
   }
 
+  test('an open project detail fits the viewport', async ({ page }) => {
+    await openHub(page);
+    await page.goto('/#projects/p1');
+    await waitForPanel(page, 'projects');
+    await expect(page.locator('[id="projects/p1"]')).toHaveClass(/is-open/);
+
+    expect(await overflowsX(page)).toBe(false);
+    // Deliberately not `overflowingChildren('… .col *')`, which the closed case
+    // above uses: an open dialog is `position: fixed` and is legitimately wider
+    // than the `.col` it is nested in. The viewport is the box that matters.
+    const dialog = await page.locator('[id="projects/p1"] .project__dialog').boundingBox();
+    expect(dialog).not.toBeNull();
+    expect(dialog!.x).toBeGreaterThanOrEqual(-SLOP_PX);
+    expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(PORTRAIT.width + SLOP_PX);
+  });
+
   test('the sticky bar wraps rather than overflowing', async ({ page }) => {
     await openHub(page);
     await page.goto('/#backend');

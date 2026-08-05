@@ -213,3 +213,25 @@ export const PROJECT_LINKS: readonly ProjectLinks[] = [
   { n: 3, repo: CONTENT.PROJECT_3_REPO_URL, demo: CONTENT.PROJECT_3_DEMO_URL },
   { n: 4, repo: CONTENT.PROJECT_4_REPO_URL, demo: CONTENT.PROJECT_4_DEMO_URL },
 ];
+
+/**
+ * The same four projects as their *details* — the `pN` the `#projects/pN`
+ * sub-route and the `id="projects/pN"` anchor use, the `n` that ties a detail
+ * back to its link slots, and the title.
+ *
+ * The title is here rather than read off the DOM because `document.title` and
+ * the analytics view are set from it, and both have to be right on a deep link
+ * before anything has rendered.
+ */
+export interface ProjectDetail {
+  readonly id: ProjectDetailId;
+  readonly n: number;
+  readonly title: string;
+}
+
+export const PROJECT_DETAILS: readonly ProjectDetail[] = [
+  { id: 'p1', n: 1, title: CONTENT.PROJECT_1_TITLE },
+  { id: 'p2', n: 2, title: CONTENT.PROJECT_2_TITLE },
+  { id: 'p3', n: 3, title: CONTENT.PROJECT_3_TITLE },
+  { id: 'p4', n: 4, title: CONTENT.PROJECT_4_TITLE },
+];

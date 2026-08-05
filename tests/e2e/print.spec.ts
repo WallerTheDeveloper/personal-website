@@ -37,6 +37,25 @@ async function expectPrintsAsOneDocument(page: Page): Promise<void> {
     }
   }
 
+  // A project detail is part of the CV, not an overlay over it. Printing from
+  // the routed edition still carries `data-dg-3d`, so without the `!important`
+  // rules in the print block three of the four would be `display: none` and the
+  // fourth pinned to the viewport — neither of which survives pagination.
+  const details = page.locator('.project__detail');
+  const count = await details.count();
+  expect(count, 'the project details are missing from the document').toBe(4);
+  for (let i = 0; i < count; i++) {
+    const style = await details.nth(i).evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { position: s.position, display: s.display, visibility: s.visibility };
+    });
+    expect(style, `project detail ${i + 1}`).toEqual({
+      position: 'static',
+      display: 'block',
+      visibility: 'visible',
+    });
+  }
+
   let bottom: number | null = null;
   for (const id of PANELS) {
     const panel = page.locator(`[data-panel="${id}"]`);
@@ -53,6 +72,22 @@ async function expectPrintsAsOneDocument(page: Page): Promise<void> {
     // fixed overlay looks like, and it prints as one page of soup.
     if (bottom !== null) expect(box!.y).toBeGreaterThanOrEqual(bottom - 1);
     bottom = box!.y + box!.height;
+
+    // Same test, one level down: a detail still pinned to the viewport would
+    // sit outside the panel that contains it and stamp itself over page one.
+    if (id === 'projects') {
+      for (let i = 0; i < count; i++) {
+        const inner = await details.nth(i).boundingBox();
+        expect(inner, `project detail ${i + 1} has no box`).not.toBeNull();
+        expect(inner!.y, `project detail ${i + 1} starts above its panel`).toBeGreaterThanOrEqual(
+          box!.y - 1,
+        );
+        expect(
+          inner!.y + inner!.height,
+          `project detail ${i + 1} runs past its panel`,
+        ).toBeLessThanOrEqual(box!.y + box!.height + 1);
+      }
+    }
   }
 
   const body = await page.evaluate(() => {
@@ -78,6 +113,18 @@ test('an open panel prints as the whole CV, not just itself', async ({ page }) =
   await page.emulateMedia({ media: 'print' });
   // The three panels the router left `visibility: hidden` have to come back —
   // this is what the `!important` in the print block is for.
+  await expectPrintsAsOneDocument(page);
+});
+
+test('an open project detail prints inside the CV, not over it', async ({ page }) => {
+  // The worst case for the print block: the routed edition, `data-dg-3d` still
+  // on, one detail `position: fixed` over the whole viewport and the other three
+  // `display: none`. All four have to come back into the flow.
+  await openHub(page, '/#projects/p1');
+  await waitForPanel(page, 'projects');
+  await expect(page.locator('[id="projects/p1"]')).toHaveClass(/is-open/);
+
+  await page.emulateMedia({ media: 'print' });
   await expectPrintsAsOneDocument(page);
 });
 

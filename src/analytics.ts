@@ -16,7 +16,7 @@
  * (ACCEPTANCE.md B) and a click may not become a view at all.
  */
 
-import type { PanelId } from './content';
+import type { PanelId, ProjectDetailId } from './content';
 import { titleFor } from './head';
 
 type TrackPayload = Record<string, unknown>;
@@ -81,9 +81,14 @@ function fail(): void {
   console.warn('[analytics] Umami script failed to load; views are not being recorded');
 }
 
-/** Hash routes, so the hub is `/` and a destination is `/#xr`. */
-function viewUrl(current: PanelId | null): string {
-  return current === null ? '/' : `/#${current}`;
+/**
+ * Hash routes, so the hub is `/`, a destination is `/#xr`, and a project detail
+ * is `/#projects/p1` — the URL the visitor can actually copy out of the address
+ * bar, which is the whole reason the detail is addressable at all.
+ */
+function viewUrl(current: PanelId | null, project: ProjectDetailId | null = null): string {
+  if (current === null) return '/';
+  return project === null ? `/#${current}` : `/#${current}/${project}`;
 }
 
 /**
@@ -110,7 +115,10 @@ export function initAnalytics(): void {
  * Records one destination view. Called from the router's `commit()` and from
  * `boot()` for the hub — never from a click handler.
  */
-export function trackView(current: PanelId | null): void {
+export function trackView(
+  current: PanelId | null,
+  project: ProjectDetailId | null = null,
+): void {
   if (!enabled) return;
-  send({ url: viewUrl(current), title: titleFor(current) });
+  send({ url: viewUrl(current, project), title: titleFor(current, project) });
 }

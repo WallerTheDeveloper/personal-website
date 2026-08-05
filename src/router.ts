@@ -28,6 +28,13 @@
  *     commit-once rule are `jump-guard.ts`, where they are unit-tested.
  *   - `go(id)` pushes history **and** drives `jump()` directly — it never waits
  *     on the resulting `hashchange`.
+ *   - `openDetail()` / `closeDetail()` are the same rule one level down: they
+ *     push and then change the view themselves. They exist *because* `go()`
+ *     early-returns on `id === current`, and a detail always opens over a panel
+ *     that is already current — routing one through `go()` would push nothing.
+ *     `closeDetail()` pushes `#projects` rather than calling `history.back()`,
+ *     for `exit()`'s reasons plus one more: a visitor who arrived on a deep
+ *     link has no `#projects` entry behind them to go back to.
  *   - Exactly one live `Warp` owns `#smoke`; `jump()` disposes the previous
  *     instance before constructing the next.
  *   - Both canvas nav paths — the `pointerdown`/`pointerup` pair and a plain
@@ -39,9 +46,11 @@ import {
   isPanelId,
   isProjectDetailId,
   PANEL_IDS,
+  PROJECT_DETAIL_IDS,
   type PanelId,
   type ProjectDetailId,
 } from './content';
+import { ProjectDetailLayer } from './project-detail';
 import { trackView } from './analytics';
 import { engineChunkUrl, warmEngineChunk } from './boot-progress';
 import { applyTitle } from './head';
@@ -225,6 +234,13 @@ export class Router {
 
   /** The open panel, or `null` for the hub. The single gate on all input. */
   private current: PanelId | null = null;
+  /**
+   * The project detail open over the Projects panel, or `null`. A second axis,
+   * not a fifth destination: it never starts a jump, because the panel is
+   * already open and the camera already parked, so none of the warp machinery
+   * below is involved in changing it.
+   */
+  private detail: ProjectDetailId | null = null;
   private hovered: PanelId | null = null;
 
   private reduce = false;
@@ -284,6 +300,8 @@ export class Router {
     foot: HTMLElement | null;
   };
   private panels: ReadonlyMap<PanelId, HTMLElement> = new Map();
+  private details: ReadonlyMap<ProjectDetailId, HTMLElement> = new Map();
+  private detailLayer: ProjectDetailLayer | null = null;
 
   /* Bound once so `destroy()` can take them off again. */
   private readonly onPop = (): void => this.route();
@@ -360,6 +378,18 @@ export class Router {
       if (panel !== null) panels.set(id, panel);
     }
     this.panels = panels;
+
+    const details = new Map<ProjectDetailId, HTMLElement>();
+    for (const id of PROJECT_DETAIL_IDS) {
+      // getElementById, never querySelector: the detail's id is `projects/p1`,
+      // which is legal as an id and as a URI fragment but is not a valid CSS id
+      // selector — `#projects\/p1` would need CSS.escape. getElementById takes
+      // the raw string, so the id can simply match the sub-route.
+      const detail = document.getElementById(`projects/${id}`);
+      if (detail !== null) details.set(id, detail);
+    }
+    this.details = details;
+    this.detailLayer = new ProjectDetailLayer(details);
 
     this.labels = new LabelLayer(labels, this.el.reticle);
     if (!config.showHud && this.el.fpsBox !== null) this.el.fpsBox.style.display = 'none';
@@ -642,6 +672,11 @@ export class Router {
     this.warpFx = null;
     this.going = false;
     this.pending = undefined;
+    // The dialog rules are gated on `data-dg-3d`, just removed, so the detail
+    // un-fixes itself back into the flow. What this is for is the part CSS
+    // cannot undo: taking the modal ARIA and the focus trap off, so the flat
+    // document does not claim to hold a modal that can no longer be dismissed.
+    this.setDetail(null);
 
     // Inline styles beat the stylesheet, so the fade-out `boot()` wrote on the
     // success path has to be cleared rather than overridden. Emptying them hands
@@ -711,6 +746,8 @@ export class Router {
     }
     this.warpFx?.dispose();
     this.warpFx = null;
+    this.detailLayer?.destroy();
+    this.detailLayer = null;
     // The one renderer per document, disposed here and nowhere else.
     if (window.__dgHub != null) {
       window.__dgHub.dispose();
@@ -727,16 +764,29 @@ export class Router {
    * unknown hash gets: show the hub rather than route to a panel that is not
    * there.
    */
+  private hashRoute(): Route {
+    const { panel, project } = parseRoute(window.location.hash);
+    if (panel === null || !this.panels.has(panel)) return { panel: null, project: null };
+    if (project === null || !this.details.has(project)) return { panel, project: null };
+    return { panel, project };
+  }
+
   private hashId(): PanelId | null {
-    const id = parseHash(window.location.hash);
-    return id !== null && this.panels.has(id) ? id : null;
+    return this.hashRoute().panel;
   }
 
   private route(): void {
     if (this.flat) return;
-    const target = this.hashId();
-    if (target === this.current) return;
-    this.jump(target);
+    const { panel, project } = this.hashRoute();
+    // Same destination, different sub-route — which is what Back out of an open
+    // detail is. No jump and no warp: the scene does not move, so there is
+    // nothing for a cover to hide. Without this branch the old `target ===
+    // current` early return swallowed it and Back did nothing at all.
+    if (panel === this.current) {
+      if (this.setDetail(panel === 'projects' ? project : null)) this.announce();
+      return;
+    }
+    this.jump(panel);
   }
 
   /**
@@ -747,13 +797,87 @@ export class Router {
   go(id: PanelId | null): void {
     if (this.flat) return;
     if (id === this.current) return;
+    // Take the detail down on the click that leaves, not 900 ms later when
+    // `commit()` runs: the teardown is what stops a playing embed, and under an
+    // opaque warp cover the visitor would go on hearing it the whole way.
+    // `commit()` sets the title and the view for the destination either way.
+    this.setDetail(null);
     const url = id === null ? window.location.pathname + window.location.search : `#${id}`;
-    try {
-      window.history.pushState({ dg: id }, '', url);
-    } catch {
-      // Sandboxed history. The jump below is what actually moves the site.
-    }
+    this.push(url, { dg: id });
     this.jump(id);
+  }
+
+  /**
+   * Push a URL, tolerating a frame that sandboxes History. Extracted from `go()`
+   * so a sub-route pushes in exactly the same way a destination does.
+   */
+  private push(url: string, state: unknown): void {
+    try {
+      window.history.pushState(state, '', url);
+    } catch {
+      // Sandboxed history. Driving the change directly is what moves the site.
+    }
+  }
+
+  /**
+   * Open a project detail.
+   *
+   * The same shape `go()` has — push history, then drive the change directly,
+   * never waiting on a `hashchange` that `pushState` does not fire — but with no
+   * jump attached: the panel is already open and the camera already parked.
+   *
+   * It cannot be routed through `go()`, which early-returns on `id ===
+   * current`, and a detail always opens over a panel that is already current.
+   * That return is correct and stays; this is the entry point beside it.
+   */
+  openDetail(project: ProjectDetailId): void {
+    if (this.flat || this.detail === project || !this.details.has(project)) return;
+    this.push(`#projects/${project}`, { dg: 'projects', detail: project });
+    if (this.current === 'projects') {
+      if (this.setDetail(project)) this.announce();
+      return;
+    }
+    // Reached from a stale bookmark or a link on another panel: one ordinary
+    // jump, and `commit()` picks the sub-route back out of the hash just pushed.
+    this.jump('projects');
+  }
+
+  /**
+   * Close it, back to `#projects`.
+   *
+   * **Push, never `history.back()`** — the rule `exit()` lives by, and here
+   * there is a second reason for it: a visitor who arrived on `#projects/p1` by
+   * deep link has no `#projects` entry behind them at all, so Back would take
+   * them off the site. Where History is sandboxed it would do nothing, leaving
+   * an open dialog over a URL claiming it is closed.
+   *
+   * The cost is that Back *after* closing re-opens the detail. That is the same
+   * trade `exit()` already makes, and `project-detail.spec.ts` pins it so that
+   * changing it later has to be deliberate.
+   */
+  closeDetail(): void {
+    if (this.flat || this.detail === null) return;
+    this.push('#projects', { dg: 'projects', detail: null });
+    if (this.setDetail(null)) this.announce();
+  }
+
+  /**
+   * The view half, with no history in it — `jump()` is to `go()` as this is to
+   * `openDetail()`. Returns whether anything actually changed, so the callers
+   * do not record a second view for a state the visitor is already in.
+   */
+  private setDetail(project: ProjectDetailId | null): boolean {
+    if (this.detail === project) return false;
+    this.detail = project;
+    if (project === null) this.detailLayer?.hide();
+    else this.detailLayer?.show(project);
+    return true;
+  }
+
+  /** Title and analytics for whatever is on screen now — always after the swap. */
+  private announce(): void {
+    applyTitle(this.current, this.detail);
+    this.recordView(this.current, this.detail);
   }
 
   /**
@@ -912,14 +1036,19 @@ export class Router {
     }
 
     this.current = target;
-    applyTitle(target);
-    this.recordView(target);
+    // The detail layer is told; it never listens for itself. `go()` drives
+    // `jump()` directly and `pushState` fires no `hashchange`, so anything
+    // watching only the URL would miss every router-driven navigation. This is
+    // also the deep-link path: `boot()` reaches here with `#projects/p1`
+    // already in the address bar.
+    this.setDetail(target === 'projects' ? this.hashRoute().project : null);
+    this.announce();
   }
 
   /** One view per destination swap, and at most one for the initial state. */
-  private recordView(id: PanelId | null): void {
+  private recordView(id: PanelId | null, project: ProjectDetailId | null = null): void {
     this.viewed = true;
-    trackView(id);
+    trackView(id, project);
   }
 
   /* ----------------------------------- scene motion while a panel is open */
@@ -1092,6 +1221,16 @@ export class Router {
   }
 
   private handleKey(e: KeyboardEvent): void {
+    // Escape chains: the detail first, the panel second. This branch can never
+    // be the reason Escape stops reaching `exit()` — a detail is only ever open
+    // over an open panel, so the second press finds `detail === null` and falls
+    // through to the branch below. Canvas input is still gated on `current`
+    // alone; `detail !== null` implies `current === 'projects'`.
+    if (e.key === 'Escape' && this.detail !== null) {
+      e.preventDefault();
+      this.closeDetail();
+      return;
+    }
     if (e.key === 'Escape' && this.current !== null) {
       e.preventDefault();
       this.exit();
@@ -1127,11 +1266,24 @@ export class Router {
       this.exit();
       return;
     }
+    // Its href is `#projects`, which is a live in-page anchor with no JS. Here
+    // it has to mean "close", because `go('projects')` would early-return on
+    // the panel that is already current and leave the dialog up.
+    if (a.hasAttribute('data-detail-close')) {
+      e.preventDefault();
+      this.closeDetail();
+      return;
+    }
     const href = a.getAttribute('href') ?? '';
     if (href.charAt(0) !== '#') return;
     const id = href.slice(1);
     e.preventDefault();
-    if (id === '') this.exit();
+    if (id === '') {
+      this.exit();
+      return;
+    }
+    const { panel, project } = parseRoute(`#${id}`);
+    if (panel === 'projects' && project !== null) this.openDetail(project);
     else if (isPanelId(id) && this.panels.has(id)) this.go(id);
   }
 

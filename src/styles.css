@@ -73,6 +73,7 @@
   --rule-cv:     rgba(169, 170, 189, 0.35);  /* CV underline, panel footers */
   --rule-cv-te:  rgba(169, 170, 189, 0.4);   /* CV underline, text edition */
   --bar:         rgba(5, 6, 13, 0.72);       /* sticky bar, blur(10px) */
+  --scrim:       rgba(5, 6, 13, 0.86);       /* project detail dim, one stop past --bar */
 
   /* Type */
   --display: 'Bodoni Moda', Georgia, serif;
@@ -1146,6 +1147,110 @@ a:hover { color: var(--hover); }
    An empty list must not leave a gap where a row would have been. */
 .project__tech:empty { display: none; }
 
+.project__detail-close {
+  display: inline-block;
+  margin-top: 26px;
+  font-family: var(--mono);
+  font-size: calc(11px * var(--type-scale));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.project__detail-close:hover { color: var(--hover); }
+
+/* The card is the link now. Every string inside it sets its own colour, so the
+   global `a:hover` reaches none of them and without this the card would warm
+   nowhere. Touch never sees any of it, which is why `.project__more` below is
+   a visible line rather than a hover-only affordance. */
+.card--project {
+  display: block;
+  transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.card--project:hover,
+.card--project:focus-visible {
+  background: var(--void-3-hover);
+  border-color: rgba(var(--accent-rgb), 0.45);
+}
+
+.card--project:hover .project__title,
+.card--project:focus-visible .project__title { color: var(--accent-hover); }
+
+/* Matches the planet labels, which take the same treatment on focus as on
+   hover at this offset (CLAUDE.md "Accessibility"). */
+.card--project:focus-visible { outline-offset: 4px; }
+
+.project__more {
+  display: block;
+  margin-top: 22px;
+  font-family: var(--mono);
+  font-size: calc(11px * var(--type-scale));
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mint);
+}
+
+.card--project:hover .project__more,
+.card--project:focus-visible .project__more { color: var(--hover); }
+
+/* ---------------------------------------------------------------------------
+   Project detail, as a dialog
+
+   Gated on `data-dg-3d` — the attribute the head probe writes on the WebGL
+   success path — rather than un-gated with `html[data-dg-flat]`. That is what
+   lets the flat block near the bottom of this file stay exactly as it is: it
+   only ever un-fixes `[data-panel]`, and would never have reached a fixed
+   dialog nested inside one. In the flat document the attribute is simply
+   absent, so none of this matches and the detail stays in the flow.
+
+   `position: fixed` here resolves against the viewport, which is only true
+   because nothing on `.panel`, `.panel__body` or `.col` carries a `transform`,
+   `filter`, `perspective`, `will-change` or `contain` — `.panel`'s `opacity`
+   makes a stacking context, not a containing block, and the one
+   `backdrop-filter` in this file is on `.panel__top`, a *sibling*. Add any of
+   those to an ancestor and the dialog silently lands inside the scrolling
+   column instead; `project-detail.spec.ts` has the test that catches it.
+   --------------------------------------------------------------------------- */
+
+html[data-dg-3d] .project__detail { display: none; }
+
+html[data-dg-3d] .project__detail.is-open {
+  display: grid;
+  place-items: center;
+  position: fixed;
+  inset: 0;
+  /* Over `.panel__top` (3) so the sticky bar cannot sit on the dialog, and
+     under `#smoke` (60) so the warp cover still hides all of it. */
+  z-index: 50;
+  padding: clamp(16px, 4vw, 48px);
+  /* The dim *is* the backdrop: no extra element, no `opacity` on an ancestor
+     (which would fade the dialog with it) and no `filter` (which would make
+     this a containing block and break the `fixed` above). */
+  background: var(--scrim);
+  overflow-y: auto;
+  /* A wheel over the scrim must not scroll the card grid behind it. */
+  overscroll-behavior: contain;
+}
+
+html[data-dg-3d] .project__detail.is-open .project__dialog {
+  width: min(720px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  /* Closed, it butts against its card and shares that edge. Open, it is a
+     free-standing sheet and needs the fourth side back. Depth is this hairline
+     and the scrim — radius stays 0 and there is no shadow, anywhere. */
+  border-top: 1px solid var(--rule-card);
+}
+
+/* The dialog takes focus on open (`project-detail.ts`) and it is a scroll
+   container, so it *will* show a focus ring. Keep it: it is the only thing
+   telling a keyboard visitor where they have landed. */
+html[data-dg-3d] .project__detail.is-open .project__dialog:focus-visible {
+  outline: 1px solid rgba(var(--accent-rgb), 0.5);
+  outline-offset: -1px;
+}
+
 /* ---------------------------------------------------------------------------
    XR — Employment
 
@@ -1472,4 +1577,25 @@ html[data-dg-flat] #fallback { position: static; opacity: 1; pointer-events: aut
      one of the CV. Everything inside #stage is scene chrome; none of it belongs
      in a printed document. */
   #stage { display: none !important; }
+
+  /* A project detail is part of the CV, not an overlay over it. Printing from
+     the routed edition still carries `data-dg-3d`, so without this three of the
+     four are `display: none` and the fourth is pinned to the viewport — and
+     neither of those survives pagination. Same shape, and the same reason, as
+     the `[data-panel]` rule above; `!important` because the routed rules are
+     the more specific ones. */
+  .project__detail {
+    display: block !important;
+    position: static !important;
+    padding: 0 !important;
+    background: none !important;
+    overflow: visible !important;
+  }
+  .project__dialog {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* Chrome that means nothing on paper: a control that closes something which
+     is not open, and the card's cue to a page the reader is already holding. */
+  [data-detail-close], .project__more { display: none !important; }
 }

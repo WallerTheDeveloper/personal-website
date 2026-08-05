@@ -12,10 +12,12 @@
 
 import {
   CONTENT,
+  PROJECT_DETAILS,
   PROJECT_LINKS,
   SITE_URL,
   TITLES,
   type PanelId,
+  type ProjectDetailId,
 } from './content';
 
 /** The hub title, and what every panel title falls back to. */
@@ -32,19 +34,37 @@ function missing(what: string): void {
 }
 
 /**
- * `<Panel title> — <name>` on a destination, the base title on the hub.
- * Pure, so the router and the unit tests can both use it.
+ * `<Panel title> — <name>` on a destination, `<Project title> — <name>` with a
+ * project detail open over it, and the base title on the hub. Pure, so the
+ * router and the unit tests can both use it.
+ *
+ * An unknown project falls back to the panel rather than to the base title:
+ * `#projects/p9` shows the Projects panel, so that is what the title should
+ * say, and this is the same recovery `parseRoute()` makes for the same hash.
  */
-export function titleFor(current: PanelId | null): string {
-  return current === null ? BASE_TITLE : `${TITLES[current]} — ${CONTENT.FULL_NAME}`;
+export function titleFor(
+  current: PanelId | null,
+  project: ProjectDetailId | null = null,
+): string {
+  if (current === null) return BASE_TITLE;
+  if (project !== null) {
+    const row = PROJECT_DETAILS.find((detail) => detail.id === project);
+    if (row !== undefined) return `${row.title} — ${CONTENT.FULL_NAME}`;
+  }
+  return `${TITLES[current]} — ${CONTENT.FULL_NAME}`;
 }
 
 /**
  * Called from `commit()` — the one place a destination is actually swapped in —
- * so the title changes with the content, not with the click.
+ * and from the two sub-route entry points, which change what is on screen
+ * without one. Either way the title changes with the content, not with the
+ * click.
  */
-export function applyTitle(current: PanelId | null): void {
-  const want = titleFor(current);
+export function applyTitle(
+  current: PanelId | null,
+  project: ProjectDetailId | null = null,
+): void {
+  const want = titleFor(current, project);
   if (document.title !== want) document.title = want;
 }
 

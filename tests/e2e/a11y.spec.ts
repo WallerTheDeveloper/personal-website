@@ -77,6 +77,23 @@ for (const id of PANELS) {
 }
 
 /**
+ * The Projects panel again, with a project detail open over it.
+ *
+ * A separate scan because it is a materially different document: a
+ * `role="dialog" aria-modal="true"` element with a hand-rolled focus trap, over
+ * a card grid that is still in the accessibility tree. There is no `inert` to
+ * take that grid out of it — every element that could carry `inert` is an
+ * ancestor of the dialog — so `aria-modal` is doing that work alone, and this is
+ * what checks the declaration is well-formed.
+ */
+test('a project detail is axe clean with the dialog open', async ({ page }) => {
+  await openHub(page, '/#projects/p1');
+  await expect(page.locator('#fallback')).toBeHidden();
+  await expect(page.locator('[id="projects/p1"]')).toHaveClass(/is-open/);
+  await scan(page, 'the projects panel with a detail open');
+});
+
+/**
  * The text edition, reached by denying WebGL rather than by disabling JS.
  *
  * `javaScriptEnabled: false` is the more faithful route to this document and it

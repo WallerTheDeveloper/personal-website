@@ -47,8 +47,21 @@ async function expectFlatDocument(page: Page): Promise<void> {
     bottom = box!.y + box!.height;
   }
 
-  // And the whole CV is genuinely there, not a stub: one <h1> per panel.
+  // And the whole CV is genuinely there, not a stub: one <h1> per panel. The
+  // project details add headings too, which is why theirs are <h3> — this count
+  // is what would catch one being promoted.
   await expect(page.locator('[data-panel] h1')).toHaveCount(PANELS.length);
+
+  // The project details are part of that document, in the flow, under their own
+  // cards. Every rule that would make one a dialog is gated on `data-dg-3d`,
+  // which this document does not have — so this is really asserting that the
+  // gate is the only thing holding them there.
+  const details = page.locator('.project__detail');
+  await expect(details).toHaveCount(4);
+  for (let i = 0; i < 4; i += 1) {
+    await expect(details.nth(i)).toBeVisible();
+    await expect(details.nth(i)).toHaveCSS('position', 'static');
+  }
 }
 
 /** Follow a text-edition card and prove the browser actually went there. */

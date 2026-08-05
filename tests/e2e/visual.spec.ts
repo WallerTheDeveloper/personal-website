@@ -409,6 +409,11 @@ test.describe('house rules, over the whole document', () => {
   test('three families, Bodoni always 400, radii 0 but for the two, no shadows anywhere — routed', async ({ page }) => {
     await openStill(page, 1440);
     for (const id of PANELS) await reveal(page, id);
+    // A project detail is `display: none` until it opens, and the sweep skips
+    // exactly those — so without this the dialog would be the one part of the
+    // site the house rules never reach. Set directly rather than routed: this
+    // test is about what the stylesheet draws, not about how it got there.
+    await page.evaluate(() => document.querySelector('[id="projects/p1"]')?.classList.add('is-open'));
     const seen = await sweep(page);
 
     expect(seen.families).toEqual(['Archivo', 'Bodoni Moda', 'IBM Plex Mono']);
