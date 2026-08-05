@@ -35,7 +35,13 @@
  *   - Overlapping jumps queue in `_pending`; they never interleave.
  */
 
-import { isPanelId, PANEL_IDS, type PanelId } from './content';
+import {
+  isPanelId,
+  isProjectDetailId,
+  PANEL_IDS,
+  type PanelId,
+  type ProjectDetailId,
+} from './content';
 import { trackView } from './analytics';
 import { engineChunkUrl, warmEngineChunk } from './boot-progress';
 import { applyTitle } from './head';
@@ -159,21 +165,54 @@ const HINT_AZIMUTH = 0.17;
 
 /* ------------------------------------------------------------------ hash */
 
-/**
- * A location hash as a panel id, or `null` for the hub.
+/*
+ * A location hash as routing state — a destination, plus the project detail
+ * open over it.
  *
  * Pure, and exported for its own unit tests: this is the one place a URL turns
  * into routing state, so everything it must tolerate — an empty hash, a bare
  * `#`, the `#/xr` form, a hash from a stale link, an id that is not a
  * destination — has to be settled here rather than at each call site.
  *
- * Anything unrecognised is the hub. There is no error state to route to: an
- * unknown hash on a single-document site means "the visitor is here", and the
- * hub is what "here" looks like.
+ * An unrecognised destination is the hub. There is no error state to route to:
+ * an unknown hash on a single-document site means "the visitor is here", and
+ * the hub is what "here" looks like.
+ */
+
+export interface Route {
+  readonly panel: PanelId | null;
+  readonly project: ProjectDetailId | null;
+}
+
+/**
+ * The full grammar: `#<panel>`, or `#projects/<pN>` for a project detail, with
+ * the `#/` form still tolerated on the front.
+ *
+ * The two halves recover differently, on purpose. A *head* that is not a
+ * destination is the hub, exactly as it has always been. A *tail* that is not a
+ * project id is dropped rather than escalated to the hub — "the visitor asked
+ * for Projects" is still true, and the panel with no dialog on it is a better
+ * answer to `#projects/p9` than the hub is.
+ */
+export function parseRoute(hash: string): Route {
+  const raw = (hash || '').replace(/^#\/?/, '');
+  const cut = raw.indexOf('/');
+  const head = cut === -1 ? raw : raw.slice(0, cut);
+  const tail = cut === -1 ? '' : raw.slice(cut + 1);
+  if (!isPanelId(head)) return { panel: null, project: null };
+  return {
+    panel: head,
+    project: head === 'projects' && isProjectDetailId(tail) ? tail : null,
+  };
+}
+
+/**
+ * The panel half on its own. Kept as its own export because most of the router
+ * only ever wants the destination, and because its test file is the regression
+ * guard on everything the grammar above must keep tolerating.
  */
 export function parseHash(hash: string): PanelId | null {
-  const raw = (hash || '').replace(/^#\/?/, '');
-  return isPanelId(raw) ? raw : null;
+  return parseRoute(hash).panel;
 }
 
 /* ----------------------------------------------------------------- router */

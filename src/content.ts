@@ -31,6 +31,22 @@ export function isPanelId(value: string): value is PanelId {
 }
 
 /**
+ * The four project details, in DOM order — the `pN` in the `#projects/pN`
+ * sub-route and in the `id="projects/pN"` the markup carries for it.
+ *
+ * Listed rather than derived from a number, for the same reason `PROJECT_LINKS`
+ * is: a typo becomes a compile error instead of a route that silently resolves
+ * to the panel with no dialog on it.
+ */
+export const PROJECT_DETAIL_IDS = ['p1', 'p2', 'p3', 'p4'] as const;
+
+export type ProjectDetailId = (typeof PROJECT_DETAIL_IDS)[number];
+
+export function isProjectDetailId(value: string): value is ProjectDetailId {
+  return (PROJECT_DETAIL_IDS as readonly string[]).includes(value);
+}
+
+/**
  * Panel titles. Literal copy, not tokens — they are the destination names, and
  * they appear verbatim in the markup (labels, "Elsewhere" lists, panel `<h1>`s).
  * Carried over from the prototype's `TITLES` map unchanged.
