@@ -70,7 +70,7 @@ Verify after any layout change.
 
 ## Content rules (editorial — do not "tidy")
 
-1. The Projects panel carries the visible notice “Independent projects — personal work, not employment.”
+1. The Projects panel carries the visible notice “Freelance projects - work that was done for clients.” The panel is named *Freelance Projects* everywhere — `<h1>`, `aria-label`, `panel__where`, the hero label and `TITLES.projects`. The prototype calls it *Independent Projects*; that rename is deliberate and recorded in `TASKS.md` under “Deliberate deviations from the prototype”.
 2. The only employment styling in the site is the XR panel's `Employment` section: 2 px violet top rule, larger heading, no card background.
 3. Backend blocks use neutral, non-employment styling. If one becomes employment, move it to the XR treatment — don't restyle the Backend blocks.
 4. Skills are exactly two groups: *Used in production* and *Used in personal projects*. There is no “currently learning” group.

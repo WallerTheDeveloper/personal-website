@@ -37,7 +37,7 @@ export function isPanelId(value: string): value is PanelId {
  */
 export const TITLES: Readonly<Record<PanelId, string>> = {
   backend: 'Backend & Platform',
-  projects: 'Independent Projects',
+  projects: 'Freelance Projects',
   xr: 'XR / AR',
   about: 'About & Contact',
 };
@@ -81,8 +81,8 @@ export const CONTENT = {
   BACKEND_BLOCK_2_STACK: 'FastAPI, Python, PostgreSQL 14+, Claude API, Apify, Resend, SlowAPI, pypdf, React, TypeScript, Tailwind CSS 4, Vite 6, TanStack Query, Zod, Vitest',
 
   // ---------------------------------------------------------------- projects
-  // The panel carries the visible notice "Independent projects — personal work,
-  // not employment." That notice is markup, not a token, and never comes out.
+  // The panel carries the visible notice "Freelance projects - work that was
+  // done for clients." That notice is markup, not a token, and never comes out.
   PROJECTS_INTRO: 'Showcase of my freelance work including web applications, XR experiences, backend systems and simulations',
 
   PROJECT_1_TITLE: 'Pick MA Job',

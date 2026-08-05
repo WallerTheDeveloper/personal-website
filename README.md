@@ -106,9 +106,9 @@ unfilled site reads the same either way; filling the CV means editing
 step — a token in one and not the other fails the build, and an unknown token in
 the HTML throws during substitution rather than shipping as visible braces.
 
-Editorial rules that the design depends on (the Projects panel's
-"not employment" notice, the single employment treatment on the XR panel, the
-two skills groups) are documented in [CLAUDE.md](CLAUDE.md).
+Editorial rules that the design depends on (the Freelance panel's client-work
+notice, the single employment treatment on the XR panel, the two skills groups)
+are documented in [CLAUDE.md](CLAUDE.md).
 
 ## Analytics
 
