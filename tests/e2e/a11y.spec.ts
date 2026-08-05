@@ -25,6 +25,12 @@ import { PANELS, blockWebGL, openHub } from './helpers';
  */
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 
+/** A 1×1 transparent PNG, so a stubbed thumbnail decodes rather than erroring. */
+const PNG_1x1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 /**
  * Scan, and fail with something worth reading.
  *
@@ -91,6 +97,36 @@ test('a project detail is axe clean with the dialog open', async ({ page }) => {
   await expect(page.locator('#fallback')).toBeHidden();
   await expect(page.locator('[id="projects/p1"]')).toHaveClass(/is-open/);
   await scan(page, 'the projects panel with a detail open');
+});
+
+/**
+ * The Projects panel a third time, with the card players upgraded.
+ *
+ * The facade turns a plain link into an image with a badge over it, and it sits
+ * *outside* the card's anchor — because an interactive element inside an `<a>`
+ * is invalid HTML and an axe `nested-interactive` failure under wcag2a. That
+ * rule is the whole reason the card stopped being an anchor, so it is worth a
+ * scan of the upgraded state rather than only of the shipped one.
+ *
+ * The still is stubbed: a real `i.ytimg.com` fetch would fail offline, the error
+ * handler would unwind the facade, and this would quietly scan the plain link.
+ */
+test('the projects panel is axe clean with the card players upgraded', async ({ page }) => {
+  await page.route('**://i.ytimg.com/**', (route) =>
+    route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1x1 }),
+  );
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      for (const cover of document.querySelectorAll<HTMLAnchorElement>('.project__video-cover')) {
+        cover.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+      }
+    });
+  });
+
+  await openHub(page, '/#projects');
+  await expect(page.locator('#fallback')).toBeHidden();
+  await expect(page.locator('.card--project .project__video-thumb').first()).toBeVisible();
+  await scan(page, 'the projects panel with card players');
 });
 
 /**

@@ -94,9 +94,22 @@ describe('in-page anchors', () => {
       html.matchAll(/class="project__video-cover"\s+href="([^"]+)"/g),
       (m) => m[1] as string,
     );
-    expect(covers).toHaveLength(PROJECT_DETAIL_IDS.length);
+    // Two per project: one on the card, one in the detail.
+    expect(covers).toHaveLength(PROJECT_DETAIL_IDS.length * 2);
     for (const href of covers) {
       expect(href).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=/);
+    }
+  });
+
+  it('keeps the card player outside the card link', () => {
+    // An interactive element inside an `<a>` is invalid HTML and an axe
+    // `nested-interactive` failure under wcag2a. This is the structural half of
+    // that rule — `a11y.spec.ts` is the behavioural half.
+    for (const project of PROJECT_DETAIL_IDS) {
+      const from = html.indexOf(`<a class="card__link" href="#projects/${project}">`);
+      expect(from, `${project} has no card link`).toBeGreaterThan(-1);
+      const link = html.slice(from, html.indexOf('</a>\n        </div>', from));
+      expect(link, `${project}'s card link contains a player`).not.toContain('project__video');
     }
   });
 

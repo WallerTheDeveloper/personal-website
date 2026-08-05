@@ -274,25 +274,50 @@
            resolve to an id that exists. Reach it with getElementById —
            `#projects\/p1` would need CSS.escape. -->
       <article class="project">
-        <a class="card card--project" href="#projects/p1">
-          <div class="project__head">
-            <h2 class="project__title">{{PROJECT_1_TITLE}}</h2>
-            <span class="project__status">{{PROJECT_1_STATUS}}</span>
+        <div class="card card--project">
+          <!-- Outside the link, and that is not a layout preference: a player
+               inside an `<a>` is invalid HTML and an axe `nested-interactive`
+               failure under wcag2a, which `a11y.spec.ts` scans for. The card is
+               therefore a container with one anchor in it, not an anchor.
+
+               Just the link in the markup. The thumbnail and the play badge are
+               built in JS, and the embed only after a click, so the served HTML
+               names no third-party host at all and the text edition asks Google
+               for nothing. An absolute URL, never `#`: the router reads `#` as
+               "exit to the hub", and `handleClick` skips this one on the first
+               character of its href. -->
+          <div class="project__video">
+            <a class="project__video-cover"
+               href="https://www.youtube.com/watch?v={{PROJECT_1_VIDEO_ID}}"
+               target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
           </div>
-          <p class="summary">{{PROJECT_1_SUMMARY}}</p>
-          <p class="stack">Stack — {{PROJECT_1_STACK}}</p>
-          <span class="project__more">View details →</span>
-        </a>
+
+          <a class="card__link" href="#projects/p1">
+            <div class="project__head">
+              <h2 class="project__title">{{PROJECT_1_TITLE}}</h2>
+              <span class="project__status">{{PROJECT_1_STATUS}}</span>
+            </div>
+            <p class="summary">{{PROJECT_1_SUMMARY}}</p>
+            <p class="stack">Stack — {{PROJECT_1_STACK}}</p>
+            <!-- Filled at build time by `build/project-tags.ts`, from
+                 PROJECT_DETAILS, with brand marks resolved out of simple-icons.
+                 Empty here and written exactly this way because that is the
+                 literal the plugin matches — and it throws on a slot it cannot
+                 place, so an edited attribute fails the build rather than
+                 shipping a blank row. Filling it in the build is what puts the
+                 row in the text edition and in the printed CV.
+
+                 A `<ul>` inside an `<a>` is valid: `<a>` is transparent, and
+                 only *interactive* descendants are forbidden. -->
+            <ul class="project__tech" data-tech="p1"></ul>
+            <span class="project__more">View details →</span>
+          </a>
+        </div>
 
         <div id="projects/p1" class="project__detail" data-detail="p1">
           <div class="project__dialog">
             <p class="project__status project__detail-eyebrow">{{PROJECT_1_STATUS}}</p>
             <h3 class="project__detail-title">{{PROJECT_1_TITLE}}</h3>
-            <!-- Just the link. The thumbnail and the play badge are built in JS,
-                 and the embed only after a click, so the served HTML names no
-                 third-party host at all and the text edition asks Google for
-                 nothing. An absolute URL, never `#`: the router reads `#` as
-                 "exit to the hub". -->
             <div class="project__video">
               <a class="project__video-cover"
                  href="https://www.youtube.com/watch?v={{PROJECT_1_VIDEO_ID}}"
@@ -303,14 +328,6 @@
               <li>{{PROJECT_1_POINT_1}}</li>
               <li>{{PROJECT_1_POINT_2}}</li>
             </ul>
-            <!-- Filled at build time by `build/project-tags.ts`, from
-                 PROJECT_DETAILS, with brand marks resolved out of simple-icons.
-                 Empty here and written exactly this way because that is the
-                 literal the plugin matches — and it throws on a slot it cannot
-                 place, so an edited attribute fails the build rather than
-                 shipping a blank row. Filling it in the build is what puts the
-                 row in the text edition and in the printed CV. -->
-            <ul class="project__tech" data-tech="p1"></ul>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="1" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="1" class="project__link">Live demo ↗</a>
@@ -325,15 +342,24 @@
       </article>
 
       <article class="project">
-        <a class="card card--project" href="#projects/p2">
-          <div class="project__head">
-            <h2 class="project__title">{{PROJECT_2_TITLE}}</h2>
-            <span class="project__status">{{PROJECT_2_STATUS}}</span>
+        <div class="card card--project">
+          <div class="project__video">
+            <a class="project__video-cover"
+               href="https://www.youtube.com/watch?v={{PROJECT_2_VIDEO_ID}}"
+               target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
           </div>
-          <p class="summary">{{PROJECT_2_SUMMARY}}</p>
-          <p class="stack">Stack — {{PROJECT_2_STACK}}</p>
-          <span class="project__more">View details →</span>
-        </a>
+
+          <a class="card__link" href="#projects/p2">
+            <div class="project__head">
+              <h2 class="project__title">{{PROJECT_2_TITLE}}</h2>
+              <span class="project__status">{{PROJECT_2_STATUS}}</span>
+            </div>
+            <p class="summary">{{PROJECT_2_SUMMARY}}</p>
+            <p class="stack">Stack — {{PROJECT_2_STACK}}</p>
+            <ul class="project__tech" data-tech="p2"></ul>
+            <span class="project__more">View details →</span>
+          </a>
+        </div>
 
         <div id="projects/p2" class="project__detail" data-detail="p2">
           <div class="project__dialog">
@@ -349,7 +375,6 @@
               <li>{{PROJECT_2_POINT_1}}</li>
               <li>{{PROJECT_2_POINT_2}}</li>
             </ul>
-            <ul class="project__tech" data-tech="p2"></ul>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="2" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="2" class="project__link">Live demo ↗</a>
@@ -360,15 +385,24 @@
       </article>
 
       <article class="project">
-        <a class="card card--project" href="#projects/p3">
-          <div class="project__head">
-            <h2 class="project__title">{{PROJECT_3_TITLE}}</h2>
-            <span class="project__status">{{PROJECT_3_STATUS}}</span>
+        <div class="card card--project">
+          <div class="project__video">
+            <a class="project__video-cover"
+               href="https://www.youtube.com/watch?v={{PROJECT_3_VIDEO_ID}}"
+               target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
           </div>
-          <p class="summary">{{PROJECT_3_SUMMARY}}</p>
-          <p class="stack">Stack — {{PROJECT_3_STACK}}</p>
-          <span class="project__more">View details →</span>
-        </a>
+
+          <a class="card__link" href="#projects/p3">
+            <div class="project__head">
+              <h2 class="project__title">{{PROJECT_3_TITLE}}</h2>
+              <span class="project__status">{{PROJECT_3_STATUS}}</span>
+            </div>
+            <p class="summary">{{PROJECT_3_SUMMARY}}</p>
+            <p class="stack">Stack — {{PROJECT_3_STACK}}</p>
+            <ul class="project__tech" data-tech="p3"></ul>
+            <span class="project__more">View details →</span>
+          </a>
+        </div>
 
         <div id="projects/p3" class="project__detail" data-detail="p3">
           <div class="project__dialog">
@@ -384,7 +418,6 @@
               <li>{{PROJECT_3_POINT_1}}</li>
               <li>{{PROJECT_3_POINT_2}}</li>
             </ul>
-            <ul class="project__tech" data-tech="p3"></ul>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="3" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="3" class="project__link">Live demo ↗</a>
@@ -395,15 +428,24 @@
       </article>
 
       <article class="project">
-        <a class="card card--project" href="#projects/p4">
-          <div class="project__head">
-            <h2 class="project__title">{{PROJECT_4_TITLE}}</h2>
-            <span class="project__status">{{PROJECT_4_STATUS}}</span>
+        <div class="card card--project">
+          <div class="project__video">
+            <a class="project__video-cover"
+               href="https://www.youtube.com/watch?v={{PROJECT_4_VIDEO_ID}}"
+               target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
           </div>
-          <p class="summary">{{PROJECT_4_SUMMARY}}</p>
-          <p class="stack">Stack — {{PROJECT_4_STACK}}</p>
-          <span class="project__more">View details →</span>
-        </a>
+
+          <a class="card__link" href="#projects/p4">
+            <div class="project__head">
+              <h2 class="project__title">{{PROJECT_4_TITLE}}</h2>
+              <span class="project__status">{{PROJECT_4_STATUS}}</span>
+            </div>
+            <p class="summary">{{PROJECT_4_SUMMARY}}</p>
+            <p class="stack">Stack — {{PROJECT_4_STACK}}</p>
+            <ul class="project__tech" data-tech="p4"></ul>
+            <span class="project__more">View details →</span>
+          </a>
+        </div>
 
         <div id="projects/p4" class="project__detail" data-detail="p4">
           <div class="project__dialog">
@@ -419,7 +461,6 @@
               <li>{{PROJECT_4_POINT_1}}</li>
               <li>{{PROJECT_4_POINT_2}}</li>
             </ul>
-            <ul class="project__tech" data-tech="p4"></ul>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="4" class="project__link">Repository ↗</a>
               <a href="#" target="_blank" rel="noopener" data-demo="4" class="project__link">Live demo ↗</a>

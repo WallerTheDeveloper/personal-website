@@ -85,6 +85,20 @@ test.describe('opening a project detail', () => {
     expect(await openPanel(page)).toBe('projects');
   });
 
+  test('a click anywhere in the card body opens it', async ({ page }) => {
+    // The card is a container with an anchor in it now, not an anchor itself —
+    // the player could not otherwise live in the card at all. `handleClick`
+    // routes on `target.closest('a')`, so everything the anchor wraps still
+    // opens the detail; this is what would catch the title falling outside it.
+    await openHub(page, '/#projects');
+    await waitForPanel(page, 'projects');
+
+    await page.locator('.card__link[href="#projects/p3"] .project__title').click();
+
+    expect(await openedDetail(page)).toBe('p3');
+    expect(await hash(page)).toBe('projects/p3');
+  });
+
   test('a deep link arrives with the detail already open', async ({ page }) => {
     await openHub(page, '/#projects/p1');
     await waitForPanel(page, 'projects');
@@ -249,6 +263,35 @@ test.describe('the video facade', () => {
     );
   }
 
+  /**
+   * The same, for one project's **card** — and it has to be an init script.
+   *
+   * Card facades are upgraded by the router's `commit()`, the first time the
+   * Projects panel is committed to, which is well before a `page.evaluate()`
+   * could run. Only the named project is filled, so the other three stay in the
+   * shipped unfilled state and the request count below stays readable.
+   */
+  async function giveCardVideo(page: Page, project: string, id: string): Promise<void> {
+    await page.addInitScript(
+      ([p, v]) => {
+        document.addEventListener('DOMContentLoaded', () => {
+          const cover = document
+            .querySelector(`a[href="#projects/${p}"]`)
+            ?.closest('.card')
+            ?.querySelector<HTMLAnchorElement>('.project__video-cover');
+          if (cover !== null && cover !== undefined) {
+            cover.href = `https://www.youtube.com/watch?v=${v}`;
+          }
+        });
+      },
+      [project, id],
+    );
+  }
+
+  /** One project's card, reached through the link that identifies it. */
+  const card = (page: Page, project: string) =>
+    page.locator('.card--project', { has: page.locator(`a[href="#projects/${project}"]`) });
+
   test('asks Google for nothing while no video is filled in', async ({ page }) => {
     // The shipped state. An unfilled `{{PROJECT_n_VIDEO_ID}}` is not a usable
     // id, so no facade is built and the plain link is what is left — which is
@@ -314,6 +357,68 @@ test.describe('the video facade', () => {
     }
   });
 
+  test('plays on the card without opening the detail', async ({ page }) => {
+    // The card player is the point of the second facade: a visitor should be
+    // able to watch without committing to the detail. The player therefore sits
+    // *outside* the card's anchor, and this is what proves the click does not
+    // fall through to it.
+    const seen = watchThirdParty(page);
+    await giveCardVideo(page, 'p1', 'dQw4w9WgXcQ');
+    await openHub(page, '/#projects');
+    await waitForPanel(page, 'projects');
+
+    const grid = card(page, 'p1');
+    await expect(grid.locator('.project__video-thumb')).toBeVisible();
+    // Only the one card was filled in, so only the one still was fetched — the
+    // other three are still on unfilled tokens.
+    expect(seen).toEqual(['https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg']);
+
+    await grid.locator('.project__video-cover').click();
+    await expect(grid.locator('.project__video-frame')).toHaveCount(1);
+    // And the card did not navigate: no detail, and the hash is still the panel.
+    expect(await openedDetail(page)).toBeNull();
+    expect(await hash(page)).toBe('projects');
+    expect(await openPanel(page)).toBe('projects');
+  });
+
+  test('costs nothing until the panel is reached', async ({ page }) => {
+    // Built in `commit()` rather than on mount. A visitor who stays on the hub
+    // must not pay four `i.ytimg.com` requests for a grid they have not seen.
+    const seen = watchThirdParty(page);
+    await giveCardVideo(page, 'p1', 'dQw4w9WgXcQ');
+    await openHub(page);
+    expect(seen).toEqual([]);
+
+    await page.locator('#labels a[href="#projects"]').click({ force: true });
+    await waitForPanel(page, 'projects');
+    expect(seen).toEqual(['https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg']);
+  });
+
+  test('stops a card player when the detail opens, and when the panel is left', async ({ page }) => {
+    // Same audio bug, one level out: a card player behind the scrim — or behind
+    // another panel entirely — is one the visitor cannot see and cannot stop.
+    for (const leave of ['detail', 'panel'] as const) {
+      await giveCardVideo(page, 'p1', 'dQw4w9WgXcQ');
+      await openHub(page, '/#projects');
+      await waitForPanel(page, 'projects');
+
+      await card(page, 'p1').locator('.project__video-cover').click();
+      expect(await page.locator('iframe').count(), `before ${leave}`).toBe(1);
+
+      if (leave === 'detail') {
+        await page.locator('a[href="#projects/p1"]').click();
+        await expect(page.locator(detail('p1'))).toHaveClass(/is-open/);
+      } else {
+        await page.evaluate(() => {
+          window.location.hash = '#xr';
+        });
+        await waitForPanel(page, 'xr');
+      }
+
+      expect(await page.locator('iframe').count(), `after ${leave}`).toBe(0);
+    }
+  });
+
   test('falls back to a plain link when the still will not load', async ({ page }) => {
     await page.route('**://i.ytimg.com/**', (route) => route.abort());
     await openHub(page, '/#projects');
@@ -332,31 +437,39 @@ test.describe('the video facade', () => {
 });
 
 test.describe('the tech tags', () => {
-  test('are in the document before anything opens', async ({ page }) => {
-    // They are rendered into the served HTML by `build/project-tags.ts`, not
-    // built when a detail opens. That is what puts them in the text edition and
-    // the printed CV, so "already there" is the assertion, not a detail worth
-    // waiting for.
+  /** One project's tag row. It is on the card, and it is there from the build. */
+  const tech = (page: Page, project: string) =>
+    page
+      .locator('.card--project', { has: page.locator(`a[href="#projects/${project}"]`) })
+      .locator('.project__tech');
+
+  test('are on the card, and in the document before anything opens', async ({ page }) => {
+    // Rendered into the served HTML by `build/project-tags.ts`, not built when a
+    // detail opens — which is what puts them in the text edition and the printed
+    // CV. So "already there, on the card" is the assertion, and no detail is
+    // opened to reach it.
     await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
 
-    const list = page.locator(`${detail('p1')} .project__tech`);
+    const list = tech(page, 'p1');
     const tags = list.locator('li');
     await expect(tags).toHaveCount(6);
     await expect(tags.first()).toHaveText('Python');
     // One glyph per tag, hidden from assistive tech — the label already says it.
     await expect(list.locator('svg')).toHaveCount(6);
     await expect(list.locator('svg').first()).toHaveAttribute('aria-hidden', 'true');
+    // And the detail no longer carries a second copy of the row.
+    await expect(page.locator(`${detail('p1')} .project__tech`)).toHaveCount(0);
   });
 
   test('render a brand with no mark as a text-only chip', async ({ page }) => {
     // C# has no logo in simple-icons. Text only is the designed answer — the
     // hand-drawn stand-ins are exactly what this replaced — so the chip must
     // still be there, and still be a chip.
-    await openHub(page, '/#projects/p2');
+    await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
 
-    const list = page.locator(`${detail('p2')} .project__tech`);
+    const list = tech(page, 'p2');
     await expect(list.locator('li')).toHaveCount(4);
     // Unity and Rust are marked; C# and Protocol Buffers are not.
     await expect(list.locator('svg')).toHaveCount(2);
@@ -367,10 +480,10 @@ test.describe('the tech tags', () => {
   });
 
   test('draw a real glyph, tinted with the panel accent', async ({ page }) => {
-    await openHub(page, '/#projects/p1');
+    await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
 
-    const tag = page.locator(`${detail('p1')} .project__tag`).first();
+    const tag = tech(page, 'p1').locator('.project__tag').first();
     // `currentColor` on the path, `--accent` on the chip: the glyph takes the
     // destination's colour without naming it.
     await expect(tag).toHaveCSS('color', 'rgb(56, 255, 176)');
@@ -391,14 +504,16 @@ test.describe('the tech tags', () => {
 
   test('every glyph in the table draws something', async ({ page }) => {
     // One malformed path would render as an empty box, and only on the one
-    // project that uses it. This walks all four details so the whole set is
-    // covered by a single pass. They have to be *opened* rather than just read
-    // off the closed markup: `getBBox()` on a `display: none` subtree is zero.
+    // project that uses it. All four rows are on screen together now, so the
+    // whole set is covered without opening anything — but the count is asserted
+    // first, because `evaluateAll` over an empty list passes vacuously and that
+    // is exactly how this test would rot.
     await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
     for (const project of ['p1', 'p2', 'p3', 'p4']) {
-      await page.locator(`a[href="#projects/${project}"]`).click();
-      const empty = await page.locator(`${detail(project)} .project__tag path`).evaluateAll((els) =>
+      const paths = tech(page, project).locator('.project__tag path');
+      expect(await paths.count(), `${project} has no glyphs at all`).toBeGreaterThan(0);
+      const empty = await paths.evaluateAll((els) =>
         els
           .map((el, i) => {
             const r = (el as SVGGeometryElement).getBBox();
@@ -407,7 +522,6 @@ test.describe('the tech tags', () => {
           .filter((i) => i >= 0),
       );
       expect(empty, `${project} has glyphs that draw nothing`).toEqual([]);
-      await page.keyboard.press('Escape');
     }
   });
 });

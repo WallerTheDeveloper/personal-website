@@ -26,6 +26,9 @@ const HIDDEN = [
   '[data-grain]',
   '[data-panel-top]',
   '[data-hero]',
+  // Both facades, on the card and in the detail. A still with a play badge over
+  // it is a lie on paper, and every project now carries two of them.
+  '.project__video',
 ];
 
 async function expectPrintsAsOneDocument(page: Page): Promise<void> {

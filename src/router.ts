@@ -50,7 +50,7 @@ import {
   type PanelId,
   type ProjectDetailId,
 } from './content';
-import { ProjectDetailLayer } from './project-detail';
+import { ProjectDetailLayer, teardownEmbeds, upgradeFacades } from './project-detail';
 import { trackView } from './analytics';
 import { engineChunkUrl, warmEngineChunk } from './boot-progress';
 import { applyTitle } from './head';
@@ -677,6 +677,9 @@ export class Router {
     // cannot undo: taking the modal ARIA and the focus trap off, so the flat
     // document does not claim to hold a modal that can no longer be dismissed.
     this.setDetail(null);
+    // And a card player is neither open nor closed by that, so it would go on
+    // playing under a document that has just become the text edition.
+    teardownEmbeds(this.panels.get('projects') ?? null);
 
     // Inline styles beat the stylesheet, so the fade-out `boot()` wrote on the
     // success path has to be cleared rather than overridden. Emptying them hands
@@ -1036,6 +1039,14 @@ export class Router {
     }
 
     this.current = target;
+    // The card video facades, built the first time the Projects panel is
+    // committed to and never before: a visitor who stays on the hub must not pay
+    // four `i.ytimg.com` requests for a grid they have not seen. Both calls are
+    // additive and idempotent — no routing rule is involved, and the sub-route
+    // below is still the only second axis.
+    const projects = this.panels.get('projects') ?? null;
+    if (target === 'projects') upgradeFacades(projects ?? document);
+    else teardownEmbeds(projects);
     // The detail layer is told; it never listens for itself. `go()` drives
     // `jump()` directly and `pushState` fires no `hashchange`, so anything
     // watching only the URL would miss every router-driven navigation. This is

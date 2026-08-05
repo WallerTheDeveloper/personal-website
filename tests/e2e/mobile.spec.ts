@@ -32,6 +32,12 @@ const LANDSCAPE = { width: 667, height: 375 } as const;
 /** Chromium reports sub-pixel layout; a fraction of a pixel is not an overflow. */
 const SLOP_PX = 1;
 
+/** A 1×1 transparent PNG, so a stubbed thumbnail decodes rather than erroring. */
+const PNG_1x1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 /** Does the document scroll sideways? The one question that covers everything. */
 async function overflowsX(page: Page): Promise<boolean> {
   return page.evaluate(
@@ -145,6 +151,38 @@ test.describe('the panels on a phone', () => {
     expect(dialog).not.toBeNull();
     expect(dialog!.x).toBeGreaterThanOrEqual(-SLOP_PX);
     expect(dialog!.x + dialog!.width).toBeLessThanOrEqual(PORTRAIT.width + SLOP_PX);
+  });
+
+  test('a card player fits the card at 375px', async ({ page }) => {
+    // The 16/9 still is the widest fixed-ratio box in the grid, and it is inside
+    // the card's padding rather than bleeding through it. At 375px there is no
+    // slack left to absorb a player that got its width from the viewport.
+    await page.route('**://i.ytimg.com/**', (route) =>
+      route.fulfill({ status: 200, contentType: 'image/png', body: PNG_1x1 }),
+    );
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        for (const cover of document.querySelectorAll<HTMLAnchorElement>('.project__video-cover')) {
+          cover.href = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+        }
+      });
+    });
+
+    await openHub(page);
+    await page.goto('/#projects');
+    await waitForPanel(page, 'projects');
+
+    const still = page.locator('.card--project .project__video-cover.is-facade').first();
+    await expect(still).toBeVisible();
+    expect(await overflowsX(page)).toBe(false);
+    expect(await overflowingChildren(page, '[data-panel="projects"] .col *')).toEqual([]);
+
+    const player = await still.boundingBox();
+    const cardBox = await page.locator('.card--project').first().boundingBox();
+    expect(player).not.toBeNull();
+    expect(cardBox).not.toBeNull();
+    expect(player!.x).toBeGreaterThanOrEqual(cardBox!.x - SLOP_PX);
+    expect(player!.x + player!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + SLOP_PX);
   });
 
   test('the sticky bar wraps rather than overflowing', async ({ page }) => {

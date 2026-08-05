@@ -1144,6 +1144,13 @@ a:hover { color: var(--hover); }
 
 .project__video { margin-top: 22px; }
 
+/* On a card the player is the first thing in it, so it leads rather than
+   follows: no top margin, and the gap goes underneath instead. */
+.card--project > .project__video {
+  margin-top: 0;
+  margin-bottom: clamp(20px, 2.4vw, 26px);
+}
+
 /* Unupgraded — and the state a failed thumbnail falls back to. Same treatment
    as the Repository / Live demo links, because that is what it is. */
 .project__video-cover {
@@ -1263,27 +1270,37 @@ a:hover { color: var(--hover); }
 
 .project__detail-close:hover { color: var(--hover); }
 
-/* The card is the link now. Every string inside it sets its own colour, so the
-   global `a:hover` reaches none of them and without this the card would warm
-   nowhere. Touch never sees any of it, which is why `.project__more` below is
-   a visible line rather than a hover-only affordance. */
+/* The card holds the link; it is not the link itself. A player inside an `<a>`
+   is invalid HTML and an axe `nested-interactive` failure, so the anchor wraps
+   the text half and the player sits beside it — which is why the warm-on-hover
+   state below is written against the card and `:focus-within` rather than
+   against `.card--project:focus-visible`, as it was when the card was an
+   anchor. Every string inside sets its own colour, so the global `a:hover`
+   reaches none of them and without these the card would warm nowhere. Touch
+   never sees any of it, which is why `.project__more` is a visible line rather
+   than a hover-only affordance. */
 .card--project {
   display: block;
   transition: background-color 200ms ease, border-color 200ms ease;
 }
 
+/* `:focus-within` rather than `:has(… :focus-visible)`: either the card's own
+   link or the player above it is a fine reason to light the card up, and this
+   needs no `:has()`. */
 .card--project:hover,
-.card--project:focus-visible {
+.card--project:focus-within {
   background: var(--void-3-hover);
   border-color: rgba(var(--accent-rgb), 0.45);
 }
 
 .card--project:hover .project__title,
-.card--project:focus-visible .project__title { color: var(--accent-hover); }
+.card--project:focus-within .project__title { color: var(--accent-hover); }
+
+.card__link { display: block; }
 
 /* Matches the planet labels, which take the same treatment on focus as on
    hover at this offset (CLAUDE.md "Accessibility"). */
-.card--project:focus-visible { outline-offset: 4px; }
+.card__link:focus-visible { outline-offset: 4px; }
 
 .project__more {
   display: block;
@@ -1296,7 +1313,7 @@ a:hover { color: var(--hover); }
 }
 
 .card--project:hover .project__more,
-.card--project:focus-visible .project__more { color: var(--hover); }
+.card--project:focus-within .project__more { color: var(--hover); }
 
 /* ---------------------------------------------------------------------------
    Project detail, as a dialog
@@ -1700,6 +1717,8 @@ html[data-dg-flat] #fallback { position: static; opacity: 1; pointer-events: aut
     overflow: visible !important;
   }
   /* Chrome that means nothing on paper: a control that closes something which
-     is not open, and the card's cue to a page the reader is already holding. */
-  [data-detail-close], .project__more { display: none !important; }
+     is not open, the card's cue to a page the reader is already holding, and a
+     video — a still with a play badge over it is a lie on paper, and every
+     project now carries two of them, on the card and in the detail. */
+  [data-detail-close], .project__more, .project__video { display: none !important; }
 }
