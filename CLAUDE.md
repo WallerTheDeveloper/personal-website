@@ -44,9 +44,16 @@ hand-written CSS with custom properties · Vitest + Playwright · static `dist/`
 - It is `position: fixed` against the **viewport**, which holds only while nothing on `.panel`, `.panel__body` or `.col` carries a `transform`, `filter`, `perspective`, `will-change` or `contain`. Adding one silently drops the dialog into the scrolling column. `project-detail.spec.ts` has the test that catches it.
 - **No `inert`.** Every element that could host it is an ancestor of the dialog, so setting it would make the dialog inert too. `aria-modal` plus the hand-rolled Tab trap does that work. Do not "fix" this with native `<dialog>`/`showModal()`: the top layer puts it above `#smoke`, where the warp cover can no longer hide it.
 - The modal ARIA is added on open and removed on close, never written in the markup — the flat document must not claim to hold a modal it cannot dismiss.
-- Play focuses the **dialog**, not the iframe: focus inside a cross-origin frame keeps its key events, and Escape closing is a functional requirement.
-- Closing removes the iframe node. Nothing else stops the audio — `pause()` needs the player API and a `display: none` iframe keeps playing.
-- The video is a facade. The markup carries only a plain YouTube link, and no third-party host appears in the served HTML. Do not put the thumbnail in the markup.
+- Play focuses this document's own furniture — the **dialog**, or on a card the `.card__link` — and **never the iframe**: focus inside a cross-origin frame keeps its key events, and Escape closing is a functional requirement.
+- Leaving removes the iframe node. Nothing else stops the audio — `pause()` needs the player API and a `display: none` iframe keeps playing. `teardownEmbeds()` sweeps a whole subtree, not one dialog, because the panel now holds up to five players: opening a detail silences the card behind it, and leaving the panel or `flatten()` silences all of them.
+
+**Project cards and their players**
+
+- Every project has **two** facades, one on the card and one in the detail. Both are facades: the markup carries only a plain YouTube link, and no third-party host appears in the served HTML. Do not put the thumbnail in the markup.
+- Card facades are upgraded from the router's `commit()`, the first time `target === 'projects'` — never on mount, or the hub pays four `i.ytimg.com` requests for a grid nobody has looked at. That call is additive; it is not a routing rule and `upgradeFacades`/`teardownEmbeds` are idempotent.
+- **The card is not an anchor.** It is a container holding the player and one `.card__link`. An interactive element inside an `<a>` is invalid HTML and an axe `nested-interactive` failure under `wcag2a`, which `a11y.spec.ts` scans. This is why the hover and focus treatment is written against the card and `:focus-within` rather than `.card--project:focus-visible`. A `<ul>` inside the link is fine — `<a>` is transparent and only *interactive* descendants are forbidden.
+- The tech tag rows are rendered **at build time** by `build/project-tags.ts`, from `PROJECT_DETAILS`, with brand marks resolved out of `simple-icons` — a **devDependency**. That is what puts the rows in the text edition and the printed CV; a row built when a dialog opens is a row neither of those ever gets. Do not move it back to runtime, and do not add an icon library to `dependencies`. A brand with no mark in the set renders text-only; do not hand-draw a substitute, which is precisely what this replaced.
+- The detail body is the owner's own HTML, `content/projects/pN.html`, inlined **raw** — escaping it would print the tags. It is not a sanitiser gap: the files are in this repo and no runtime user input exists anywhere on this site. `tests/unit/authored-html.test.ts` is what holds the line instead, including the `<h4>` floor that keeps one `<h1>` per panel. A missing file leaves the slot empty, which is the unfilled state, not an error.
 
 **Performance**
 
@@ -81,6 +88,7 @@ Verify after any layout change.
 - Define global `a` / `a:hover` (`#e9e7f2` / `#ffb877`).
 - Layout stays fluid by `clamp()`. The one width breakpoint that carries layout is the phone one at **≤ 640px**, and it works mainly by dropping `--type-scale` from 1.5 to 1.18 — type only, both times: the `44dvh` hero, the column measures and the padding clamps stay unscaled because `PARK_HEIGHT_FRACTION` is tuned against them. **375px** is the narrowest supported width. Use `dvh` for viewport-height layout, with a `vh` line before it as the fallback.
 - Grid tracks that hold copy take `minmax(0, …)` and their contents `overflow-wrap: anywhere`. An implicit `1fr` floors at `min-content`, so one unbreakable word widens the track past its container and `overflow-x: hidden` clips it — silently, since the viewport never overflows.
+- `.project__body` is styled with **element selectors only**, scoped to that class, so the owner's authored HTML needs no classes to land inside the house type. `.shots` / `.shot` are the two opt-in ones and are documented in `content/projects/README.md`; add a third only by documenting it there too, because a class nobody knows about is a class nobody uses.
 
 ## Content rules (editorial — do not "tidy")
 
@@ -95,6 +103,15 @@ Verify after any layout change.
 Every visible string is a `{{TOKEN}}` placeholder that **the owner fills in
 code**. Never invent copy, never "improve" a token, never remove one. Tokens that
 sit in attributes or structured data are applied on mount from the content table.
+
+One exception, and it is a location rather than a relaxation: the **project
+detail bodies** are authored HTML in `content/projects/pN.html` instead of
+tokens, because a fixed set of copy slots is the wrong shape for describing a
+project. They are the owner's to write and the same rule applies — do not invent
+prose for them. The files currently there were seeded verbatim from the
+`PROJECT_n_POINT_1`, `_POINT_2` and `_STACK` tokens they replaced, so nothing was
+lost in the move; the headings around that text are scaffolding for the owner to
+replace, and `content/projects/README.md` says so.
 
 ## Working style
 

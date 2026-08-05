@@ -28,18 +28,27 @@ Build order and the DOM contract are in `PORT_PLAN.md`. Invariants are in
 
 ### Owner's pre-launch list (not the developer's)
 
-- [ ] Fill every `{{TOKEN}}` in `src/content.ts`. Two of those groups are new and
-      gate the project detail dialog:
-      - `PROJECT_n_DESCRIPTION` — the long copy the dialog exists to show. The
-        card keeps the short summary; this is the fuller account beside the
-        video.
-      - `PROJECT_n_VIDEO_ID` — the `v=` of a YouTube watch URL, nothing else.
-        Until it is filled the detail shows a plain "Watch video ↗" link and no
-        facade is built, which is the normal unfilled state rather than a fault.
+- [ ] Fill every `{{TOKEN}}` in `src/content.ts`. One group is new and gates both
+      video players:
+      - `PROJECT_n_VIDEO_ID` — the `v=` of a YouTube watch URL, nothing else. It
+        is substituted into the card's link *and* the detail's. Until it is
+        filled both show a plain "Watch video ↗" link and no facade is built,
+        which is the normal unfilled state rather than a fault.
+- [ ] **Write `content/projects/pN.html`** — the detail body for each project,
+      as plain HTML. `content/projects/README.md` documents what is allowed and
+      `npm test` checks it. The four files there now hold the text seeded from
+      the retired `PROJECT_n_POINT_1`, `_POINT_2` and `_STACK` tokens, under
+      "Highlights" and "Stack" headings that are scaffolding, not copy. Replace
+      them.
+- [ ] Screenshots into `public/projects/`, referenced from those files as
+      `<img src="projects/….png" alt="…">` — relative, so they resolve under the
+      `/personal-website/` base. `public/` is outside both size budgets.
 - [ ] Check the tech tags in `PROJECT_DETAILS` (`src/content.ts`) say what you
-      want them to. The labels were taken from each project's existing `STACK`
-      line and trimmed to the ones worth a chip; the glyphs are geometric
-      category marks, not brand logos (see deviation 7).
+      want them to. The labels were taken from each project's `STACK` line and
+      trimmed to the ones worth a chip; the glyphs are now real brand marks from
+      `simple-icons` (see deviation 7). **C#, OpenXR, GLSL and Protocol Buffers
+      have no mark in that set** and render as text-only chips — that is the
+      designed answer, not a gap to fill by hand.
 - [ ] Final `cv.pdf`.
 - [ ] Regenerate `og.png` with the real name and role.
 - [ ] Supply the ship glTF (later milestone) — contract in `public/models/README.md`.
@@ -345,4 +354,9 @@ Do not "restore fidelity" on any of these:
 4. **Tab order is five stops, not six** — the quality button is a readout (Phase 7).
 5. **The ship has one rest seat.** The prototype carries the same three-way mismatch verbatim (`design/space-engine.js:543-547, 848, 893`) (Phase 12).
 6. **Destination 02 is named *Freelance Projects*, and its notice reads “Freelance projects - work that was done for clients.”** The prototype calls it *Independent Projects* and carries the notice “Independent projects — personal work, not employment.” (`design/index.dc.html:222-235`), which `design/DESIGN_SPEC.md:164,322-328` still records — that file measures the prototype and is deliberately left describing it. The panel now holds client work, so the port renames it in all five places (`<h1>`, `aria-label`, `panel__where`, the hero label, `TITLES.projects`) and rewrites the notice. Confirmed with the owner.
-7. **The Freelance panel's cards are links, and each opens a project detail dialog at `#projects/pN`.** The prototype has four inert `<article>` cards whose only actions are two external links. The port makes the card one anchor, moves Repository / Live demo and the bullets into the detail, and adds a video, a longer description and tech tags with inline glyphs. Measured in `design/DESIGN_SPEC.md` under “Project detail dialog — port addition”. Two knock-on decisions worth keeping: the glyphs are geometric category marks rather than brand logos, because `DESIGN_SPEC.md` rules an icon set out of the body column and brand marks fight a flat monochrome language; and the video is a facade, so the site still makes no third-party request until a visitor opens a detail. Requested by the owner.
+7. **The Freelance panel's cards carry a video player, and each opens a project detail dialog at `#projects/pN`.** The prototype has four inert `<article>` cards whose only actions are two external links. The port gives each card a player and one `.card__link`, moves Repository / Live demo into the detail, replaces the `Stack — …` line with a tag row of real brand marks, and gives the detail a body the owner authors as HTML. Measured in `design/DESIGN_SPEC.md` under “Project detail dialog — port addition”. Three knock-on decisions worth keeping:
+   - **The card is a container, not an anchor.** A player inside an `<a>` is invalid HTML and an axe `nested-interactive` failure, so the anchor wraps only the text half.
+   - **The glyphs are real brand marks, from `simple-icons` as a devDependency, inlined at build time.** An earlier revision drew geometric category marks by hand, on the reading that `DESIGN_SPEC.md` rules an icon set out of the body column and that brand marks fight a flat monochrome language. The owner overruled it: the hand-drawn marks read as casual, and the transfer budget had the room. Drawn monochrome in the panel accent, which is what settles the second half of that objection. Brands the set has no mark for render as text-only chips.
+   - **Both videos are facades**, so the site still makes no third-party request until a visitor reaches the Projects panel — and none at all from the hub.
+
+   Requested by the owner.

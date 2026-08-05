@@ -349,10 +349,19 @@ below it in the flow, its detail. **The detail is normal flow content** — that
 is what the text edition and the printed CV render. Only
 `html[data-dg-3d] .project__detail.is-open` lifts it out.
 
-The **card** is now one `<a href="#projects/pN">`: title `<h2>`, status, summary,
-stack line, then `View details →` (mono `11px`, `letter-spacing .16em`,
-uppercase, `#9dffd6`). Hover and focus take `background: #0c1020`,
-`border-color: rgba(56,255,176,0.45)`, title `#84ffcb`, and `outline-offset: 4px`.
+The **card** is a `<div class="card card--project">` holding two things: a video
+facade, then one `<a class="card__link" href="#projects/pN">` wrapping title
+`<h2>`, status, summary, the tag row, and `View details →` (mono `11px`,
+`letter-spacing .16em`, uppercase, `#9dffd6`).
+
+It is a container rather than an anchor **because the player is interactive**:
+an `<a>` may not contain one, and axe fails it as `nested-interactive` under
+`wcag2a`. The warm state therefore keys off the card with `:hover` /
+`:focus-within` rather than `:focus-visible` on the anchor —
+`background: #0c1020`, `border-color: rgba(56,255,176,0.45)`, title `#84ffcb` —
+and `outline-offset: 4px` sits on `.card__link`. The card's player has no top
+margin and `margin-bottom: clamp(20px,2.4vw,26px)`, so it leads the card where
+the detail's follows the heading.
 
 The **scrim** is `position: fixed; inset: 0; z-index: 50` — above `.panel__top`
 (3), below `#smoke` (60), so the warp cover still covers it —
@@ -367,24 +376,42 @@ the hairline and the scrim. Closed, `border-top: 0` so it shares its card's edge
 
 Contents in order: status eyebrow (the card's `.project__status` treatment as a
 block), `<h3>` Bodoni Moda `clamp(23px,2.8vw,28px)` `#eeecf6`, the video, the
-description, 2 bullets, the tag row, the *Repository ↗* / *Live demo ↗* row, and
-`← Back to projects` (mono 11px, `#9294ab`, hover `#ffb877`).
+authored body, the *Repository ↗* / *Live demo ↗* row, and `← Back to projects`
+(mono 11px, `#9294ab`, hover `#ffb877`).
 
-**Video** — the markup ships only `<a class="project__video-cover">` to
-`youtube.com/watch?v=…`, styled exactly like the project links. When a detail
-opens, JS upgrades it to a `16/9` still (`i.ytimg.com/vi/…/hqdefault.jpg`,
-`object-fit: cover` to crop the 4:3 letterbox) under a
-`rgba(5,6,13,0.86)`-at-`0.55` scrim carrying the label, easing to `0.3` on hover.
-A click replaces it with a `youtube-nocookie` iframe.
+**Video** — two per project, one on the card and one in the detail, identical.
+The markup ships only `<a class="project__video-cover">` to
+`youtube.com/watch?v=…`, styled exactly like the project links. The card's is
+upgraded when the Projects panel first commits and the detail's when the detail
+opens: a `16/9` still (`i.ytimg.com/vi/…/hqdefault.jpg`, `object-fit: cover` to
+crop the 4:3 letterbox) under a `rgba(5,6,13,0.86)`-at-`0.55` scrim carrying the
+label, easing to `0.3` on hover. A click replaces it with a `youtube-nocookie`
+iframe. `@media print` hides `.project__video` outright.
 
-**Tech tags** — `<ul class="project__tech">`, ships empty and is filled from
-`PROJECT_DETAILS` on open; `:empty` hides it, so the flat and print editions show
-the card's `Stack — …` line instead. Each tag: `inline-flex`, `gap 7px`,
-`padding: 5px 10px`, `border: 1px solid rgba(56,255,176,0.28)`,
-`background: rgba(255,255,255,0.05)`, mono `10px`, `letter-spacing .1em`,
-`color: #38ffb0`, with a 14px inline `<svg>` filled `currentColor`. The glyphs are
-geometric category marks, **not brand logos** — see the “no icon set” rule below,
-which they are a deliberate, minimal reading of.
+**Tech tags** — `<ul class="project__tech" data-tech="pN">` on the **card**,
+where it replaced the `Stack — …` line. It ships empty and `build/project-tags.ts`
+fills it **at build time** from `PROJECT_DETAILS`, so the row is in the served
+bytes and the flat and print editions carry it too — which is why there is no
+longer a `:empty` rule. Each tag: `inline-flex`, `gap 7px`, `padding: 5px 10px`,
+`border: 1px solid rgba(56,255,176,0.28)`, `background: rgba(255,255,255,0.05)`,
+mono `10px`, `letter-spacing .1em`, `color: #38ffb0`, with a 14px inline `<svg>`
+filled `currentColor`.
+
+The glyphs are **real brand marks**, from `simple-icons` as a devDependency.
+An earlier revision drew geometric category marks by hand, reading the “no icon
+set” rule below as ruling brand logos out; the owner overruled that — see
+`TASKS.md` deviation 7. Drawn monochrome in the panel accent, they cost ~12 KB
+gzip inline and stay inside the flat-set budget. A brand the set has no mark for
+renders as a text-only chip.
+
+**Authored body** — `<div class="project__body" data-body="pN">`, filled at build
+time from `content/projects/pN.html`, which the owner writes as plain HTML.
+Styled with element selectors only, scoped to the class, so unclassed markup
+lands in the house type: `h4`–`h6` as mono `11px` uppercase `letter-spacing .16em`
+in the accent; `p` and lists 16px/1.75 and 1.65 on `--body` / `--bullet`;
+`blockquote` a 2px accent rule down the left with no card; `img` a
+`--rule-card` hairline. `.shots` / `.shot` are the two opt-in classes, a
+`repeat(auto-fit, minmax(min(220px,100%),1fr))` grid for side-by-side figures.
 
 ### XR / AR (`#xr`, accent `#b26bff`)
 
@@ -578,6 +605,19 @@ onto a camera that has not moved.
 
 No icon set, no photography, no illustration. If imagery is ever added it goes
 in the hero windows, not the body column.
+
+Two port additions read against that rule rather than around it, both at the
+owner's direction, both recorded in `TASKS.md` under deviations 7:
+
+- **The tech tag marks.** Real brand logos from `simple-icons`, drawn at 14px in
+  the panel accent — monochrome and accented, so they behave as typography does
+  and not as a second colour system. They are not an icon *set*: only the marks
+  the tag rows name are inlined, and no library ships.
+- **Screenshots in the authored project bodies** (`public/projects/`). Imagery in
+  the body column, which is exactly what the sentence above rules out — but a
+  detail dialog is a page about one project rather than the CV column this rule
+  was written for, and a project without a picture of it is the weaker document.
+  Confined to `.project__body`; the four panels stay imageless.
 
 ## Performance budget
 

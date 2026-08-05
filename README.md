@@ -75,7 +75,7 @@ index.html            the one document: head probe, hub chrome, four panels, tex
 src/
   main.ts             entry — boots the router
   router.ts           hash routing, the jump, panel lifecycle
-  project-detail.ts   the #projects/pN dialog: focus trap, tech tags, video facade
+  project-detail.ts   the #projects/pN dialog: focus trap, video facades
   hub.ts              scene setup, camera, input, hover, park/unpark
   engine/             planet meshes, texture baking, shaders, sky, ship, capability tiers
   warp.ts             the hyperspace cover
@@ -87,10 +87,13 @@ src/
   analytics.ts        optional Umami hook
   content.ts          every visible string
   styles.css
-build/copy-tokens.ts  Vite plugin: substitutes content.ts into the HTML at build time
+build/copy-tokens.ts  Vite plugin: substitutes content.ts into the HTML, and
+                      inlines content/projects/pN.html, both at build time
+build/project-tags.ts Vite plugin: renders the tech tag rows from simple-icons
 build/engine-chunk.ts Vite plugin: writes the hashed engine chunk URL into the head
+content/projects/     the owner's authored project bodies, one HTML file each
 tests/unit  tests/e2e
-public/               cv.pdf, og.png, robots.txt, sitemap.xml, models/
+public/               cv.pdf, og.png, robots.txt, sitemap.xml, models/, projects/
 design/               the reference prototype and its notes
 ```
 
@@ -106,10 +109,19 @@ Everything that turns a detail into a dialog is gated on `html[data-dg-3d]`, so
 the text edition and the printed CV render all four details inline, under their
 own cards, with no JavaScript.
 
-The detail's video is a facade: the markup carries only a plain link to YouTube,
-the thumbnail is fetched when a detail opens, and the `youtube-nocookie` player
-is mounted only after a click on play. The site makes no third-party request
-until then.
+Every project has **two** video facades — one on its card, one in its detail. The
+markup carries only a plain link to YouTube; the card's thumbnail is fetched when
+the Projects panel is first reached and the detail's when the detail opens, and
+the `youtube-nocookie` player is mounted only after a click on play. The site
+makes no third-party request until then, and none at all from the hub.
+
+The card is a container, not a link: an interactive player inside an `<a>` is
+invalid HTML and an axe `nested-interactive` failure. The player sits beside one
+`.card__link` that wraps the title, summary, tag row and "View details →".
+
+Closing a detail, leaving the panel, `flatten()` and Escape all remove every
+player node in the panel. Removing the node is the only thing that stops the
+audio — `pause()` needs the iframe player API, and a hidden iframe keeps playing.
 
 ## Content
 
@@ -117,6 +129,20 @@ Every visible string lives in `src/content.ts`. The markup carries `{{TOKEN}}`
 placeholders that `build/copy-tokens.ts` substitutes **at build time**, so the
 served HTML carries the real copy with JavaScript disabled — which is what keeps
 the text edition complete.
+
+Two things in the Projects panel are built rather than tokenised, for the same
+reason and at the same moment:
+
+- **The project detail bodies** are freeform HTML the owner writes, one file per
+  project in `content/projects/`, inlined raw into `[data-body]`.
+  `content/projects/README.md` documents what is allowed;
+  `tests/unit/authored-html.test.ts` enforces it.
+- **The tech tag rows** are rendered by `build/project-tags.ts` from
+  `PROJECT_DETAILS` in `content.ts`, with brand marks resolved out of
+  `simple-icons` — a **devDependency**, so the glyphs ship as inline paths and no
+  icon library reaches the browser. A brand the set has no mark for (C#, OpenXR,
+  GLSL, Protocol Buffers) renders as a text-only chip; an unknown slug fails the
+  build.
 
 Each token still defaults to the literal `{{TOKEN}}` string it replaces, so an
 unfilled site reads the same either way; filling the CV means editing
