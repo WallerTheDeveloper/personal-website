@@ -195,6 +195,121 @@ test.describe('closing a project detail', () => {
   });
 });
 
+test.describe('the video facade', () => {
+  /** Every request that left for a Google host, in order. */
+  function watchThirdParty(page: Page): string[] {
+    const seen: string[] = [];
+    page.on('request', (r) => {
+      const url = r.url();
+      if (/ytimg\.com|youtube(-nocookie)?\.com/.test(url)) seen.push(url);
+    });
+    return seen;
+  }
+
+  /**
+   * Fill one project's video id in the DOM, the way the build would.
+   *
+   * The tokens ship unfilled — the owner supplies the ids — so without this
+   * there is no video to build a facade for and the tests below would assert
+   * the empty case twice. Set before the detail opens, because the facade is
+   * built by `show()`.
+   */
+  async function giveVideo(page: Page, project: string, id: string): Promise<void> {
+    await page.evaluate(
+      ([p, v]) => {
+        const cover = document
+          .querySelector(`[id="projects/${p}"]`)
+          ?.querySelector<HTMLAnchorElement>('.project__video-cover');
+        if (cover !== null && cover !== undefined) {
+          cover.href = `https://www.youtube.com/watch?v=${v}`;
+        }
+      },
+      [project, id],
+    );
+  }
+
+  test('asks Google for nothing while no video is filled in', async ({ page }) => {
+    // The shipped state. An unfilled `{{PROJECT_n_VIDEO_ID}}` is not a usable
+    // id, so no facade is built and the plain link is what is left — which is
+    // still a working link once the owner fills the token.
+    const seen = watchThirdParty(page);
+    await openHub(page, '/#projects/p1');
+    await waitForPanel(page, 'projects');
+
+    expect(seen).toEqual([]);
+    const cover = page.locator(`${detail('p1')} .project__video-cover`);
+    await expect(cover).toBeVisible();
+    await expect(cover).not.toHaveClass(/is-facade/);
+    await expect(cover).toHaveAttribute('href', /^https:\/\/www\.youtube\.com\/watch\?v=/);
+  });
+
+  test('fetches the still only once a detail opens, and the player only on play', async ({ page }) => {
+    const seen = watchThirdParty(page);
+    await openHub(page, '/#projects');
+    await waitForPanel(page, 'projects');
+    await giveVideo(page, 'p1', 'dQw4w9WgXcQ');
+
+    // Sitting on the panel with the grid in view costs nothing.
+    expect(seen).toEqual([]);
+
+    await page.locator('a[href="#projects/p1"]').click();
+    await expect(page.locator(`${detail('p1')} .project__video-thumb`)).toBeVisible();
+    expect(seen).toEqual(['https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg']);
+    // Nothing from the player yet: opening a detail is not consent to load it.
+    expect(await page.locator('iframe').count()).toBe(0);
+
+    await page.locator(`${detail('p1')} .project__video-cover`).click();
+    const frame = page.locator(`${detail('p1')} .project__video-frame`);
+    await expect(frame).toHaveCount(1);
+    await expect(frame).toHaveAttribute(
+      'src',
+      /^https:\/\/www\.youtube-nocookie\.com\/embed\/dQw4w9WgXcQ\?/,
+    );
+    // The still is gone rather than stacked behind the player.
+    await expect(page.locator(`${detail('p1')} .project__video-cover`)).toBeHidden();
+  });
+
+  test('takes the embed down on every way out of the dialog', async ({ page }) => {
+    // Removing the node is the only thing that stops the audio: `pause()` needs
+    // the player API, and an iframe hidden with `display: none` keeps playing.
+    for (const leave of ['escape', 'close', 'panel'] as const) {
+      await openHub(page, '/#projects');
+      await waitForPanel(page, 'projects');
+      await giveVideo(page, 'p1', 'dQw4w9WgXcQ');
+      await page.locator('a[href="#projects/p1"]').click();
+      await page.locator(`${detail('p1')} .project__video-cover`).click();
+      expect(await page.locator('iframe').count(), `before ${leave}`).toBe(1);
+
+      if (leave === 'escape') await page.keyboard.press('Escape');
+      else if (leave === 'close') await page.locator(`${detail('p1')} [data-detail-close]`).click();
+      else {
+        await page.evaluate(() => {
+          window.location.hash = '#xr';
+        });
+        await waitForPanel(page, 'xr');
+      }
+
+      expect(await page.locator('iframe').count(), `after ${leave}`).toBe(0);
+    }
+  });
+
+  test('falls back to a plain link when the still will not load', async ({ page }) => {
+    await page.route('**://i.ytimg.com/**', (route) => route.abort());
+    await openHub(page, '/#projects');
+    await waitForPanel(page, 'projects');
+    await giveVideo(page, 'p1', 'dQw4w9WgXcQ');
+    await page.locator('a[href="#projects/p1"]').click();
+
+    const cover = page.locator(`${detail('p1')} .project__video-cover`);
+    // A still that will not load usually means Google is unreachable, so the
+    // whole upgrade unwinds rather than leaving a click that builds a player
+    // which would fail the same way.
+    await expect(cover).not.toHaveClass(/is-facade/);
+    await expect(page.locator(`${detail('p1')} .project__video-thumb`)).toHaveCount(0);
+    await expect(cover).toBeVisible();
+  });
+});
+
 test.describe('the dialog', () => {
   test('is centred on the viewport, not inside the column', async ({ page }) => {
     await openHub(page, '/#projects/p1');

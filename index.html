@@ -288,6 +288,16 @@
           <div class="project__dialog">
             <p class="project__status project__detail-eyebrow">{{PROJECT_1_STATUS}}</p>
             <h3 class="project__detail-title">{{PROJECT_1_TITLE}}</h3>
+            <!-- Just the link. The thumbnail and the play badge are built in JS,
+                 and the embed only after a click, so the served HTML names no
+                 third-party host at all and the text edition asks Google for
+                 nothing. An absolute URL, never `#`: the router reads `#` as
+                 "exit to the hub". -->
+            <div class="project__video">
+              <a class="project__video-cover"
+                 href="https://www.youtube.com/watch?v={{PROJECT_1_VIDEO_ID}}"
+                 target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
+            </div>
             <p class="summary">{{PROJECT_1_DESCRIPTION}}</p>
             <ul class="bullets">
               <li>{{PROJECT_1_POINT_1}}</li>
@@ -327,6 +337,11 @@
           <div class="project__dialog">
             <p class="project__status project__detail-eyebrow">{{PROJECT_2_STATUS}}</p>
             <h3 class="project__detail-title">{{PROJECT_2_TITLE}}</h3>
+            <div class="project__video">
+              <a class="project__video-cover"
+                 href="https://www.youtube.com/watch?v={{PROJECT_2_VIDEO_ID}}"
+                 target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
+            </div>
             <p class="summary">{{PROJECT_2_DESCRIPTION}}</p>
             <ul class="bullets">
               <li>{{PROJECT_2_POINT_1}}</li>
@@ -357,6 +372,11 @@
           <div class="project__dialog">
             <p class="project__status project__detail-eyebrow">{{PROJECT_3_STATUS}}</p>
             <h3 class="project__detail-title">{{PROJECT_3_TITLE}}</h3>
+            <div class="project__video">
+              <a class="project__video-cover"
+                 href="https://www.youtube.com/watch?v={{PROJECT_3_VIDEO_ID}}"
+                 target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
+            </div>
             <p class="summary">{{PROJECT_3_DESCRIPTION}}</p>
             <ul class="bullets">
               <li>{{PROJECT_3_POINT_1}}</li>
@@ -387,6 +407,11 @@
           <div class="project__dialog">
             <p class="project__status project__detail-eyebrow">{{PROJECT_4_STATUS}}</p>
             <h3 class="project__detail-title">{{PROJECT_4_TITLE}}</h3>
+            <div class="project__video">
+              <a class="project__video-cover"
+                 href="https://www.youtube.com/watch?v={{PROJECT_4_VIDEO_ID}}"
+                 target="_blank" rel="noopener"><span class="project__video-label">Watch video ↗</span></a>
+            </div>
             <p class="summary">{{PROJECT_4_DESCRIPTION}}</p>
             <ul class="bullets">
               <li>{{PROJECT_4_POINT_1}}</li>

@@ -77,6 +77,29 @@ describe('in-page anchors', () => {
     }
   });
 
+  it('sends the video link to YouTube itself, never to a fragment', () => {
+    // `href="#"` is what `handleClick` reads as "exit to the hub", so a video
+    // link built that way would warp the visitor out of the panel. It has to be
+    // an absolute URL in the served bytes, which is why the id is substituted at
+    // build time rather than applied on mount like the repo/demo hrefs.
+    const covers = Array.from(
+      html.matchAll(/class="project__video-cover"\s+href="([^"]+)"/g),
+      (m) => m[1] as string,
+    );
+    expect(covers).toHaveLength(PROJECT_DETAIL_IDS.length);
+    for (const href of covers) {
+      expect(href).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=/);
+    }
+  });
+
+  it('names no third-party host in the served markup', () => {
+    // The facade is built in JS when a detail opens, so a visitor who never
+    // opens one — and every visitor of the text edition — asks Google for
+    // nothing. Putting the thumbnail in the markup would quietly undo that.
+    expect(html).not.toContain('i.ytimg.com');
+    expect(html).not.toContain('youtube-nocookie');
+  });
+
   it('leaves no href pointing at something the document does not contain', () => {
     const hrefs = Array.from(html.matchAll(/href="#([^"]*)"/g), (m) => m[1] as string);
     // `href="#"` is the [data-exit] links: intercepted when routing, top of the

@@ -1133,6 +1133,94 @@ a:hover { color: var(--hover); }
   color: var(--ink-head);
 }
 
+/* ---------------------------------------------------------------------------
+   The video facade
+
+   The markup ships one plain anchor. Everything below the first rule only ever
+   applies once `project-detail.ts` has upgraded it, which is why the text
+   edition and the printed CV get a readable link and no layout to go wrong.
+   --------------------------------------------------------------------------- */
+
+.project__video { margin-top: 22px; }
+
+/* Unupgraded — and the state a failed thumbnail falls back to. Same treatment
+   as the Repository / Live demo links, because that is what it is. */
+.project__video-cover {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: calc(12px * var(--type-scale));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mint);
+  border-bottom: 1px solid rgba(var(--mint-rgb), 0.45);
+  padding-bottom: 3px;
+}
+
+.project__video-cover:hover {
+  color: var(--hover);
+  border-bottom-color: rgba(var(--hover-rgb), 0.6);
+}
+
+/* Upgraded: the anchor becomes the still, and its label becomes the play badge
+   sitting on it. Paint order is by source alone — the thumbnail is prepended,
+   the scrim is `::after`, and only the label needs lifting out of the flow to
+   clear both. */
+.project__video-cover.is-facade {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  padding: 0;
+  border-bottom: 0;
+  background: var(--void);
+  overflow: hidden;
+}
+
+.project__video-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* hqdefault is 4:3 with letterbox bars top and bottom; cropping to 16/9 takes
+     exactly those off and leaves the real frame. */
+  object-fit: cover;
+}
+
+/* The badge has to stay legible on any frame, so it carries its own scrim
+   rather than relying on the still being dark. */
+.project__video-cover.is-facade::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  opacity: 0.55;
+  transition: opacity 200ms ease;
+}
+
+.project__video-cover.is-facade:hover::after,
+.project__video-cover.is-facade:focus-visible::after { opacity: 0.3; }
+
+.project__video-cover.is-facade .project__video-label {
+  position: relative;
+  z-index: 1;
+  letter-spacing: 0.2em;
+  color: var(--ink-head);
+}
+
+/* The player replaces the still by setting `hidden` on it. The UA's
+   `[hidden] { display: none }` is a single-attribute rule, so the `.is-facade`
+   display above outranks it and the still would stay on screen under the
+   iframe. This is what actually takes it away. */
+.project__video-cover[hidden] { display: none; }
+
+.project__video-frame {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+}
+
 .project__tech {
   display: flex;
   flex-wrap: wrap;
