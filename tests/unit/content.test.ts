@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CONTENT,
-  ICONS,
   PANEL_IDS,
   PROJECT_DETAILS,
   PROJECT_DETAIL_IDS,
@@ -98,23 +97,16 @@ describe('project details', () => {
     }
   });
 
-  it('resolves every tag icon, and ships no glyph nothing uses', () => {
-    const used = new Set(PROJECT_DETAILS.flatMap((d) => d.tech.map((t) => t.icon)));
-    const known = new Set(Object.keys(ICONS));
-    // Unresolvable slugs are already a compile error; this is the runtime half,
-    // and the reverse direction is what keeps dead path data out of the bundle —
-    // every byte of it is served to every visitor.
-    expect([...used].filter((slug) => !known.has(slug)).sort()).toEqual([]);
-    expect([...known].filter((slug) => !used.has(slug as never)).sort()).toEqual([]);
-  });
-
-  it('holds path data, never markup', () => {
-    // `tagFor()` writes these straight into a `d` attribute. They are ours, but
-    // the rule that nothing in the content table is ever parsed as markup is
-    // what makes that safe to keep doing.
-    for (const [slug, d] of Object.entries(ICONS)) {
-      expect(d, slug).toMatch(/^[Mm][\d\s.,\-A-Za-z]+$/);
-      expect(d, slug).not.toContain('<');
+  it('carries simple-icons slugs, never a path or a title', () => {
+    // The glyphs live in the library now, and `build/project-tags.ts` resolves
+    // them — including throwing on a slug that does not exist, which is the real
+    // coverage check and lives in `project-tags.test.ts`. This only pins the
+    // shape: lower-case, punctuation-free, the form simple-icons.org publishes.
+    for (const entry of PROJECT_DETAILS) {
+      for (const { icon, label } of entry.tech) {
+        if (icon === undefined) continue;
+        expect(icon, `${entry.id} / ${label}`).toMatch(/^[a-z0-9]+$/);
+      }
     }
   });
 

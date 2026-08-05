@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 import { copyTokens } from './build/copy-tokens';
 import { engineChunk } from './build/engine-chunk';
+import { projectTags } from './build/project-tags';
 
 // Single HTML entry, on purpose.
 //
@@ -32,10 +33,12 @@ export default defineConfig(({ command }) => ({
   base: command === 'build' ? BASE : '/',
   // copyTokens fills the {{TOKEN}} placeholders from src/content.ts, so the
   // owner fills copy in one file and the served HTML carries it with JS
-  // disabled. engineChunk writes the hashed engine URL into the head, which is
-  // the only place that URL is knowable — the loading dial streams it for a byte
-  // count before importing it.
-  plugins: [copyTokens(), engineChunk()],
+  // disabled. projectTags does the same for the tech tag rows, resolving the
+  // brand marks out of simple-icons — a devDependency, so the glyphs ship as
+  // inline paths and the library never reaches the browser. engineChunk writes
+  // the hashed engine URL into the head, which is the only place that URL is
+  // knowable — the loading dial streams it for a byte count before importing it.
+  plugins: [copyTokens(), projectTags(), engineChunk()],
   build: {
     target: 'es2022',
     // The budget is < 900 KB transfer and `three` is essentially all of it,

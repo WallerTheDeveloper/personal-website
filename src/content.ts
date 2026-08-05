@@ -239,63 +239,21 @@ export interface ProjectDetail {
 }
 
 /**
- * The glyphs the tech tags draw, one `<path d>` each on a `0 0 24 24` box.
+ * One tech tag: the technology's name, and optionally the brand mark to draw
+ * beside it.
  *
- * **Geometric marks, not brand logos.** `design/DESIGN_SPEC.md` rules an icon
- * set out of the body column, and brand marks in particular fight a monochrome
- * flat language — they arrive with their own colours, weights and silhouettes.
- * These are category marks: a language is chevrons, a store is a cylinder, an
- * engine is a cube. The tag's *label* is what names the technology; the glyph
- * only makes the row scannable.
+ * `icon` is a **`simple-icons` slug** — the one at simple-icons.org, lower-case
+ * and punctuation-free (`cplusplus`, `postgresql`, `threedotjs`). The glyph is
+ * resolved and inlined by `build/project-tags.ts` at build time, so the set is a
+ * devDependency and no icon library reaches the browser. An unknown slug fails
+ * the build rather than shipping an empty chip.
  *
- * Every path is filled with `currentColor` and `fill-rule: evenodd`, so a shape
- * with a second subpath reads as an outline. Path data only — never a whole
- * `<svg>` string: `project-detail.ts` builds the element, so nothing here is
- * ever parsed as markup, and `tests/unit/content.test.ts` asserts that.
- *
- * Swapping one for an official brand path is a one-line change here and touches
- * nothing else.
+ * Leave `icon` off where the brand has no mark in the set — C#, OpenXR, GLSL
+ * and Protocol Buffers all genuinely have none. The chip is then text only,
+ * which is honest. A hand-drawn stand-in is not, and is the thing this replaced.
  */
-export type IconSlug =
-  | 'code'
-  | 'bolt'
-  | 'database'
-  | 'spark'
-  | 'atom'
-  | 'cube'
-  | 'nut'
-  | 'layers'
-  | 'mesh'
-  | 'headset';
-
-export const ICONS: Readonly<Record<IconSlug, string>> = {
-  /** Chevrons — a programming language. */
-  code: 'M9 5.6 L10.6 7.2 L5.8 12 L10.6 16.8 L9 18.4 L2.6 12 Z M15 5.6 L21.4 12 L15 18.4 L13.4 16.8 L18.2 12 L13.4 7.2 Z',
-  /** A bolt — a framework whose point is speed. */
-  bolt: 'M13 2 L4 14 L11 14 L10 22 L20 10 L13 10 Z',
-  /** A cylinder — a database. */
-  database:
-    'M12 2 C7 2 3.5 3.3 3.5 5 C3.5 6.7 7 8 12 8 C17 8 20.5 6.7 20.5 5 C20.5 3.3 17 2 12 2 Z M3.5 8.2 L3.5 12 C3.5 13.7 7 15 12 15 C17 15 20.5 13.7 20.5 12 L20.5 8.2 C18.6 9.4 15.5 10 12 10 C8.5 10 5.4 9.4 3.5 8.2 Z M3.5 15.2 L3.5 19 C3.5 20.7 7 22 12 22 C17 22 20.5 20.7 20.5 19 L20.5 15.2 C18.6 16.4 15.5 17 12 17 C8.5 17 5.4 16.4 3.5 15.2 Z',
-  /** A four-point star — a model API. */
-  spark: 'M12 2 L14 10 L22 12 L14 14 L12 22 L10 14 L2 12 L10 10 Z',
-  /** An orbit — a component library. */
-  atom: 'M12 4 C17.5 4 22 7.6 22 12 C22 16.4 17.5 20 12 20 C6.5 20 2 16.4 2 12 C2 7.6 6.5 4 12 4 Z M12 6 C7.6 6 4 8.7 4 12 C4 15.3 7.6 18 12 18 C16.4 18 20 15.3 20 12 C20 8.7 16.4 6 12 6 Z M12 9.5 C13.4 9.5 14.5 10.6 14.5 12 C14.5 13.4 13.4 14.5 12 14.5 C10.6 14.5 9.5 13.4 9.5 12 C9.5 10.6 10.6 9.5 12 9.5 Z',
-  /** An isometric cube — a game engine. */
-  cube: 'M12 2 L21 7 L12 12 L3 7 Z M3 8.5 L11 13 L11 22 L3 17.5 Z M21 8.5 L21 17.5 L13 22 L13 13 Z',
-  /** A hex nut — systems work. */
-  nut: 'M12 2 L21 7 L21 17 L12 22 L3 17 L3 7 Z M12 6 L6.5 9.1 L6.5 14.9 L12 18 L17.5 14.9 L17.5 9.1 Z',
-  /** Stacked planes — a wire format. */
-  layers:
-    'M12 2 L22 7.5 L12 13 L2 7.5 Z M4.2 10.2 L12 14.5 L19.8 10.2 L22 11.4 L12 17 L2 11.4 Z M4.2 14.2 L12 18.5 L19.8 14.2 L22 15.4 L12 21 L2 15.4 Z',
-  /** A polygon outline — a graphics API. */
-  mesh: 'M12 2 L22 20 L2 20 Z M12 7 L6.2 17.5 L17.8 17.5 Z',
-  /** Goggles — an XR runtime. */
-  headset:
-    'M4 7 L20 7 C21.1 7 22 7.9 22 9 L22 15 C22 16.1 21.1 17 20 17 L15 17 L12 14 L9 17 L4 17 C2.9 17 2 16.1 2 15 L2 9 C2 7.9 2.9 7 4 7 Z',
-};
-
 export interface Tech {
-  readonly icon: IconSlug;
+  readonly icon?: string;
   readonly label: string;
 }
 
@@ -305,12 +263,12 @@ export const PROJECT_DETAILS: readonly ProjectDetail[] = [
     n: 1,
     title: CONTENT.PROJECT_1_TITLE,
     tech: [
-      { icon: 'code', label: 'Python' },
-      { icon: 'bolt', label: 'FastAPI' },
-      { icon: 'database', label: 'PostgreSQL' },
-      { icon: 'spark', label: 'Claude API' },
-      { icon: 'atom', label: 'React' },
-      { icon: 'code', label: 'TypeScript' },
+      { icon: 'python', label: 'Python' },
+      { icon: 'fastapi', label: 'FastAPI' },
+      { icon: 'postgresql', label: 'PostgreSQL' },
+      { icon: 'claude', label: 'Claude API' },
+      { icon: 'react', label: 'React' },
+      { icon: 'typescript', label: 'TypeScript' },
     ],
   },
   {
@@ -318,10 +276,10 @@ export const PROJECT_DETAILS: readonly ProjectDetail[] = [
     n: 2,
     title: CONTENT.PROJECT_2_TITLE,
     tech: [
-      { icon: 'cube', label: 'Unity' },
-      { icon: 'code', label: 'C#' },
-      { icon: 'nut', label: 'Rust' },
-      { icon: 'layers', label: 'Protocol Buffers' },
+      { icon: 'unity', label: 'Unity' },
+      { label: 'C#' },
+      { icon: 'rust', label: 'Rust' },
+      { label: 'Protocol Buffers' },
     ],
   },
   {
@@ -329,19 +287,15 @@ export const PROJECT_DETAILS: readonly ProjectDetail[] = [
     n: 3,
     title: CONTENT.PROJECT_3_TITLE,
     tech: [
-      { icon: 'code', label: 'C++' },
-      { icon: 'mesh', label: 'OpenGL' },
-      { icon: 'mesh', label: 'GLSL' },
+      { icon: 'cplusplus', label: 'C++' },
+      { icon: 'opengl', label: 'OpenGL' },
+      { label: 'GLSL' },
     ],
   },
   {
     id: 'p4',
     n: 4,
     title: CONTENT.PROJECT_4_TITLE,
-    tech: [
-      { icon: 'cube', label: 'Unity' },
-      { icon: 'code', label: 'C#' },
-      { icon: 'headset', label: 'OpenXR' },
-    ],
+    tech: [{ icon: 'unity', label: 'Unity' }, { label: 'C#' }, { label: 'OpenXR' }],
   },
 ];

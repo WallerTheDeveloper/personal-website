@@ -332,22 +332,38 @@ test.describe('the video facade', () => {
 });
 
 test.describe('the tech tags', () => {
-  test('are filled from the content table when the detail opens', async ({ page }) => {
+  test('are in the document before anything opens', async ({ page }) => {
+    // They are rendered into the served HTML by `build/project-tags.ts`, not
+    // built when a detail opens. That is what puts them in the text edition and
+    // the printed CV, so "already there" is the assertion, not a detail worth
+    // waiting for.
     await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
 
-    // Empty in the markup, so the `:empty` rule keeps it out of the flat
-    // document and the printed CV entirely.
     const list = page.locator(`${detail('p1')} .project__tech`);
-    await expect(list.locator('li')).toHaveCount(0);
-
-    await page.locator('a[href="#projects/p1"]').click();
     const tags = list.locator('li');
     await expect(tags).toHaveCount(6);
     await expect(tags.first()).toHaveText('Python');
     // One glyph per tag, hidden from assistive tech — the label already says it.
     await expect(list.locator('svg')).toHaveCount(6);
     await expect(list.locator('svg').first()).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('render a brand with no mark as a text-only chip', async ({ page }) => {
+    // C# has no logo in simple-icons. Text only is the designed answer — the
+    // hand-drawn stand-ins are exactly what this replaced — so the chip must
+    // still be there, and still be a chip.
+    await openHub(page, '/#projects/p2');
+    await waitForPanel(page, 'projects');
+
+    const list = page.locator(`${detail('p2')} .project__tech`);
+    await expect(list.locator('li')).toHaveCount(4);
+    // Unity and Rust are marked; C# and Protocol Buffers are not.
+    await expect(list.locator('svg')).toHaveCount(2);
+
+    const bare = list.locator('li', { hasText: 'C#' });
+    await expect(bare).toHaveCount(1);
+    await expect(bare.locator('svg')).toHaveCount(0);
   });
 
   test('draw a real glyph, tinted with the panel accent', async ({ page }) => {
@@ -376,7 +392,8 @@ test.describe('the tech tags', () => {
   test('every glyph in the table draws something', async ({ page }) => {
     // One malformed path would render as an empty box, and only on the one
     // project that uses it. This walks all four details so the whole set is
-    // covered by a single pass.
+    // covered by a single pass. They have to be *opened* rather than just read
+    // off the closed markup: `getBBox()` on a `display: none` subtree is zero.
     await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
     for (const project of ['p1', 'p2', 'p3', 'p4']) {

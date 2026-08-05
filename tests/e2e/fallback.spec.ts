@@ -62,6 +62,18 @@ async function expectFlatDocument(page: Page): Promise<void> {
     await expect(details.nth(i)).toBeVisible();
     await expect(details.nth(i)).toHaveCSS('position', 'static');
   }
+
+  // The tech tag rows are rendered into the served HTML at build time, which is
+  // the whole reason they moved out of `project-detail.ts` — a row built when a
+  // dialog opens is a row this document never gets, and this is the edition
+  // that has no dialogs.
+  const rows = page.locator('.project__tech');
+  await expect(rows).toHaveCount(4);
+  for (let i = 0; i < 4; i += 1) {
+    await expect(rows.nth(i)).toBeVisible();
+    await expect(rows.nth(i).locator('li').first()).toBeVisible();
+  }
+  await expect(page.locator('.project__tag svg').first()).toBeVisible();
 }
 
 /** Follow a text-edition card and prove the browser actually went there. */

@@ -303,11 +303,13 @@
               <li>{{PROJECT_1_POINT_1}}</li>
               <li>{{PROJECT_1_POINT_2}}</li>
             </ul>
-            <!-- Filled from PROJECT_DETAILS when the detail opens. Empty in the
-                 markup on purpose: four projects of inline SVG is served HTML a
-                 no-JS visitor pays for and cannot use, and the card's
-                 `Stack — …` line above is already the text edition of this list.
-                 `.project__tech:empty` is what makes it cost nothing unfilled. -->
+            <!-- Filled at build time by `build/project-tags.ts`, from
+                 PROJECT_DETAILS, with brand marks resolved out of simple-icons.
+                 Empty here and written exactly this way because that is the
+                 literal the plugin matches — and it throws on a slot it cannot
+                 place, so an edited attribute fails the build rather than
+                 shipping a blank row. Filling it in the build is what puts the
+                 row in the text edition and in the printed CV. -->
             <ul class="project__tech" data-tech="p1"></ul>
             <div class="project__links">
               <a href="#" target="_blank" rel="noopener" data-repo="1" class="project__link">Repository ↗</a>

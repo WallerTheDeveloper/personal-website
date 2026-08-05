@@ -29,7 +29,12 @@ const ESCAPES: Readonly<Record<string, string>> = {
   "'": '&#39;',
 };
 
-function escapeHtml(value: string): string {
+/**
+ * Shared with `project-tags.ts`, which escapes tag labels for the same reason:
+ * one escaper, so "C#" and an ampersand in a label cannot break the markup in
+ * one pipeline and not the other.
+ */
+export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ESCAPES[character] ?? character);
 }
 

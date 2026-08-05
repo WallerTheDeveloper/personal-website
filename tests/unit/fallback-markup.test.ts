@@ -14,10 +14,18 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { PANEL_IDS, PROJECT_DETAIL_IDS } from '../../src/content';
+import { fillTags } from '../../build/project-tags';
+import { PANEL_IDS, PROJECT_DETAILS, PROJECT_DETAIL_IDS } from '../../src/content';
 
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../../src/styles.css', import.meta.url), 'utf8');
+
+/**
+ * What a no-JS visitor is actually sent. The authored markup ships the tag rows
+ * empty and the build fills them, so anything asserting the text edition is
+ * *complete* has to look at the transformed HTML, not at the file.
+ */
+const served = fillTags(html);
 
 describe('the document ships flat', () => {
   it('carries data-dg-flat on <html>', () => {
@@ -90,6 +98,26 @@ describe('in-page anchors', () => {
     for (const href of covers) {
       expect(href).toMatch(/^https:\/\/www\.youtube\.com\/watch\?v=/);
     }
+  });
+
+  it('carries the tech tag rows in the served bytes, drawn and labelled', () => {
+    // These used to be built when a detail opened, which meant the text edition
+    // and the printed CV never had them. Rendering at build time is what closes
+    // that gap, so the assertion is on the served HTML rather than on the file.
+    for (const entry of PROJECT_DETAILS) {
+      const row =
+        new RegExp(`<ul class="project__tech" data-tech="${entry.id}">(.*?)</ul>`, 's').exec(
+          served,
+        )?.[1] ?? '';
+      expect(row, `${entry.id} has no tags in the served markup`).not.toBe('');
+      for (const tech of entry.tech) {
+        expect(row, `${entry.id} is missing ${tech.label}`).toContain(tech.label);
+      }
+    }
+    // The marks are inline paths. simple-icons is a devDependency read during
+    // the build — nothing may reference it as a subresource.
+    expect(served).toContain('<path fill="currentColor" d="M');
+    expect(served).not.toMatch(/(?:src|href)="[^"]*simple-icons/);
   });
 
   it('names no third-party host in the served markup', () => {

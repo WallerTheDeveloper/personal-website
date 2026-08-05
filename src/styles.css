@@ -1231,11 +1231,6 @@ a:hover { color: var(--hover); }
   list-style: none;
 }
 
-/* Filled from the content table when a detail opens, so it is empty everywhere
-   else: the text edition, the printed CV, and a load where the module failed.
-   An empty list must not leave a gap where a row would have been. */
-.project__tech:empty { display: none; }
-
 .project__tag {
   display: inline-flex;
   align-items: center;
