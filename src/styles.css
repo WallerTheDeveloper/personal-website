@@ -939,8 +939,6 @@ a:hover { color: var(--hover); }
 .entry .stack,
 .employment__entry .stack { margin-top: 20px; }
 
-.card--project .stack { margin-top: 18px; }
-
 .card {
   padding: clamp(24px, 3.4vw, 32px);
   background: var(--void-2);

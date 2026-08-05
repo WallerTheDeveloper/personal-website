@@ -101,51 +101,41 @@ export const CONTENT = {
   // done for clients." That notice is markup, not a token, and never comes out.
   PROJECTS_INTRO: 'Showcase of my freelance work including web applications, XR experiences, backend systems and simulations',
 
+  // A project's card is title, status and summary; everything else it has to say
+  // is in `content/projects/pN.html`, which the owner writes as plain HTML and
+  // the build inlines. `_DESCRIPTION`, `_POINT_1`, `_POINT_2` and `_STACK` were
+  // retired into those files — a fixed set of copy slots is the wrong shape for
+  // describing a project, and the tag row below covers what `_STACK` did.
   PROJECT_1_TITLE: 'Pick MA Job',
   PROJECT_1_STATUS: 'Live, multiple active users',
   PROJECT_1_SUMMARY: 'Pick Ma Job is a multi-user SaaS platform that scrapes job postings from Upwork and LinkedIn, evaluates every posting against your profile using Anthropics Claude API, and presents only the most relevant opportunities in a clean, modern React UI',
-  PROJECT_1_POINT_1: 'Scrapes Upwork and LinkedIn job postings via Apify actors. Extensible to new platforms in minutes',
-  PROJECT_1_POINT_2: 'Upload your CV as PDF, describe your skills and preferences — every job is evaluated against your actual profile',
-  PROJECT_1_DESCRIPTION: '{{PROJECT_1_DESCRIPTION}}',
-  // The `v` of a YouTube watch URL, nothing else. It is substituted into the
-  // href at build time, so the no-JS edition gets a real link in the served
-  // bytes; the facade in `project-detail.ts` reads the id back off that href
-  // rather than from a second table.
+  // The `v` of a YouTube watch URL, nothing else. It is substituted into both of
+  // the project's video links at build time — the card's and the detail's — so
+  // the no-JS edition gets real links in the served bytes; the facade in
+  // `project-detail.ts` reads the id back off the href rather than from a
+  // second table.
   PROJECT_1_VIDEO_ID: '{{PROJECT_1_VIDEO_ID}}',
-  PROJECT_1_STACK: 'FastAPI, Python, PostgreSQL 14+, Claude API, Apify, Resend, SlowAPI, pypdf, React, TypeScript, Tailwind CSS 4, Vite 6, TanStack Query, Zod, Vitest',
   PROJECT_1_REPO_URL: 'https://github.com/WallerTheDeveloper/pick-ma-job',
   PROJECT_1_DEMO_URL: 'https://pickmajob.cc/',
 
   PROJECT_2_TITLE: 'Paper.io 2 Clone (Multiplayer Game with custom built server)',
   PROJECT_2_STATUS: 'Finished prototype',
   PROJECT_2_SUMMARY: 'A fully authoritative multiplayer territory-capture game inspired by Voodoo Paper.io⁠ 2. Built with a custom Rust server and Unity 3D client (URP) featuring real-time state sync, procedural trail rendering, flood-fill territory claiming, and client-side prediction',
-  PROJECT_2_POINT_1: 'The client never determines game outcomes. The server owns simulation, collision, and territory state. The client handles input, rendering, and prediction',
-  PROJECT_2_POINT_2: 'Client is built with Unity 3D (URP) and C#, server is built with Rust and Tokio. The server uses a custom binary protocol over TCP for low-latency state sync',
-  PROJECT_2_DESCRIPTION: '{{PROJECT_2_DESCRIPTION}}',
   PROJECT_2_VIDEO_ID: '{{PROJECT_2_VIDEO_ID}}',
-  PROJECT_2_STACK: 'Unity 6, C#, Rust, Tokio, TCP, UDP, Google.Protobuf',
   PROJECT_2_REPO_URL: 'https://github.com/WallerTheDeveloper/paperio-clone',
   PROJECT_2_DEMO_URL: 'https://wallerthedeveloper.itch.io/paperio-clone',
 
   PROJECT_3_TITLE: 'Solar System Simulation',
   PROJECT_3_STATUS: 'Finished prototype',
   PROJECT_3_SUMMARY: 'A real-time 3D visualization of our solar system, built from scratch using C++ and OpenGL. This project showcases accurate orbital mechanics, realistic planet rendering, and an interactive camera system that lets you explore space at your own pace',
-  PROJECT_3_POINT_1: 'Project showcases a custom graphics engine architecture built for real-time 3D rendering. While the solar system simulation demonstrates orbital mechanics using Keplers laws, the underlying engine is designed to be extended into different 3D applications',
-  PROJECT_3_POINT_2: 'The simulation features accurate orbital mechanics, realistic planet textures, and a dynamic camera system that allows users to explore the solar system from various perspectives',
-  PROJECT_3_DESCRIPTION: '{{PROJECT_3_DESCRIPTION}}',
   PROJECT_3_VIDEO_ID: '{{PROJECT_3_VIDEO_ID}}',
-  PROJECT_3_STACK: 'C++, OpenGL, GLSL, GLM, GLFW, stb_image, GLAD',
   PROJECT_3_REPO_URL: 'https://github.com/WallerTheDeveloper/solar-system-opengl',
   PROJECT_3_DEMO_URL: 'https://wallerthedeveloper.itch.io/solar-system-simulation',
 
   PROJECT_4_TITLE: 'VR Tower Defense',
   PROJECT_4_STATUS: 'Finished prototype',
   PROJECT_4_SUMMARY: 'A Virtual Reality tower defense game built with Unity, featuring immersive spatial gameplay where players defend their headquarters using strategic tower placement. Project uses Passthrough feature. Players must defend their headquarters from enemy attacks by strategically placing and managing different types of towers. The VR implementation allows for intuitive hand-based interactions and immersive spatial awareness that traditional tower defense games cannot provide',
-  PROJECT_4_POINT_1: 'Players must defend their headquarters from enemy attacks by strategically placing and managing different types of towers',
-  PROJECT_4_POINT_2: 'Pinch Gestures for natural selection mechanics',
-  PROJECT_4_DESCRIPTION: '{{PROJECT_4_DESCRIPTION}}',
   PROJECT_4_VIDEO_ID: '{{PROJECT_4_VIDEO_ID}}',
-  PROJECT_4_STACK: 'Unity Engine, C#, OpenXR',
   PROJECT_4_REPO_URL: 'https://github.com/WallerTheDeveloper/vr-tower-defense',
   PROJECT_4_DEMO_URL: 'https://www.linkedin.com/feed/update/urn:li:activity:7366896687132356609/',
 
