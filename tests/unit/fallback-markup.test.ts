@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-import { PANEL_IDS } from '../../src/content';
+import { PANEL_IDS, PROJECT_DETAIL_IDS } from '../../src/content';
 
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../../src/styles.css', import.meta.url), 'utf8');
@@ -50,6 +50,30 @@ describe('in-page anchors', () => {
   it('keeps the panels on their `panel-` ids, so the two never collide', () => {
     for (const id of PANEL_IDS) {
       expect(html).toContain(`id="panel-${id}" data-panel="${id}"`);
+    }
+  });
+
+  it('gives every project detail the id its sub-route points at', () => {
+    // `#projects/pN` is only a working no-JS destination because the detail
+    // carries that exact id — and the dangling-href sweep below is what makes
+    // the pair load-bearing rather than decorative. Changing the separator
+    // breaks both at once, which is the point of asserting the literal here.
+    for (const project of PROJECT_DETAIL_IDS) {
+      expect(html).toContain(`id="projects/${project}" class="project__detail"`);
+    }
+  });
+
+  it('keeps each project detail on exactly one repo/demo pair', () => {
+    // The links moved out of the card and into the detail. They are still one
+    // per project, so `PROJECT_LINKS` and `applyLinks()` are unchanged — this
+    // catches a copy-paste that left two details sharing a slot number, which
+    // `content.test.ts` cannot see because it only counts the slots site-wide.
+    const starts = PROJECT_DETAIL_IDS.map((p) => html.indexOf(`id="projects/${p}"`));
+    for (const [i, from] of starts.entries()) {
+      expect(from).toBeGreaterThan(-1);
+      const detail = html.slice(from, starts[i + 1] ?? html.indexOf('</section>', from));
+      expect(detail.match(/data-repo="\d+"/g)).toEqual([`data-repo="${i + 1}"`]);
+      expect(detail.match(/data-demo="\d+"/g)).toEqual([`data-demo="${i + 1}"`]);
     }
   });
 

@@ -1093,6 +1093,60 @@ a:hover { color: var(--hover); }
 }
 
 /* ---------------------------------------------------------------------------
+   Project detail
+
+   In the markup this is the rest of the project, in flow, directly under its
+   own card — and that is exactly what the text edition and the printed CV
+   render, with no JS and no overrides. Everything that turns it into a centred
+   dialog is gated on `html[data-dg-3d]` further down, so the flat document,
+   which is the state index.html ships in, never sees one and the flat block at
+   the bottom of this file needs no line of its own.
+
+   `.projects` is a grid with a 20px gap, so without the `.project` wrapper a
+   card and its own detail would sit as far apart as two different projects.
+   The wrapper makes `.projects` a grid *of projects*; inside it the detail
+   butts against its card on a single shared hairline.
+   --------------------------------------------------------------------------- */
+
+.project__dialog {
+  padding: clamp(22px, 3.4vw, 34px);
+  background: var(--void-2);
+  border: 1px solid var(--rule-card);
+  /* The card above already drew this edge. Two 1px borders meeting would read
+     as one 2px rule, which is not a weight this site uses anywhere. */
+  border-top: 0;
+  /* Same reason as `.card`: the column can shrink, so the text in it must wrap. */
+  overflow-wrap: anywhere;
+}
+
+/* The status line again, as a block above the title rather than beside it.
+   Reuses `.project__status` wholesale — this only puts the <p> margin back. */
+.project__detail-eyebrow { margin: 0; }
+
+.project__detail-title {
+  margin: 10px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(calc(23px * var(--type-scale)), calc(2.8vw * var(--type-scale)), calc(28px * var(--type-scale)));
+  line-height: 1.2;
+  color: var(--ink-head);
+}
+
+.project__tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Filled from the content table when a detail opens, so it is empty everywhere
+   else: the text edition, the printed CV, and a load where the module failed.
+   An empty list must not leave a gap where a row would have been. */
+.project__tech:empty { display: none; }
+
+/* ---------------------------------------------------------------------------
    XR — Employment
 
    The only employment styling in the site: 2px accent top rule, larger
