@@ -8,8 +8,6 @@ flew to frames the page and parallaxes as you scroll.
 
 **Live:** <https://wallerthedeveloper.github.io/personal-website/>
 
-![The hub: four planets in a starfield, each labelled with a destination](screenshots/01-hub.png)
-
 ## Two editions of the same site
 
 Everything is one document, one WebGL context, no backend.
@@ -22,8 +20,6 @@ Everything is one document, one WebGL context, no backend.
   it knows WebGL can run. No JavaScript, no WebGL, a crawler, or a print dialog
   all get the whole site, and `Ctrl+P` flattens all four panels into one
   continuous document.
-
-![The text edition: the same CV without WebGL](screenshots/06-text-edition.png)
 
 ## Stack
 
