@@ -242,12 +242,46 @@ test.describe('the video facade', () => {
   }
 
   /**
+   * Put every video cover back to the unfilled state, before anything reads one.
+   *
+   * These tests count requests to Google hosts, so they have to know exactly how
+   * many facades exist. That used to be free: every `PROJECT_n_VIDEO_ID` shipped
+   * as an unfilled token, so the only facade in the document was the one the
+   * test had just built. It stopped being free the moment the owner filled some
+   * of the tokens — which is the entire point of the tokens, and must therefore
+   * never be a test failure.
+   *
+   * So the fixture owns the state now. Blank all four here, fill the one under
+   * test with `giveVideo`/`giveCardVideo`, and the counts below hold whatever
+   * `src/content.ts` happens to contain.
+   *
+   * An empty `v` is unfilled as far as `videoIdFrom()` is concerned — it fails
+   * the `[\w-]{6,20}` test the same way `{{PROJECT_1_VIDEO_ID}}` does, and
+   * without depending on how a browser encodes braces in an href.
+   */
+  async function clearVideos(page: Page): Promise<void> {
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        for (const cover of document.querySelectorAll<HTMLAnchorElement>('.project__video-cover')) {
+          cover.href = 'https://www.youtube.com/watch?v=';
+        }
+      });
+    });
+  }
+
+  // Registered before anything in a test body, and before `giveCardVideo`'s own
+  // init script — both listen for DOMContentLoaded, and listeners run in the
+  // order they were added, so the blanking always lands first.
+  test.beforeEach(async ({ page }) => {
+    await clearVideos(page);
+  });
+
+  /**
    * Fill one project's video id in the DOM, the way the build would.
    *
-   * The tokens ship unfilled — the owner supplies the ids — so without this
-   * there is no video to build a facade for and the tests below would assert
-   * the empty case twice. Set before the detail opens, because the facade is
-   * built by `show()`.
+   * `clearVideos` has just blanked all four, so without this there is no video
+   * to build a facade for and the tests below would assert the empty case twice.
+   * Set before the detail opens, because the facade is built by `show()`.
    */
   async function giveVideo(page: Page, project: string, id: string): Promise<void> {
     await page.evaluate(
@@ -268,8 +302,8 @@ test.describe('the video facade', () => {
    *
    * Card facades are upgraded by the router's `commit()`, the first time the
    * Projects panel is committed to, which is well before a `page.evaluate()`
-   * could run. Only the named project is filled, so the other three stay in the
-   * shipped unfilled state and the request count below stays readable.
+   * could run. Only the named project is filled — `clearVideos` blanked the
+   * other three — so the request counts below stay readable.
    */
   async function giveCardVideo(page: Page, project: string, id: string): Promise<void> {
     await page.addInitScript(
@@ -293,9 +327,10 @@ test.describe('the video facade', () => {
     page.locator('.card--project', { has: page.locator(`a[href="#projects/${project}"]`) });
 
   test('asks Google for nothing while no video is filled in', async ({ page }) => {
-    // The shipped state. An unfilled `{{PROJECT_n_VIDEO_ID}}` is not a usable
-    // id, so no facade is built and the plain link is what is left — which is
-    // still a working link once the owner fills the token.
+    // The unfilled state, which `clearVideos` pins rather than borrowing it from
+    // whatever `src/content.ts` currently holds. An unfilled
+    // `{{PROJECT_n_VIDEO_ID}}` is not a usable id, so no facade is built and the
+    // plain link is what is left — still a working link once the owner fills it.
     const seen = watchThirdParty(page);
     await openHub(page, '/#projects/p1');
     await waitForPanel(page, 'projects');

@@ -1,10 +1,88 @@
-<!-- Seeded from PROJECT_2_POINT_1, _POINT_2 and _STACK when those tokens were
-     retired. A starting point, not finished writing — see the README here. -->
-<h4>Highlights</h4>
-<ul>
-  <li>The client never determines game outcomes. The server owns simulation, collision, and territory state. The client handles input, rendering, and prediction</li>
-  <li>Client is built with Unity 3D (URP) and C#, server is built with Rust and Tokio. The server uses a custom binary protocol over TCP for low-latency state sync</li>
-</ul>
+<div class="callout callout--note">
+  <p>A <strong>fully authoritative multiplayer</strong> territory-capture game inspired by Voodoo's Paper.io 2. Built with a <strong>custom Rust server</strong> and <strong>Unity 3D client</strong> (URP) featuring real-time state sync, procedural trail rendering, flood-fill territory claiming, and client-side prediction.</p>
+</div>
+<div class="callout callout--note">
+  <p><strong>⚠️ Portfolio project</strong> &mdash; Built as a technical showcase for a Senior Game Developer application at Voodoo, the original creators of Paper.io. All mechanics reimplemented from scratch &mdash; no original code or assets used.</p>
+</div>
 
-<h4>Stack</h4>
-<p>Unity 6, C#, Rust, Tokio, TCP, UDP, Google.Protobuf</p>
+<h4>Core Features</h4>
+<div class="features">
+  <div class="feature">
+    <strong>◈ Territory Claiming</strong>
+    <p>Draw trails outside your zone and return home to claim everything enclosed. Uses edge-based flood-fill to determine captured regions &mdash; including enemy territory.</p>
+  </div>
+  <div class="feature">
+    <strong>⚡ Trail Collisions</strong>
+    <p>Cross any player's trail (or your own) and they're eliminated. Head-on collisions, self-intersections, and boundary kills &mdash; all server-side.</p>
+  </div>
+  <div class="feature">
+    <strong>↻ Respawn System</strong>
+    <p>Eliminated players respawn after a short delay with brief invulnerability. Spawn algorithm ensures safe distance from other players.</p>
+  </div>
+  <div class="feature">
+    <strong>▦ 3D Rendering</strong>
+    <p>Procedural mesh generation for territory and trails in full 3D. Vertex-colored grid, glowing emissive trails, smooth position interpolation.</p>
+  </div>
+  <div class="feature">
+    <strong>⟐ Client-Side Prediction</strong>
+    <p>Local input applied immediately with pending input buffering. Server reconciliation replays unacknowledged inputs on authoritative state arrival.</p>
+  </div>
+  <div class="feature">
+    <strong>△ Delta Compression</strong>
+    <p>Only changed cells and players transmitted per tick. Full state on join and periodically. RLE encoding for territory chunks minimizes bandwidth.</p>
+  </div>
+</div>
+
+<h4>How to Play</h4>
+<p>Move your avatar across the grid with <strong>WASD</strong>. When you leave your colored territory, you start leaving a <strong>trail</strong>. Return to your territory to <strong>claim</strong> everything your trail encloses &mdash; including enemy land. If another player crosses your trail before you close it, you're <strong>eliminated</strong>.</p>
+
+<h4>Architecture</h4>
+<p>Designed around a strict <strong>authoritative server</strong> model &mdash; the client never determines game outcomes. The server owns simulation, collision detection, and territory state.</p>
+<table>
+  <tr>
+    <th>Layer</th>
+    <th>Technology</th>
+    <th>Details</th>
+  </tr>
+  <tr>
+    <td><strong>Server</strong></td>
+    <td>Rust + Tokio</td>
+    <td>Async game server at 20 tick/s. Sessions, rooms, simulation, collision, flood-fill, protobuf broadcasting</td>
+  </tr>
+  <tr>
+    <td><strong>Client</strong></td>
+    <td>Unity (URP)</td>
+    <td>Universal Render Pipeline. Procedural mesh generation. New Input System. Object pooling</td>
+  </tr>
+  <tr>
+    <td><strong>Protocol</strong></td>
+    <td>Protobuf over UDP</td>
+    <td>Binary serialization with sequence numbering. State, delta, input, and join response messages</td>
+  </tr>
+  <tr>
+    <td><strong>Transport</strong></td>
+    <td>Custom UDP</td>
+    <td>Lightweight game-agnostic transport. Session management, sequence checking, duplicate filtering</td>
+  </tr>
+</table>
+
+<h5>Server Responsibilities</h5>
+<table>
+  <tr><th>System</th><th>What it does</th></tr>
+  <tr><td><strong>Tick Loop</strong></td><td>Runs at 20 Hz (50 ms). Processes inputs, advances simulation, broadcasts state</td></tr>
+  <tr><td><strong>Movement</strong></td><td>Grid-based. Direction changes apply next tick. Boundary collision handling</td></tr>
+  <tr><td><strong>Trail System</strong></td><td>Tracks positions outside own territory. Triggers claim on return home</td></tr>
+  <tr><td><strong>Territory</strong></td><td>Converts trail cells + flood-fill from edges to find enclosed regions</td></tr>
+  <tr><td><strong>Collision</strong></td><td>Trail crossing, self-intersection, head-on collision, boundary elimination</td></tr>
+  <tr><td><strong>Respawn</strong></td><td>Delayed respawn with invulnerability. Safe spawn distance algorithm</td></tr>
+</table>
+
+<h5>Client Responsibilities</h5>
+<table>
+  <tr><th>System</th><th>What it does</th></tr>
+  <tr><td><strong>Prediction</strong></td><td>Applies local input immediately. Buffers pending inputs with sequence numbers</td></tr>
+  <tr><td><strong>Reconciliation</strong></td><td>Snaps to authoritative position, replays unacknowledged inputs</td></tr>
+  <tr><td><strong>Territory</strong></td><td>Procedural mesh with vertex colours per cell. Updates on delta arrival</td></tr>
+  <tr><td><strong>Trail</strong></td><td>3D tube geometry with emissive glow. Per-player trail tracking and pooling</td></tr>
+  <tr><td><strong>Interpolation</strong></td><td>Smooths movement between server ticks for all remote players</td></tr>
+</table>

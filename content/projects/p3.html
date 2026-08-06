@@ -1,10 +1,134 @@
-<!-- Seeded from PROJECT_3_POINT_1, _POINT_2 and _STACK when those tokens were
-     retired. A starting point, not finished writing — see the README here. -->
-<h4>Highlights</h4>
+<div class="callout">
+  <p>Solar System Simulation is a real-time 3D visualization of our solar system, built from scratch using C++ and OpenGL. This project showcases accurate orbital mechanics, realistic planet rendering, and an interactive camera system that lets you explore space at your own pace.</p>
+  <p>Perfect for space enthusiasts, students, or anyone curious about our cosmic neighborhood!</p>
+</div>
+
+<h4>✨ Key Features</h4>
+
+<h5>Realistic Physics Simulation</h5>
 <ul>
-  <li>Project showcases a custom graphics engine architecture built for real-time 3D rendering. While the solar system simulation demonstrates orbital mechanics using Keplers laws, the underlying engine is designed to be extended into different 3D applications</li>
-  <li>The simulation features accurate orbital mechanics, realistic planet textures, and a dynamic camera system that allows users to explore the solar system from various perspectives</li>
+  <li><strong>Accurate orbital mechanics</strong> - Planets follow elliptical orbits based on real astronomical data (semi-major axis, eccentricity)</li>
+  <li><strong>Proper scale relationships</strong> - Realistic distance and size ratios between celestial bodies</li>
+  <li><strong>Real-time orbital motion</strong> - Watch planets orbit the Sun at calculated velocities based on Kepler's laws</li>
+  <li><strong>Authentic rotation speeds</strong> - Each planet rotates at speeds proportional to their real rotation periods</li>
 </ul>
 
-<h4>Stack</h4>
-<p>C++, OpenGL, GLSL, GLM, GLFW, stb_image, GLAD</p>
+<h5>All 8 Planets + The Sun</h5>
+<ul>
+  <li>Mercury</li>
+  <li>Venus</li>
+  <li>Earth</li>
+  <li>Mars</li>
+  <li>Jupiter</li>
+  <li>Saturn (with its iconic rings!)</li>
+  <li>Uranus</li>
+  <li>Neptune</li>
+  <li>The Sun at the center</li>
+</ul>
+
+<h5>Interactive 3D Environment</h5>
+<ul>
+  <li><strong>Free camera movement</strong> - Fly through space with WASD controls</li>
+  <li><strong>Mouse look</strong> - Look around naturally with your mouse</li>
+  <li><strong>Zoom functionality</strong> - Get up close to planets or pull back for the full view</li>
+  <li><strong>Planet selection</strong> - Click on any planet to select it and view detailed information</li>
+  <li><strong>Information panels</strong> - See real data about each celestial body:
+    <ul>
+      <li>Distance from Sun (in AU)</li>
+      <li>Temperature</li>
+      <li>Planet type</li>
+      <li>Mass (relative to Earth)</li>
+      <li>Diameter</li>
+      <li>Number of moons</li>
+    </ul>
+  </li>
+</ul>
+
+<h5>Technical Highlights</h5>
+<ul>
+  <li><strong>Custom OpenGL rendering engine</strong> - Built from the ground up</li>
+  <li><strong>Real-time text rendering</strong> - On-screen UI and planet information</li>
+  <li><strong>Skybox environment</strong> - Immersive space backdrop</li>
+  <li><strong>Custom shader system</strong> - To control shader usage from different classes</li>
+  <li><strong>Optimized performance</strong> - Smooth 60+ FPS experience</li>
+  <li><strong>Clean Architecture</strong> - Built with OOP and design patterns</li>
+</ul>
+
+<h5>User-Friendly Interface</h5>
+<ul>
+  <li><strong>Clear on-screen controls</strong> - Always know what keys to press</li>
+  <li><strong>FPS counter</strong> - Monitor performance</li>
+  <li><strong>Camera position display</strong> - Know where you are in 3D space</li>
+  <li><strong>Crosshair targeting</strong> - Easily select planets</li>
+  <li><strong>Fullscreen support</strong> - Immersive viewing experience</li>
+</ul>
+
+<h4>🎮 Controls</h4>
+<table>
+  <tr><th>Function</th><th>Description</th></tr>
+  <tr><td>W/A/S/D</td><td>Move camera forward/left/backward/right</td></tr>
+  <tr><td>Mouse</td><td>Look around</td></tr>
+  <tr><td>Scroll Wheel</td><td>Zoom in/out</td></tr>
+  <tr><td>Shift</td><td>Move 5x faster</td></tr>
+  <tr><td>Left Click</td><td>Select planet under crosshair</td></tr>
+  <tr><td>Shift + Enter</td><td>Toggle fullscreen</td></tr>
+  <tr><td>ESC</td><td>Exit application</td></tr>
+</table>
+
+<h4>🖥️ System Requirements</h4>
+<div class="features">
+  <div class="feature">
+    <strong>Minimum</strong>
+    <ul>
+      <li><strong>OS</strong>: Windows 10/11</li>
+      <li><strong>Processor</strong>: Dual-core CPU, 2.0 GHz</li>
+      <li><strong>Memory</strong>: 2 GB RAM</li>
+      <li><strong>Graphics</strong>: OpenGL 3.3 compatible GPU</li>
+      <li><strong>Storage</strong>: 50 MB available space</li>
+    </ul>
+  </div>
+  <div class="feature">
+    <strong>Recommended</strong>
+    <ul>
+      <li><strong>Processor</strong>: Quad-core CPU, 3.0 GHz or higher</li>
+      <li><strong>Memory</strong>: 4 GB RAM</li>
+      <li><strong>Graphics</strong>: Dedicated GPU with OpenGL 3.3+ support</li>
+    </ul>
+  </div>
+</div>
+
+<h4>🛠️ Built With</h4>
+<ul>
+  <li><strong>C++17</strong> - Core programming language</li>
+  <li><strong>OpenGL 3.3</strong> - Graphics rendering</li>
+  <li><strong>GLFW</strong> - Window and input management</li>
+  <li><strong>GLM</strong> - Mathematics library for 3D transformations</li>
+  <li><strong>stb_image</strong> - Texture loading</li>
+  <li><strong>miniaudio</strong> - Lightweight library for audio control</li>
+  <li><strong>CMake</strong> - Cross-platform build system</li>
+</ul>
+
+<h4>📚 Educational Value</h4>
+<p>This simulation is perfect for:</p>
+<ul>
+  <li>Learning about orbital mechanics and Kepler's laws</li>
+  <li>Understanding planetary scale and distances</li>
+  <li>Visualizing the solar system in 3D</li>
+  <li>Exploring real astronomical data</li>
+  <li>Studying OpenGL and 3D graphics programming</li>
+</ul>
+
+<h4>🎯 Portfolio Showcase</h4>
+<p>This project demonstrates:</p>
+<ul>
+  <li>Advanced C++ programming and OOP design</li>
+  <li>OpenGL rendering pipeline implementation</li>
+  <li>3D mathematics and physics simulation</li>
+  <li>Modern graphics programming techniques</li>
+  <li>UI/UX design for 3D applications</li>
+</ul>
+
+<h4>📝 Credits</h4>
+<p>Developed by Danylo Golosov as a portfolio project showcasing 3D graphics programming and physics simulation.</p>
+<p><strong>Texture Credits</strong>: Planet textures sourced from NASA and public domain resources.</p>
+<p><em>Created with passion for space exploration and computer graphics</em> 🚀✨</p>

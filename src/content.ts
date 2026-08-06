@@ -53,7 +53,7 @@ export function isProjectDetailId(value: string): value is ProjectDetailId {
  */
 export const TITLES: Readonly<Record<PanelId, string>> = {
   backend: 'Backend & Platform',
-  projects: 'Freelance Projects',
+  projects: 'Independent Projects',
   xr: 'XR / AR',
   about: 'About & Contact',
 };
@@ -97,9 +97,9 @@ export const CONTENT = {
   BACKEND_BLOCK_2_STACK: 'FastAPI, Python, PostgreSQL 14+, Claude API, Apify, Resend, SlowAPI, pypdf, React, TypeScript, Tailwind CSS 4, Vite 6, TanStack Query, Zod, Vitest',
 
   // ---------------------------------------------------------------- projects
-  // The panel carries the visible notice "Freelance projects - work that was
-  // done for clients." That notice is markup, not a token, and never comes out.
-  PROJECTS_INTRO: 'Showcase of my freelance work including web applications, XR experiences, backend systems and simulations',
+  // The panel carries the visible notice "Independent projects - work built on
+  // my own initiative." That notice is markup, not a token, and never comes out.
+  PROJECTS_INTRO: 'Showcase of my independent work including web applications, XR experiences, backend systems and simulations',
 
   // A project's card is title, status and summary; everything else it has to say
   // is in `content/projects/pN.html`, which the owner writes as plain HTML and
@@ -121,28 +121,28 @@ export const CONTENT = {
   PROJECT_2_TITLE: 'Paper.io 2 Clone (Multiplayer Game with custom built server)',
   PROJECT_2_STATUS: 'Finished prototype',
   PROJECT_2_SUMMARY: 'A fully authoritative multiplayer territory-capture game inspired by Voodoo Paper.io⁠ 2. Built with a custom Rust server and Unity 3D client (URP) featuring real-time state sync, procedural trail rendering, flood-fill territory claiming, and client-side prediction',
-  PROJECT_2_VIDEO_ID: '{{PROJECT_2_VIDEO_ID}}',
+  PROJECT_2_VIDEO_ID: 'c8RU1d6Tpp8',
   PROJECT_2_REPO_URL: 'https://github.com/WallerTheDeveloper/paperio-clone',
   PROJECT_2_DEMO_URL: 'https://wallerthedeveloper.itch.io/paperio-clone',
 
   PROJECT_3_TITLE: 'Solar System Simulation',
   PROJECT_3_STATUS: 'Finished prototype',
   PROJECT_3_SUMMARY: 'A real-time 3D visualization of our solar system, built from scratch using C++ and OpenGL. This project showcases accurate orbital mechanics, realistic planet rendering, and an interactive camera system that lets you explore space at your own pace',
-  PROJECT_3_VIDEO_ID: '{{PROJECT_3_VIDEO_ID}}',
+  PROJECT_3_VIDEO_ID: '-Bvyj-GJXLw',
   PROJECT_3_REPO_URL: 'https://github.com/WallerTheDeveloper/solar-system-opengl',
   PROJECT_3_DEMO_URL: 'https://wallerthedeveloper.itch.io/solar-system-simulation',
 
   PROJECT_4_TITLE: 'VR Tower Defense',
   PROJECT_4_STATUS: 'Finished prototype',
   PROJECT_4_SUMMARY: 'A Virtual Reality tower defense game built with Unity, featuring immersive spatial gameplay where players defend their headquarters using strategic tower placement. Project uses Passthrough feature. Players must defend their headquarters from enemy attacks by strategically placing and managing different types of towers. The VR implementation allows for intuitive hand-based interactions and immersive spatial awareness that traditional tower defense games cannot provide',
-  PROJECT_4_VIDEO_ID: '{{PROJECT_4_VIDEO_ID}}',
+  PROJECT_4_VIDEO_ID: 'GdgjmxrjIHU',
   PROJECT_4_REPO_URL: 'https://github.com/WallerTheDeveloper/vr-tower-defense',
   PROJECT_4_DEMO_URL: 'https://www.linkedin.com/feed/update/urn:li:activity:7366896687132356609/',
 
   // ---------------------------------------------------------------------- xr
   // The ZAUBAR block is the site's only employment section (README
   // "Content rules" 2). The XR personal projects below it are not employment.
-  XR_INTRO: 'Showcase of my XR / AR work, including both employment and freelance projects',
+  XR_INTRO: 'Showcase of my XR / AR work, including both employment and independent projects',
 
   ZAUBAR_ROLE_TITLE: 'AR & Web Developer',
   ZAUBAR_DATES: 'Aug 2023 - Jul 2025',
@@ -159,7 +159,7 @@ export const CONTENT = {
 
   XR_PROJECT_1_TITLE: 'VR Tower Defense',
   XR_PROJECT_1_DATES: 'A Virtual Reality tower defense game built with Unity, featuring immersive spatial gameplay where players defend their headquarters using strategic tower placement',
-  XR_PROJECT_1_SUMMARY: 'A Virtual Reality tower defense game built with Unity, featuring immersive spatial gameplay where players defend their headquarters using strategic tower placement. Freelance project for the clients who wanted a VR tower defense prototype for grabbing towers with pinch gestures and placing them in strategic positions',
+  XR_PROJECT_1_SUMMARY: 'A Virtual Reality tower defense game built with Unity, featuring immersive spatial gameplay where players defend their headquarters using strategic tower placement. Built on my own initiative as a prototype for grabbing towers with pinch gestures and placing them in strategic positions',
   XR_PROJECT_1_STACK: 'Unity Engine, C#, OpenXR, AR Foundation',
 
   // ------------------------------------------------------------------- about

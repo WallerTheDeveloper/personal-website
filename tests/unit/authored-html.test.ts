@@ -132,6 +132,38 @@ describe('the authored project bodies', () => {
     }
   });
 
+  /**
+   * The opt-in classes, and the whole list.
+   *
+   * Everything else in `.project__body` is an element selector and needs no
+   * cooperation from the author. These are the shapes that have no element, and
+   * CLAUDE.md allows another one only if `content/projects/README.md` documents
+   * it — a class nobody knows about is a class nobody uses. This pins both
+   * halves: a body cannot reach for a class that does not exist, and a class
+   * cannot exist without the README telling anyone about it.
+   */
+  const OPT_IN = ['shots', 'shot', 'callout', 'callout--note', 'features', 'feature'];
+
+  it('use only the opt-in classes the README documents', () => {
+    for (const { name, html } of bodies) {
+      for (const [, list = ''] of html.matchAll(/\sclass\s*=\s*"([^"]*)"/gi)) {
+        for (const cls of list.split(/\s+/).filter(Boolean)) {
+          expect(
+            OPT_IN,
+            `${name} uses .${cls}, which is not an opt-in class — style it with an element selector, or add it to src/styles.css AND document it in content/projects/README.md`,
+          ).toContain(cls);
+        }
+      }
+    }
+  });
+
+  it('are documented, every one of them', () => {
+    const readme = readFileSync(`${DIR}README.md`, 'utf8');
+    for (const cls of OPT_IN) {
+      expect(readme, `.${cls} is styled but the README never mentions it`).toContain(`.${cls}`);
+    }
+  });
+
   it('carry no copy tokens', () => {
     // Bodies are inlined *after* `fillTokens` runs, so a token written here
     // would ship as visible braces. The copy goes in the file.

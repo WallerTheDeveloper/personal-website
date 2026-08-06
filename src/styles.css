@@ -1246,6 +1246,136 @@ a:hover { color: var(--hover); }
   margin-top: 0;
 }
 
+/* A table is ordinary flow content, so it takes element selectors like the rest
+   of this block rather than a class the author has to remember. The header row
+   is the same mono micro-label the tag chips and `<h4>` take, which is what
+   keeps a spec table reading as part of the project rather than as a data dump.
+
+   Cells wrap rather than scroll — deliberately. `overflow-x: auto` here would
+   look right on a phone and then clip the far column out of the printed CV,
+   which flattens every panel into one document and cannot scroll. Wrapping is
+   ugly at 375px and correct on paper; that is the right way round. */
+.project__body table {
+  width: 100%;
+  margin-top: 18px;
+  border-collapse: collapse;
+  font-size: calc(14px * var(--type-scale));
+  line-height: 1.6;
+}
+
+.project__body th {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.28);
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: calc(10px * var(--type-scale));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--accent);
+}
+
+.project__body td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--rule-card);
+  color: var(--body);
+  vertical-align: top;
+}
+
+/* `.project__body` sets `overflow-wrap: anywhere`, and inside a table that is
+   actively wrong: `anywhere` feeds its break opportunities into the min-content
+   width, so the auto layout decides a column can be one character wide and
+   "Layer" comes out as "Laye / r". `break-word` breaks the same overlong strings
+   but is ignored when intrinsic widths are measured, so columns keep sizing to
+   their longest word. Caught in the text edition, where the column is narrowest. */
+.project__body th,
+.project__body td { overflow-wrap: break-word; }
+
+/* The outer edges align with the column, so the table sits in the text block
+   rather than looking inset from it. */
+.project__body th:first-child,
+.project__body td:first-child { padding-left: 0; }
+
+.project__body th:last-child,
+.project__body td:last-child { padding-right: 0; }
+
+/* ---------------------------------------------------------------------------
+   The remaining opt-in classes, documented in `content/projects/README.md`
+
+   Everything above is an element selector and needs no cooperation from the
+   author. These three are the shapes that have no element: an aside that is not
+   a quote, and a grid of short blocks. They are opt-in for the same reason
+   `.shots` is — a class nobody knows about is a class nobody uses, so each one
+   is documented there or it does not belong here.
+   --------------------------------------------------------------------------- */
+
+/* Sibling of `blockquote`, and deliberately close to it: a rule down the side,
+   no radius, no shadow. The fill is what separates a framing statement from a
+   pulled quote. */
+.callout {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-left: 2px solid rgba(var(--accent-rgb), 0.45);
+  background: var(--tag);
+}
+
+/* The quieter variant — an aside, a caveat, a note about scope. No fill and the
+   neutral rule, so it recedes instead of competing with the accent one. There is
+   no amber here on purpose: a warning colour would be a fifth accent inside a
+   panel that already owns one. */
+.callout--note {
+  border-left-color: var(--rule-cv);
+  background: none;
+  color: var(--muted);
+}
+
+.callout > :first-child { margin-top: 0; }
+
+/* `.project__body p` targets the paragraph directly, so the colour set on the
+   wrapper above never reaches it on inheritance alone. */
+.project__body .callout--note p { color: var(--muted); }
+
+/* `minmax(0, …)` for the reason `.shots` and the card grid use it: an implicit
+   `1fr` floors at min-content, so one long unbroken word would push the track
+   wider than the dialog and the overflow would be clipped in silence. */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.feature {
+  padding: 16px;
+  border: 1px solid var(--rule-card);
+}
+
+/* A block's lead line, not a heading — it carries no outline weight, which is
+   why this is `<strong>` and not another `<h5>` for the lint to count.
+
+   Direct child only. Unscoped, this turns *every* `<strong>` in the block into
+   one, so a list item like `<strong>OS</strong>: Windows 10/11` breaks after the
+   term and the value starts the next line. */
+.feature > strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--ink-head);
+}
+
+/* A block's own copy runs a step below the body size — it is a caption inside a
+   grid cell, not the column's main text. The list is here for the same reason:
+   left at the body size it comes out *larger* than the lead line above it. */
+.feature p,
+.feature ul,
+.feature ol {
+  margin-top: 6px;
+  font-size: calc(14px * var(--type-scale));
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.feature > :first-child { margin-top: 0; }
+
 /* ---------------------------------------------------------------------------
    The video facade
 

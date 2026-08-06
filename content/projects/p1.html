@@ -1,10 +1,74 @@
-<!-- Seeded from PROJECT_1_POINT_1, _POINT_2 and _STACK when those tokens were
-     retired. A starting point, not finished writing — see the README here. -->
-<h4>Highlights</h4>
-<ul>
-  <li>Scrapes Upwork and LinkedIn job postings via Apify actors. Extensible to new platforms in minutes</li>
-  <li>Upload your CV as PDF, describe your skills and preferences — every job is evaluated against your actual profile</li>
-</ul>
+<div class="callout">
+  <p><strong>Pick Ma Job</strong> is a product I designed, built and run myself. It watches the freelance job boards &mdash; Upwork and LinkedIn &mdash; reads every new posting as it appears, and works out which ones are genuinely worth answering before you ever see them.</p>
+  <p>It is live at <a href="https://pickmajob.cc" target="_blank" rel="noopener">pickmajob.cc</a>, a small group of freelancers use it, and I use it myself every day.</p>
+</div>
 
-<h4>Stack</h4>
-<p>FastAPI, Python, PostgreSQL 14+, Claude API, Apify, Resend, SlowAPI, pypdf, React, TypeScript, Tailwind CSS 4, Vite 6, TanStack Query, Zod, Vitest</p>
+<h4>The problem it solves</h4>
+<p>Freelance work goes to whoever is early <em>and</em> relevant. The price of that is reading: hundreds of new postings a week, of which perhaps three are a real fit. I was spending hours every week on that reading &mdash; and the good ones still slipped past while I was asleep.</p>
+<p>Pick Ma Job does the reading. What arrives is a short list, ranked, with a reason attached to every entry.</p>
+
+<h4>What it does</h4>
+<div class="features">
+  <div class="feature">
+    <strong>◈ Reads everything, constantly</strong>
+    <p>New postings are collected from Upwork and LinkedIn around the clock, so nothing is missed for having been published at three in the morning.</p>
+  </div>
+  <div class="feature">
+    <strong>◎ Scores the fit</strong>
+    <p>Every posting is judged against your uploaded CV and your stated preferences, then scored out of ten. Anything under your threshold never reaches you.</p>
+  </div>
+  <div class="feature">
+    <strong>⟐ Explains its verdict</strong>
+    <p>Strong matches get a second, deeper read: what lines up, what does not, and what to be careful of. You decide with the reasoning in front of you rather than a bare number.</p>
+  </div>
+  <div class="feature">
+    <strong>⤢ Writes the first draft</strong>
+    <p>One click produces a CV tailored to that particular job and a proposal written for that particular client. Editing a draft is a very different task from facing a blank page.</p>
+  </div>
+  <div class="feature">
+    <strong>⊘ Remembers your no</strong>
+    <p>Blacklist a company and it never appears again. Rule out the kinds of work you do not take and those postings stop arriving. Repeats between runs are dropped automatically.</p>
+  </div>
+  <div class="feature">
+    <strong>▤ Keeps the shortlist tidy</strong>
+    <p>Drag jobs into lists of your own, and filter by platform, score or status. The pile stays a pile; what you see is the decision.</p>
+  </div>
+</div>
+
+<h4>How it works, in four steps</h4>
+<ol>
+  <li><strong>You say who you are.</strong> Upload your CV as a PDF and describe the work you want. That becomes the yardstick every posting is measured against.</li>
+  <li><strong>It goes and looks.</strong> A run gathers the latest postings from the platforms you have switched on, then discards duplicates, blacklisted companies and anything matching the words you have excluded.</li>
+  <li><strong>It reads, then reads harder.</strong> Everything surviving that gets a quick score; only the ones clearing your threshold get the slow, detailed read. Two passes instead of one is what keeps a run cheap enough to leave running.</li>
+  <li><strong>You get a shortlist.</strong> Ranked, each with its reasoning, ready to keep, dismiss, or answer with a generated CV and proposal.</li>
+</ol>
+
+<!-- Screenshots: drop the files into public/projects/ and uncomment. Paths are
+     relative on purpose — a leading slash 404s under the site's base path.
+<div class="shots">
+  <img class="shot" src="projects/pick-ma-job-1.png" alt="The shortlist: scored jobs with their platform and status">
+  <img class="shot" src="projects/pick-ma-job-2.png" alt="One job opened, showing the detailed match analysis">
+</div>
+-->
+
+<h4>Trusted with your CV</h4>
+<p>There are no passwords to lose: signing in sends a one-time link to your email address. Every account sees only its own jobs, lists and documents &mdash; that separation is enforced at the database, not left to the screen you happen to be on.</p>
+
+<div class="callout callout--note">
+  <p><strong>Status</strong> &mdash; live at <a href="https://pickmajob.cc" target="_blank" rel="noopener">pickmajob.cc</a> and in daily use. A handful of other freelancers are on it alongside me, and it is still under active development.</p>
+</div>
+
+<h4>Under the hood</h4>
+<p>Built solo, front to back &mdash; the interface, the engine behind it, the database, the server it runs on, and the tests that keep it honest.</p>
+<table>
+  <tr><th>Part</th><th>Built with</th><th>What it is for</th></tr>
+  <tr><td><strong>Interface</strong></td><td>React, TypeScript</td><td>The site itself: the shortlist, the filters, the drag-and-drop lists</td></tr>
+  <tr><td><strong>Engine</strong></td><td>Python, FastAPI</td><td>Runs each search end to end and coordinates everything below</td></tr>
+  <tr><td><strong>Judgement</strong></td><td>Claude API</td><td>Reads each posting, scores the match, writes the tailored CV and proposal</td></tr>
+  <tr><td><strong>Memory</strong></td><td>PostgreSQL</td><td>Every job, profile and list, kept separate per account</td></tr>
+  <tr><td><strong>Collection</strong></td><td>Apify</td><td>Fetches the raw postings from Upwork and LinkedIn</td></tr>
+  <tr><td><strong>Delivery</strong></td><td>nginx on Linux</td><td>Serves the live site and routes traffic to the engine</td></tr>
+</table>
+<p>Adding a whole new job board takes three small files and no changes to anything already working &mdash; the system discovers the new source by itself.</p>
+
+<p><a href="https://pickmajob.cc" target="_blank" rel="noopener">Try it at pickmajob.cc</a> &middot; <a href="https://github.com/WallerTheDeveloper/pick-ma-job" target="_blank" rel="noopener">Source on GitHub</a></p>

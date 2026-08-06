@@ -99,7 +99,7 @@ design/               the reference prototype and its notes
 
 ## Routes
 
-`#backend`, `#projects`, `#xr`, `#about` — and no hash for the hub. The Freelance
+`#backend`, `#projects`, `#xr`, `#about` — and no hash for the hub. The Projects
 panel adds one sub-route, `#projects/pN`, which opens that project's detail as a
 centred dialog over the card grid. It is deep-linkable: Back closes the dialog
 and returns to `#projects`, Escape closes the dialog and a second Escape exits to
@@ -150,7 +150,7 @@ unfilled site reads the same either way; filling the CV means editing
 step — a token in one and not the other fails the build, and an unknown token in
 the HTML throws during substitution rather than shipping as visible braces.
 
-Editorial rules that the design depends on (the Freelance panel's client-work
+Editorial rules that the design depends on (the Projects panel's own-initiative
 notice, the single employment treatment on the XR panel, the two skills groups)
 are documented in [CLAUDE.md](CLAUDE.md).
 

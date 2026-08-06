@@ -37,10 +37,32 @@ mistake shows up in a second rather than in a Playwright run. It rejects:
 ## What you can use
 
 Ordinary flow content — `<p>`, `<ul>`, `<ol>`, `<h4>`–`<h6>`, `<strong>`,
-`<em>`, `<code>`, `<blockquote>`, `<a>`, `<img>`, `<figure>` — all of it
-inherits the panel's type and its accent.
+`<em>`, `<code>`, `<blockquote>`, `<a>`, `<img>`, `<figure>`, `<table>` — all of
+it inherits the panel's type and its accent. None of it needs a class.
 
-Two opt-in classes, so a side-by-side figure needs no inline style:
+A `<table>` needs no wrapper and no `class`. Write plain `<tr>` / `<th>` / `<td>`
+and the header row comes out as the same mono micro-label the headings use:
+
+```html
+<table>
+  <tr><th>Layer</th><th>Technology</th></tr>
+  <tr><td><strong>Server</strong></td><td>Rust + Tokio</td></tr>
+</table>
+```
+
+Cells **wrap** rather than scroll sideways. That is deliberate: a horizontally
+scrolling table looks right on a phone and then clips its far column out of the
+printed CV, which flattens every panel into one document and cannot scroll. Keep
+tables to two or three columns and they read fine at 375px.
+
+### Opt-in classes
+
+Four, and that is the whole list. Each one exists because there is no element
+for the shape it makes. **Adding a fifth means documenting it here** — CLAUDE.md
+makes that the condition, because a class nobody knows about is a class nobody
+uses.
+
+`.shots` / `.shot` — a side-by-side figure, so it needs no inline style:
 
 ```html
 <div class="shots">
@@ -51,6 +73,36 @@ Two opt-in classes, so a side-by-side figure needs no inline style:
 
 `.shots` is a responsive grid that collapses to one column on a phone; `.shot`
 sizes an image to its cell. A single image needs neither.
+
+`.callout` — a framing statement or a caveat. A rule down the side and a faint
+fill, no radius and no shadow, like everything else here. Add `.callout--note`
+for the quieter variant: no fill, neutral rule, muted text.
+
+```html
+<div class="callout callout--note">
+  <p><strong>Portfolio project</strong> — built as a technical showcase. All
+     mechanics reimplemented from scratch.</p>
+</div>
+```
+
+There is no warning colour. A red or an amber would be a second accent inside a
+panel that already owns one.
+
+`.features` / `.feature` — a grid of short blocks, each a lead line and a
+sentence or two. It reflows to one column when the dialog is narrow.
+
+```html
+<div class="features">
+  <div class="feature">
+    <strong>Territory claiming</strong>
+    <p>Edge-based flood-fill decides which regions a closed trail captures.</p>
+  </div>
+</div>
+```
+
+Use `<strong>` for the lead line, not a heading — it is a label inside one
+project, not another level of the document's outline, and the `<h4>` floor
+exists to keep that outline intact.
 
 ## Images
 
