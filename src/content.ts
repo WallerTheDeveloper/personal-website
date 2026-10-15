@@ -68,8 +68,8 @@ export const SITE_URL = 'https://wallerthedeveloper.github.io/personal-website/'
 export const CONTENT = {
   // ---------------------------------------------------------- hub / global
   FULL_NAME: 'Danylo Golosov',
-  ROLE_TAGLINE: 'Software Engineer & XR Developer',
-  LOCATION: 'Berlin, Germany',
+  ROLE_TAGLINE: 'Full-Stack Software Engineer',
+  LOCATION: 'Cologne, Germany',
   META_DESCRIPTION: '{{META_DESCRIPTION}}',
   /** The micro-label under the wordmark on the loading screen. */
   LOADING_LABEL: 'Loading the website...',
@@ -165,7 +165,7 @@ export const CONTENT = {
   // ------------------------------------------------------------------- about
   // Skills are exactly two groups. There is no "currently learning" group
   // anywhere, and adding one is a content-rule violation (README 4).
-  ABOUT_BIO: 'Software Engineer with a focus on XR & backend development. I have 2 years of production experience in XR mobile app development, and experience in creating backend systems and web application. Prefer taking responsibility and owning features through the full release process: creating REST API design, relational data modeling, and CI/CD automation. Independent backend work include a production FastAPI & async PostgreSQL SaaS (live, multiple active users) and an authoritative multiplayer game server built from scratch in Rust. Core languages are C#, C++, TypeScript, Python, and Rust',
+  ABOUT_BIO: "Full-stack software engineer with 3 years of experience shipping production software. Made Pick Ma Job, a job-seeker's website made with FastAPI, PostgreSQL, React and TypeScript that scores job postings against each user's profile with the Claude API and has multiple active users. Before that, two years at ZAUBAR split evenly between web work (Vue.js and TypeScript frontends, APIs, Directus CMS data modelling) and Unity XR, as sole developer on 4 of 10 shipped applications, owning each through CI/CD release. Also built an authoritative multiplayer game server from scratch in Rust which was used in Unity multiplayer game and made generic to be used in any game",
 
   EMAIL: 'golo7ov.danil@gmail.com',
   GITHUB_URL: 'https://github.com/WallerTheDeveloper',
@@ -175,7 +175,7 @@ export const CONTENT = {
   EDUCATION_INSTITUTION: 'Lublin University of Technology',
   EDUCATION_DATES: 'Oct 2019 - Feb 2023',
   EDUCATION_LOCATION: 'Lublin, Poland',
-  EDUCATION_NOTE: '',
+  EDUCATION_NOTE: 'Thesis: Implementation of a 4X Strategy Game with Unity Engine (Parallax)',
 
   LANGUAGE_1_NAME: 'Ukrainian',
   LANGUAGE_1_CEFR: 'Native',
@@ -189,7 +189,7 @@ export const CONTENT = {
   LANGUAGE_5_CEFR: 'A2',
 
 
-  SKILLS_PRODUCTION: 'C#, C++, TypeScript, Swift, React, Unity Engine, AR Foundation, OpenXR, ARCore, ARKit, Vue.js, Vite, Tailwind CSS, Github Actions, Directus CMS, Python, Rust, OpenGL, GLSL, FastAPI, PostgreSQL, Firebase App Distribution, Git, Jenkins, Blender',
+  SKILLS_PRODUCTION: 'Python, TypeScript/JavaScript, SQL, Rust, C#, C++, Swift, FastAPI, PostgreSQL, asyncio, Pydantic, Tokio, Protocol Buffers, WebSocket, Directus CMS, React, Vue.js, Vite, Tailwind CSS, TanStack Query, Zod, three.js, Claude API, pytest, Vitest, MSW, Playwright, GitHub Actions, Jenkins, Firebase App Distribution, Git, Linux, nginx, systemd, Unity, OpenXR, XR Interaction Toolkit, AR Foundation, ARKit, ARCore, Photon SDK, OpenGL, GLSL, Blender',
 } as const satisfies Readonly<Record<string, string>>;
 
 export type TokenName = keyof typeof CONTENT;

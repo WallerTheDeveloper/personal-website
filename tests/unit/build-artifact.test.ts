@@ -220,13 +220,18 @@ describe('copy', () => {
     const html = emitted.get('index.html')!.text!;
     const escaped = (value: string): string => fillTokens('{{V}}', { V: value });
 
-    const filled = Object.entries(CONTENT).filter(([key, value]) => value !== `{{${key}}}`);
+    // Widened to `string`: `CONTENT` is `as const`, so with no value currently
+    // `''` the literal union would make the empty check below a type error.
+    const filled: [string, string][] = Object.entries(CONTENT).filter(
+      ([key, value]) => value !== `{{${key}}}`,
+    );
     expect(filled.length, 'no copy is filled — content.ts is all placeholders').toBeGreaterThan(0);
 
     for (const [key, value] of filled) {
       expect(html, `${key} is filled but its token still ships`).not.toContain(`{{${key}}}`);
-      // `EDUCATION_NOTE` is deliberately empty; `toContain('')` says nothing,
-      // and the token assertion above is the one that matters for it.
+      // A token the owner fills with `''` on purpose is still filled, but
+      // `toContain('')` says nothing; the token assertion above is the one
+      // that matters for it.
       if (value !== '' && markupTokens.has(key)) {
         expect(html, `${key} is filled but its copy is not in the document`).toContain(
           escaped(value),
