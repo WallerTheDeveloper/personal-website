@@ -16,8 +16,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { fillBodies } from '../../build/copy-tokens';
+import { fillSprite } from '../../build/icon-sprite';
 import { fillTags } from '../../build/project-tags';
-import { PANEL_IDS, PROJECT_DETAILS, PROJECT_DETAIL_IDS } from '../../src/content';
+import { fillSkills } from '../../build/skill-tags';
+import { PANEL_IDS, PROJECT_DETAILS, PROJECT_DETAIL_IDS, SKILL_GROUPS } from '../../src/content';
 
 const html = readFileSync(new URL('../../index.html', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../../src/styles.css', import.meta.url), 'utf8');
@@ -34,12 +36,13 @@ const bodyOf = (id: string): string | null => {
 };
 
 /**
- * What a no-JS visitor is actually sent. The authored markup ships the tag rows
- * and the project bodies empty and the build fills both, so anything asserting
- * the text edition is *complete* has to look at the transformed HTML rather than
- * at the file.
+ * What a no-JS visitor is actually sent. The authored markup ships the tag rows,
+ * the skills rows and the project bodies empty and the build fills them — and
+ * writes the marks they use into a sprite — so anything asserting the text
+ * edition is *complete* has to look at the transformed HTML rather than at the
+ * file.
  */
-const served = fillBodies(fillTags(html), bodyOf);
+const served = fillBodies(fillSprite(fillSkills(fillTags(html))), bodyOf);
 
 describe('the document ships flat', () => {
   it('carries data-dg-flat on <html>', () => {
@@ -147,6 +150,22 @@ describe('in-page anchors', () => {
     expect(served).not.toMatch(/(?:src|href)="[^"]*simple-icons/);
   });
 
+  it('carries the skills in the served bytes, every subtitle and skill labelled', () => {
+    for (const group of SKILL_GROUPS) {
+      const from = served.indexOf(`<div class="skills__categories" data-skills="${group.id}">`);
+      expect(from, `${group.id} has no skills slot in the served markup`).toBeGreaterThan(-1);
+      const block = served.slice(from, served.indexOf('</section>', from));
+      for (const category of group.categories) {
+        expect(block, `${group.id} is missing the ${category.title} subtitle`).toContain(
+          `<h4 class="skills__category-title">${category.title.replace(/&/g, '&amp;')}</h4>`,
+        );
+        for (const tech of category.tech) {
+          expect(block, `${group.id} is missing ${tech.label}`).toContain(tech.label);
+        }
+      }
+    }
+  });
+
   it('carries every authored project body in the served bytes', () => {
     // Same reason as the tag rows: inlined at build time, so the text edition
     // and the printed CV carry the whole project with no JS at all.
@@ -172,10 +191,12 @@ describe('in-page anchors', () => {
   });
 
   it('leaves no href pointing at something the document does not contain', () => {
-    const hrefs = Array.from(html.matchAll(/href="#([^"]*)"/g), (m) => m[1] as string);
+    // The served bytes, so the chips' `<use href="#si-…">` are checked against
+    // the sprite symbols as well as the links against their anchors.
+    const hrefs = Array.from(served.matchAll(/href="#([^"]*)"/g), (m) => m[1] as string);
     // `href="#"` is the [data-exit] links: intercepted when routing, top of the
     // document when flat. Both are correct destinations.
-    const targets = new Set(Array.from(html.matchAll(/\sid="([^"]+)"/g), (m) => m[1] as string));
+    const targets = new Set(Array.from(served.matchAll(/\sid="([^"]+)"/g), (m) => m[1] as string));
     const dangling = [...new Set(hrefs)].filter((id) => id !== '' && !targets.has(id)).sort();
     expect(dangling).toEqual([]);
   });

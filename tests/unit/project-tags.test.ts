@@ -1,10 +1,9 @@
 /**
  * The build-time tag renderer.
  *
- * Two things are worth failing fast on here: a slug `simple-icons` does not
- * carry (which would otherwise ship as an empty chip), and a mark leaking into
- * the document as anything other than path data. Both are build errors by
- * design — this is where that is pinned.
+ * Worth failing fast on here: a slug `simple-icons` does not carry, which would
+ * otherwise ship as an empty chip. The marks themselves — path data and nothing
+ * else, written once — are `icon-sprite.test.ts`.
  */
 
 import { readFileSync } from 'node:fs';
@@ -25,7 +24,10 @@ describe('chipFor', () => {
     const chip = chipFor({ icon: 'python', label: 'Python' });
     expect(chip).toContain('<li class="project__tag">');
     expect(chip).toContain('viewBox="0 0 24 24"');
-    expect(chip).toContain('fill="currentColor"');
+    // A reference to the sprite, not a copy of the path: the mark is written
+    // once per document however many chips draw it.
+    expect(chip).toContain('<use href="#si-python"/>');
+    expect(chip).not.toContain('<path');
     expect(chip).toContain('aria-hidden="true"');
     expect(chip).toContain('focusable="false"');
     expect(chip).toMatch(/<\/svg>Python<\/li>$/);
@@ -39,6 +41,15 @@ describe('chipFor', () => {
     expect(chip).not.toContain('<svg');
   });
 
+  it('takes the chip class from the row that asks', () => {
+    // The skills rows reuse this renderer with their own class; the default
+    // stays the project tag so the project rows never have to say it.
+    expect(chipFor({ label: 'GLSL' }, 'skills__tag')).toBe('<li class="skills__tag">GLSL</li>');
+    expect(chipFor({ icon: 'rust', label: 'Rust' }, 'skills__tag')).toMatch(
+      /^<li class="skills__tag"><svg/,
+    );
+  });
+
   it('escapes the label', () => {
     expect(chipFor({ label: 'A & B' })).toContain('A &amp; B');
     expect(chipFor({ label: '<script>' })).not.toContain('<script>');
@@ -48,13 +59,6 @@ describe('chipFor', () => {
     // The whole reason the glyphs moved to a library: a typo has to be a build
     // failure, not a chip that quietly lost its mark.
     expect(() => chipFor({ icon: 'nosuchbrand', label: 'Nope' })).toThrow(/not a simple-icons slug/);
-  });
-
-  it('never carries fill-rule', () => {
-    // simple-icons paths are authored for the default `nonzero`. Forcing
-    // `evenodd` — which the hand-drawn outlines needed — punches holes in every
-    // mark that has a counter.
-    expect(chipFor({ icon: 'postgresql', label: 'PostgreSQL' })).not.toContain('fill-rule');
   });
 });
 
@@ -94,12 +98,9 @@ describe('fillTags', () => {
     expect(() => fillTags('<p>nothing here</p>', table([{ label: 'X' }]))).toThrow(/no <ul/);
   });
 
-  it('writes path data and nothing else into the d attribute', () => {
-    const ds = Array.from(fillTags(html).matchAll(/ d="([^"]*)"/g), (m) => m[1] as string);
-    expect(ds.length).toBeGreaterThan(0);
-    for (const d of ds) {
-      expect(d).toMatch(/^[Mm][\d\s.,\-A-Za-z]+$/);
-      expect(d).not.toContain('<');
-    }
+  it('references a mark for every chip the table gives one', () => {
+    const uses = (fillTags(html).match(/<use href="#si-[a-z0-9]+"\/>/g) ?? []).length;
+    const marked = PROJECT_DETAILS.flatMap((entry) => entry.tech).filter((t) => t.icon).length;
+    expect(uses).toBe(marked);
   });
 });

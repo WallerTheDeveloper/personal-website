@@ -1500,6 +1500,16 @@ a:hover { color: var(--hover); }
    transforms near it are the one thing that would break its containing block. */
 .project__tag svg { flex: none; }
 
+/* The marks every chip `<use>`s, written once by `build/icon-sprite.ts`. Drawing
+   source, not content: out of the flow and zero-size, but not `display: none`,
+   which is the one shape older engines have refused to clone a symbol from. */
+.icon-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
 .project__detail-close {
   display: inline-block;
   margin-top: 26px;
@@ -1753,12 +1763,50 @@ html[data-dg-3d] .project__detail.is-open .project__dialog:focus-visible {
 .skills__group-title--production { color: var(--cyan-soft); }
 .skills__group-title--personal   { color: var(--mint); }
 
-.skills__list {
-  margin: 14px 0 0;
-  font-size: calc(17px * var(--type-scale));
-  line-height: 1.85;
+.skills__category { margin-top: 24px; }
+
+/* One step under the group title: the same mono micro-label, a size down and in
+   the section-title grey, so the group's colour stays the group's. */
+.skills__category-title {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: calc(10px * var(--type-scale));
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--chrome);
+}
+
+.skills__tech {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* The project tag chip's shape, a size up, because here the chips are the
+   content rather than a note under it. The label stays in the skills-row
+   colour and only the mark takes the group's: forty-odd chips all in one
+   accent read as a wall of colour, not a list. */
+.skills__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 11px;
+  border: 1px solid var(--rule-2);
+  background: var(--tag);
+  font-family: var(--mono);
+  font-size: calc(11px * var(--type-scale));
+  letter-spacing: 0.08em;
   color: var(--body-3);
 }
+
+.skills__tag svg { flex: none; }
+
+[data-skills="production"] .skills__tag svg { color: var(--cyan-soft); }
+[data-skills="personal"]   .skills__tag svg { color: var(--mint); }
 
 /* ---------------------------------------------------------------------------
    Elsewhere in the system

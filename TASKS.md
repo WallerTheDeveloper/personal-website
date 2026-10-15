@@ -359,3 +359,7 @@ Do not "restore fidelity" on any of these:
    - **Both videos are facades**, so the site still makes no third-party request until a visitor reaches the Projects panel — and none at all from the hub.
 
    Requested by the owner.
+
+7. **The About panel's skills are tag chips with brand marks, not a comma-separated paragraph.** The prototype sets `{{SKILLS_PRODUCTION}}` as one 17px line of text. The port draws each skill as a project-style chip, from `SKILL_GROUPS`, with the mark out of `simple-icons` and text only where the set has none, under the CV's technology subtitles (Languages, Backend, Frontend, LLM applications, Testing, CI/CD, XR, 3D & graphics). The mark takes the group's colour and the label keeps the skills-row colour, so forty-odd chips do not read as one block of accent. Every chip on the site now `<use>`s its mark from one inline sprite, which is what keeps the text edition inside its 64 KB first load.
+
+   Requested by the owner.

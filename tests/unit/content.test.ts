@@ -7,6 +7,7 @@ import {
   PROJECT_DETAILS,
   PROJECT_DETAIL_IDS,
   PROJECT_LINKS,
+  SKILL_GROUPS,
   TITLES,
   isPanelId,
   type TokenName,
@@ -115,6 +116,40 @@ describe('project details', () => {
       for (const tech of entry.tech) {
         expect(tech.label.trim(), `${entry.id}`).not.toBe('');
       }
+    }
+  });
+});
+
+describe('skill groups', () => {
+  it('matches the [data-skills] slots in the markup, in DOM order', () => {
+    const inMarkup = Array.from(html.matchAll(/data-skills="([a-z]+)"/g), (m) => m[1]);
+    expect(inMarkup).toEqual(SKILL_GROUPS.map((group) => group.id));
+  });
+
+  it('has skills in every category, each named, with slugs in simple-icons form', () => {
+    // Same shape rule as the project tags; `skill-tags.test.ts` is where an
+    // unknown slug actually fails.
+    for (const group of SKILL_GROUPS) {
+      expect(group.categories.length, `${group.id} has no categories`).toBeGreaterThan(0);
+      for (const category of group.categories) {
+        const where = `${group.id} / ${category.title}`;
+        expect(category.title.trim(), group.id).not.toBe('');
+        expect(category.tech.length, `${where} has no skills`).toBeGreaterThan(0);
+        for (const { icon, label } of category.tech) {
+          expect(label.trim(), where).not.toBe('');
+          if (icon !== undefined) expect(icon, `${where} / ${label}`).toMatch(/^[a-z0-9]+$/);
+        }
+      }
+    }
+  });
+
+  it('names each category once, and lists each skill once, per group', () => {
+    // A skill under two subtitles reads as two skills.
+    for (const group of SKILL_GROUPS) {
+      const titles = group.categories.map((c) => c.title);
+      expect(titles, group.id).toEqual([...new Set(titles)]);
+      const labels = group.categories.flatMap((c) => c.tech.map((t) => t.label));
+      expect(labels, group.id).toEqual([...new Set(labels)]);
     }
   });
 });

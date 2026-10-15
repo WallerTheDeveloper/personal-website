@@ -86,6 +86,8 @@ src/
 build/copy-tokens.ts  Vite plugin: substitutes content.ts into the HTML, and
                       inlines content/projects/pN.html, both at build time
 build/project-tags.ts Vite plugin: renders the tech tag rows from simple-icons
+build/skill-tags.ts   Vite plugin: renders the About skills as the same chips
+build/icon-sprite.ts  Vite plugin: writes each used brand mark once, as a sprite
 build/engine-chunk.ts Vite plugin: writes the hashed engine chunk URL into the head
 content/projects/     the owner's authored project bodies, one HTML file each
 tests/unit  tests/e2e
@@ -139,6 +141,9 @@ reason and at the same moment:
   icon library reaches the browser. A brand the set has no mark for (C#, OpenXR,
   GLSL, Protocol Buffers) renders as a text-only chip; an unknown slug fails the
   build.
+- **The skills** are `SKILL_GROUPS` in `content.ts`, drawn as the same chips by
+  `build/skill-tags.ts` under technology subtitles taken from the CV. Every chip references its mark, and
+  `build/icon-sprite.ts` writes each used mark once into an inline sprite.
 
 Each token still defaults to the literal `{{TOKEN}}` string it replaces, so an
 unfilled site reads the same either way; filling the CV means editing

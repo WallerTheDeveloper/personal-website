@@ -594,7 +594,12 @@
 
       <div class="skills__group">
         <h3 class="skills__group-title skills__group-title--production">Used in production</h3>
-        <p class="skills__list">{{SKILLS_PRODUCTION}}</p>
+        <!-- Filled at build time by `build/skill-tags.ts`, from SKILL_GROUPS:
+             a subtitle per technology category, and under it one chip per skill
+             with its brand mark out of simple-icons — the project tag rows'
+             renderer. Empty and written exactly this way because that is the
+             literal the plugin matches; it throws on a slot it cannot place. -->
+        <div class="skills__categories" data-skills="production"></div>
       </div>
       
     </section>

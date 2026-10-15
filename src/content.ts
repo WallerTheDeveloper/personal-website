@@ -163,8 +163,8 @@ export const CONTENT = {
   XR_PROJECT_1_STACK: 'Unity Engine, C#, OpenXR, AR Foundation',
 
   // ------------------------------------------------------------------- about
-  // Skills are exactly two groups. There is no "currently learning" group
-  // anywhere, and adding one is a content-rule violation (README 4).
+  // The skills are not tokens: they are `SKILL_GROUPS` at the end of this file,
+  // one tagged chip per skill, the same shape as a project's tech row.
   ABOUT_BIO: "Full-stack software engineer with 3 years of experience shipping production software. Made Pick Ma Job, a job-seeker's website made with FastAPI, PostgreSQL, React and TypeScript that scores job postings against each user's profile with the Claude API and has multiple active users. Before that, two years at ZAUBAR split evenly between web work (Vue.js and TypeScript frontends, APIs, Directus CMS data modelling) and Unity XR, as sole developer on 4 of 10 shipped applications, owning each through CI/CD release. Also built an authoritative multiplayer game server from scratch in Rust which was used in Unity multiplayer game and made generic to be used in any game",
 
   EMAIL: 'golo7ov.danil@gmail.com',
@@ -187,9 +187,6 @@ export const CONTENT = {
   LANGUAGE_4_CEFR: 'B2',
   LANGUAGE_5_NAME: 'German',
   LANGUAGE_5_CEFR: 'A2',
-
-
-  SKILLS_PRODUCTION: 'Python, TypeScript/JavaScript, SQL, Rust, C#, C++, Swift, FastAPI, PostgreSQL, asyncio, Pydantic, Tokio, Protocol Buffers, WebSocket, Directus CMS, React, Vue.js, Vite, Tailwind CSS, TanStack Query, Zod, three.js, Claude API, pytest, Vitest, MSW, Playwright, GitHub Actions, Jenkins, Firebase App Distribution, Git, Linux, nginx, systemd, Unity, OpenXR, XR Interaction Toolkit, AR Foundation, ARKit, ARCore, Photon SDK, OpenGL, GLSL, Blender',
 } as const satisfies Readonly<Record<string, string>>;
 
 export type TokenName = keyof typeof CONTENT;
@@ -287,5 +284,117 @@ export const PROJECT_DETAILS: readonly ProjectDetail[] = [
     n: 4,
     title: CONTENT.PROJECT_4_TITLE,
     tech: [{ icon: 'unity', label: 'Unity' }, { label: 'C#' }, { label: 'OpenXR' }],
+  },
+];
+
+/**
+ * The About panel's skills, one group per `[data-skills="…"]` slot, each skill
+ * a `Tech` chip drawn by `build/skill-tags.ts` exactly the way a project's tag
+ * row is — at build time, so the text edition and the printed CV carry them.
+ *
+ * Skills are exactly two groups, *Used in production* and *Used in personal
+ * projects*, and only the first is in use. There is no "currently learning"
+ * group anywhere, and adding one is a content-rule violation (README 4).
+ *
+ * Within a group the chips sit under technology subtitles, named and ordered as
+ * the CV's "Skills and technologies" section names them. A subtitle is
+ * structure inside a group, not a third group.
+ */
+export type SkillGroupId = 'production' | 'personal';
+
+export interface SkillCategory {
+  /** The subtitle, shown above its chips. */
+  readonly title: string;
+  readonly tech: readonly Tech[];
+}
+
+export interface SkillGroup {
+  readonly id: SkillGroupId;
+  readonly categories: readonly SkillCategory[];
+}
+
+export const SKILL_GROUPS: readonly SkillGroup[] = [
+  {
+    id: 'production',
+    categories: [
+      {
+        title: 'Languages',
+        tech: [
+          { icon: 'python', label: 'Python' },
+          { icon: 'typescript', label: 'TypeScript' },
+          { icon: 'javascript', label: 'JavaScript' },
+          { label: 'SQL' },
+          { icon: 'rust', label: 'Rust' },
+          { label: 'C#' },
+          { icon: 'cplusplus', label: 'C++' },
+          { icon: 'swift', label: 'Swift' },
+        ],
+      },
+      {
+        title: 'Backend',
+        tech: [
+          { icon: 'fastapi', label: 'FastAPI' },
+          { icon: 'postgresql', label: 'PostgreSQL' },
+          { label: 'asyncio' },
+          { icon: 'pydantic', label: 'Pydantic' },
+          { icon: 'tokio', label: 'Tokio' },
+          { label: 'Protocol Buffers' },
+          { label: 'WebSocket' },
+          { icon: 'directus', label: 'Directus CMS' },
+        ],
+      },
+      {
+        title: 'Frontend',
+        tech: [
+          { icon: 'react', label: 'React' },
+          { icon: 'vuedotjs', label: 'Vue.js' },
+          { icon: 'vite', label: 'Vite' },
+          { icon: 'tailwindcss', label: 'Tailwind CSS' },
+          { icon: 'tanstack', label: 'TanStack Query' },
+          { icon: 'zod', label: 'Zod' },
+          { icon: 'threedotjs', label: 'three.js' },
+        ],
+      },
+      {
+        title: 'LLM applications',
+        tech: [{ icon: 'claude', label: 'Claude API' }],
+      },
+      {
+        title: 'Testing',
+        tech: [
+          { icon: 'pytest', label: 'pytest' },
+          { icon: 'vitest', label: 'Vitest' },
+          { icon: 'mockserviceworker', label: 'MSW' },
+          { label: 'Playwright' },
+        ],
+      },
+      {
+        title: 'CI/CD',
+        tech: [
+          { icon: 'githubactions', label: 'GitHub Actions' },
+          { icon: 'jenkins', label: 'Jenkins' },
+          { icon: 'firebase', label: 'Firebase App Distribution' },
+          { icon: 'git', label: 'Git' },
+          { icon: 'linux', label: 'Linux' },
+          { icon: 'nginx', label: 'nginx' },
+          { label: 'systemd' },
+        ],
+      },
+      {
+        title: 'XR, 3D & graphics',
+        tech: [
+          { icon: 'unity', label: 'Unity' },
+          { label: 'OpenXR' },
+          { label: 'XR Interaction Toolkit' },
+          { label: 'AR Foundation' },
+          { label: 'ARKit' },
+          { label: 'ARCore' },
+          { icon: 'photon', label: 'Photon SDK' },
+          { icon: 'opengl', label: 'OpenGL' },
+          { label: 'GLSL' },
+          { icon: 'blender', label: 'Blender' },
+        ],
+      },
+    ],
   },
 ];

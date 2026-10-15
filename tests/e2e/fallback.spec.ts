@@ -75,6 +75,28 @@ async function expectFlatDocument(page: Page): Promise<void> {
   }
   await expect(page.locator('.project__tag svg').first()).toBeVisible();
 
+  // The About panel's skills go through the same build-time renderer, for the
+  // same reason: this edition and the printed CV are where they get read.
+  const production = page.locator('[data-skills="production"]');
+  await expect(production.locator('.skills__category-title').first()).toBeVisible();
+  const skills = production.locator('.skills__tag');
+  expect(await skills.count()).toBeGreaterThan(0);
+  await expect(skills.first()).toBeVisible();
+  // Every mark draws: a `<use>` pointing at a symbol the sprite does not hold,
+  // or a malformed `d`, is an empty box. Counted first, because `evaluateAll`
+  // over nothing passes vacuously.
+  const glyphs = page.locator('.skills__tag use');
+  expect(await glyphs.count()).toBeGreaterThan(0);
+  const blank = await glyphs.evaluateAll((els) =>
+    els
+      .filter((el) => {
+        const r = (el as SVGGraphicsElement).getBBox();
+        return r.width < 4 || r.height < 4;
+      })
+      .map((el) => el.getAttribute('href')),
+  );
+  expect(blank, 'skills with marks that draw nothing').toEqual([]);
+
   // And the authored bodies, for the same reason: `content/projects/pN.html` is
   // inlined at build time, so the whole project is in this document rather than
   // behind a dialog it has no way to open.

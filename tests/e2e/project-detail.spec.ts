@@ -519,18 +519,21 @@ test.describe('the tech tags', () => {
     await waitForPanel(page, 'projects');
 
     const tag = tech(page, 'p1').locator('.project__tag').first();
-    // `currentColor` on the path, `--accent` on the chip: the glyph takes the
-    // destination's colour without naming it.
+    // `currentColor` on the sprite's path, `--accent` on the chip: the `<use>`
+    // clone resolves it against the chip, so the glyph takes the destination's
+    // colour without naming it.
     await expect(tag).toHaveCSS('color', 'rgb(56, 255, 176)');
-    await expect(tag.locator('path')).toHaveAttribute('fill', 'currentColor');
+    await expect(tag.locator('use')).toHaveAttribute('href', '#si-python');
+    await expect(page.locator('#si-python path')).toHaveAttribute('fill', 'currentColor');
 
     // And it is actually on screen with area, rather than an empty <svg> — a
-    // malformed `d` renders as nothing at all and would pass every check above.
+    // malformed `d`, or a `<use>` pointing at nothing, renders as nothing at all
+    // and would pass every check above.
     const box = await tag.locator('svg').boundingBox();
     expect(box?.width).toBeGreaterThan(8);
     expect(box?.height).toBeGreaterThan(8);
-    const painted = await tag.locator('path').evaluate((el) => {
-      const r = (el as SVGGeometryElement).getBBox();
+    const painted = await tag.locator('use').evaluate((el) => {
+      const r = (el as SVGGraphicsElement).getBBox();
       return { w: r.width, h: r.height };
     });
     expect(painted.w).toBeGreaterThan(4);
@@ -546,12 +549,12 @@ test.describe('the tech tags', () => {
     await openHub(page, '/#projects');
     await waitForPanel(page, 'projects');
     for (const project of ['p1', 'p2', 'p3', 'p4']) {
-      const paths = tech(page, project).locator('.project__tag path');
-      expect(await paths.count(), `${project} has no glyphs at all`).toBeGreaterThan(0);
-      const empty = await paths.evaluateAll((els) =>
+      const glyphs = tech(page, project).locator('.project__tag use');
+      expect(await glyphs.count(), `${project} has no glyphs at all`).toBeGreaterThan(0);
+      const empty = await glyphs.evaluateAll((els) =>
         els
           .map((el, i) => {
-            const r = (el as SVGGeometryElement).getBBox();
+            const r = (el as SVGGraphicsElement).getBBox();
             return r.width < 4 || r.height < 4 ? i : -1;
           })
           .filter((i) => i >= 0),

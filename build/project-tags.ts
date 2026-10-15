@@ -2,9 +2,10 @@
  * Fills each project's tech tag row with real brand marks, at build time.
  *
  * The glyphs come from `simple-icons`, which is a **devDependency**: it is read
- * here, during the build, and the browser never receives a byte of it. What
- * ships is the one `<path d>` per tag that the row actually draws, inline in
- * `index.html`, monochrome in `currentColor` so the panel accent tints it.
+ * during the build, and the browser never receives a byte of it. Each chip
+ * carries a `<use>` of its mark, and `build/icon-sprite.ts` writes each mark
+ * that is used once, inline in `index.html`, monochrome in `currentColor` so the
+ * panel accent tints it.
  *
  * Build time rather than on open, and that is the whole point of this file:
  *
@@ -22,31 +23,12 @@
  * and drawing a hand-made stand-in is exactly what this file replaced.
  */
 
-import * as simpleIcons from 'simple-icons';
-import type { SimpleIcon } from 'simple-icons';
 import type { Plugin } from 'vite';
 
 import { PROJECT_DETAILS, type ProjectDetail, type Tech } from '../src/content';
 
 import { escapeHtml } from './copy-tokens';
-
-/**
- * Every icon in the set, by slug. Built once, and only ever in the build — the
- * namespace import is ~3,500 icons, which is free here and unthinkable in the
- * bundle. Keyed off `icon.slug` rather than the `si…` export name so nothing
- * here has to reimplement the library's slug-to-identifier mangling.
- */
-const BY_SLUG: ReadonlyMap<string, SimpleIcon> = new Map(
-  Object.values<SimpleIcon>(simpleIcons).map((icon) => [icon.slug, icon]),
-);
-
-/**
- * Path data, and nothing that could be read as markup. `simple-icons` is a
- * trusted dependency, but its `path` is written straight into an attribute in a
- * document that has no other unescaped interpolation — so it is checked rather
- * than assumed.
- */
-const PATH_DATA = /^[Mm][\d\s.,\-A-Za-z]+$/;
+import { markFor, symbolId } from './icon-sprite';
 
 /** The empty slot the markup ships, one per project. */
 const SLOT = /<ul class="project__tech" data-tech="([^"]+)"><\/ul>/g;
@@ -56,30 +38,22 @@ const SLOT = /<ul class="project__tech" data-tech="([^"]+)"><\/ul>/g;
  *
  * `aria-hidden` on the svg because the label beside it already names the
  * technology, and `focusable="false"` to keep it out of the tab ring in engines
- * that make SVG focusable by default. No `fill-rule` — simple-icons paths are
- * authored for the default `nonzero`, and forcing `evenodd` punches holes in
- * the ones with counters.
+ * that make SVG focusable by default. The slug is resolved here, not only when
+ * the sprite is written, so an unknown one fails naming the label it was on.
+ *
+ * `className` is the only thing a row decides: `build/skill-tags.ts` draws the
+ * About panel's skills through this same function as `skills__tag`.
  */
-export function chipFor({ icon, label }: Tech): string {
+export function chipFor({ icon, label }: Tech, className = 'project__tag'): string {
   const text = escapeHtml(label);
-  if (icon === undefined) return `<li class="project__tag">${text}</li>`;
+  if (icon === undefined) return `<li class="${className}">${text}</li>`;
 
-  const mark = BY_SLUG.get(icon);
-  if (mark === undefined) {
-    throw new Error(
-      `[project-tags] "${icon}" (tagged "${label}") is not a simple-icons slug. ` +
-        'Check it at https://simple-icons.org — or drop the `icon` field and let the chip be text only, ' +
-        'which is what a brand with no mark in the set is supposed to look like.',
-    );
-  }
-  if (!PATH_DATA.test(mark.path)) {
-    throw new Error(`[project-tags] the "${icon}" path is not plain path data.`);
-  }
+  markFor(icon, label);
 
   return (
-    '<li class="project__tag">' +
+    `<li class="${className}">` +
     '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">' +
-    `<path fill="currentColor" d="${mark.path}"/>` +
+    `<use href="#${symbolId(icon)}"/>` +
     '</svg>' +
     `${text}</li>`
   );

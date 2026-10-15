@@ -4,7 +4,9 @@ import { defineConfig } from 'vitest/config';
 
 import { copyTokens } from './build/copy-tokens';
 import { engineChunk } from './build/engine-chunk';
+import { iconSprite } from './build/icon-sprite';
 import { projectTags } from './build/project-tags';
+import { skillTags } from './build/skill-tags';
 
 // Single HTML entry, on purpose.
 //
@@ -35,10 +37,14 @@ export default defineConfig(({ command }) => ({
   // owner fills copy in one file and the served HTML carries it with JS
   // disabled. projectTags does the same for the tech tag rows, resolving the
   // brand marks out of simple-icons — a devDependency, so the glyphs ship as
-  // inline paths and the library never reaches the browser. engineChunk writes
+  // inline paths and the library never reaches the browser — and skillTags
+  // draws the About panel's skills with the same chips. Both leave a `<use>` per
+  // mark, and iconSprite, last of the three, writes each used mark once into an
+  // inline sprite; it reads the others' output, so it must stay after them.
+  // engineChunk writes
   // the hashed engine URL into the head, which is the only place that URL is
   // knowable — the loading dial streams it for a byte count before importing it.
-  plugins: [copyTokens(), projectTags(), engineChunk()],
+  plugins: [copyTokens(), projectTags(), skillTags(), iconSprite(), engineChunk()],
   build: {
     target: 'es2022',
     // The budget is < 900 KB transfer and `three` is essentially all of it,
